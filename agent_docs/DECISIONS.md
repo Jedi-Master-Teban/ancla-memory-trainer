@@ -143,6 +143,71 @@ directorio de primer nivel, sibling de `src/`) es válida sin cambios.
 el registro de que las versiones se verificaron activamente, con sus trampas, en
 vez de asumirse.
 
+## ADR-012 · 2026-08-11 · Aceptada — supersede parcialmente a ADR-011
+**Decisión:** downgrade de Expo SDK 57 → **SDK 54 (`expo@54.0.36`)**. Este es el
+evento de "la realidad diverge del plan" que §12.7 del brief anticipa
+explícitamente ("ej. una librería no funciona en Expo Go") — se registra aquí en
+vez de parchear en silencio.
+
+**Razón, con evidencia verificada, no asumida:**
+El operador reportó que Expo Go decía necesitar "una versión más nueva" pese a estar
+ya actualizada. Se verificó contra fuentes oficiales de Expo, no de memoria (el
+conocimiento del agente no cubre nada posterior a mayo 2026, y SDK 57 es de después):
+
+- Changelog oficial de SDK 57 (30 jun 2026), cita textual: *"We'd like to release a
+  new version for SDK 57, but we're still waiting on approval"* — el build de Expo
+  Go para SDK 57 seguía en cola de revisión de Apple.
+- Ficha real del App Store (`apps.apple.com/us/app/expo-go/id982107779`), consultada
+  el 11 ago 2026: **versión publicada 54.0.2**, sin actualizar desde el 23 sep 2025.
+- Conclusión: el Expo Go que el operador tiene instalado (desde el App Store, la
+  única fuente permitida por §3 — "cero intención de publicación en App Store") solo
+  soporta hasta SDK 54. Instalar "la última" SDK (57) fue exactamente el tipo de
+  suposición que el protocolo anti-alucinación existe para evitar — en este caso no
+  sobre una API, sino sobre la disponibilidad real de una plataforma externa.
+
+**Dos hallazgos adicionales durante el downgrade:**
+1. `expo-status-bar` había quedado en el array `plugins` de `app.json` desde el
+   scaffold original (SDK 57), auto-añadido por `expo install` sin que el agente lo
+   pidiera. Se verificó que el paquete **no tiene `app.plugin.js`** (no es un config
+   plugin real, es solo un componente `<StatusBar>`) y se retiró de `plugins`. La
+   propia CLI lo señaló al fallar su verificación interna por un problema de Node.js
+   ajeno a este proyecto (`ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING`).
+2. `expo-router` trae, también en la línea de SDK 54, una dependencia dura (vía
+   `@expo/ui`/`@radix-ui`) que resuelve `react-dom@19.2.8` como peer opcional —
+   incompatible con el `react@19.1.0` real que pide React Native 0.81.5 en esta SDK.
+   Se resolvió con `"overrides": { "react-dom": "19.1.0" }` en `package.json` en vez
+   de forzar con `--legacy-peer-deps` (que `npm` advierte como "potentially
+   broken" para todo el árbol). El proyecto no usa `react-dom` en ningún punto —
+   no hay soporte web — así que fijar su versión solo satisface la consistencia
+   de peers de `npm`, no afecta funcionalidad real.
+
+**Versiones finales de Fase 0 (reemplazan a la tabla "no instalada aún" de
+ADR-011 para lo que Fase 0 sí instala):**
+
+| Paquete | Versión | Nota |
+|---|---|---|
+| expo | 54.0.36 | antes 57.0.12 |
+| expo-router | ~6.0.24 | antes ~57.0.12 — numeración propia, no sigue al SDK |
+| expo-constants | ~18.0.13 | |
+| expo-linking | ~8.0.12 | |
+| expo-status-bar | ~3.0.9 | fuera de `plugins`, ver hallazgo 1 |
+| react | 19.1.0 | antes 19.2.8 |
+| react-native | 0.81.5 | antes 0.86.2 |
+| react-native-safe-area-context | ~5.6.0 | |
+| react-native-screens | ~4.16.0 | |
+| typescript | ~5.9.2 | antes ~6.0.3 |
+| @types/react | ~19.1.10 | |
+| jest-expo | ~54.0.17 | antes ~57.0.4 |
+
+**Re-verificado tras el downgrade:** `npx tsc --noEmit` limpio, `npm test` verde,
+`npx expo export --platform ios` bundlea 964 módulos sin error. Estructura `app/` en
+la raíz sin cambios (confirmado empíricamente: el bundle encuentra las rutas sin
+error, no hace falta releer el código fuente de `expo-router` para esta versión).
+
+**Consecuencia:** ninguna decisión de arquitectura del proyecto cambia — esto es un
+ajuste de versión de plataforma externa, no de diseño propio. **Nuevo pendiente:**
+ver P-6 abajo, sobre cuándo revisitar SDK 57.
+
 ## Pendientes de decisión
 
 | # | Tema | Dueño | Se necesita para |
@@ -152,3 +217,4 @@ vez de asumirse.
 | P-3 | ¿Palabra colgadero para el dígito `0` suelto y el trozo `00`? | Operador | Fase 4 |
 | P-4 | ¿`expo-notifications` dispara notificaciones locales en Expo Go con el SDK que se fije en Fase 0? | Agente (spike) | Fase 8 |
 | P-5 | Simulador de iOS sin runtime descargado (`xcrun simctl list runtimes` vacío). Xcode está instalado pero falta la plataforma iOS, una descarga de varios GB que normalmente pide contraseña de administrador. No bloquea ninguna fase (el objetivo real es Expo Go en el iPhone físico), pero impide usar el simulador como verificación intermedia. | Operador | Ninguna fase (solo conveniencia) |
+| P-6 | El proyecto quedó fijado en SDK 54 por ADR-012, no en "la última" a propósito. Antes de subir de SDK en cualquier fase futura, verificar primero contra `apps.apple.com/us/app/expo-go/id982107779` (o preguntar al operador qué ve en Expo Go) que la nueva versión ya está disponible en el App Store — nunca asumir que "más nueva" significa "usable". | Agente | Cualquier fase futura que toque versión de Expo SDK |
