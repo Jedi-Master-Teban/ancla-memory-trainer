@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "memory-trainer",
+    "slug": "memory-trainer",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "memorytrainer",
+    "userInterfaceStyle": "automatic",
+    "plugins": ["expo-router", "expo-status-bar"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
