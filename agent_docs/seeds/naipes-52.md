@@ -3,6 +3,15 @@
 Fuente: §7.4 del brief + **reglas dictadas por el operador durante Plan Mode**
 (2026-08-10). El brief no traía las 52 palabras; trae las reglas para construirlas.
 
+> **Convención de mazo (aclarado 2026-08-12):** el mazo francés estándar de 52
+> cartas con figuras **J, Q, K** (el que trae `type Valor` en §6) — no la baraja
+> española tradicional (Oros/Copas/Espadas/Bastos, sin Reina, con Sota/Caballo/Rey).
+> Los palos de la Regla 1 (Espadas/Diamantes/Palos/Corazones) ya eran la
+> traducción de picas/diamantes/tréboles/corazones, así que esa parte estaba
+> bien; lo que había que corregir era llamar a las figuras "Sota, Reina, Rey" en
+> vez de J, Q, K — mezclaba vocabulario de dos mazos distintos. Nunca usar
+> imágenes o iconografía de la baraja española en la UI.
+
 ## 1. Reglas (texto del operador, normativo)
 
 **Regla 1 — La consonante inicial indica el palo** (adaptación al mazo del libro):
@@ -23,8 +32,8 @@ consonante del valor.
 > Ejemplo del operador: para "10 de Espadas" se necesita una palabra que empiece con
 > E y termine en sonido R, porque 10 codifica a R.
 
-**Figuras (Sota, Reina, Rey):** no tienen un dígito natural 11–13 limpio. Lorayne
-les asigna consonantes reservadas distintas — p. ej. "Rey de Palos" empieza con P
+**Figuras (J, Q, K):** no tienen un dígito natural 11–13 limpio. Lorayne
+les asigna consonantes reservadas distintas — p. ej. "K de Palos" empieza con P
 (palo) y usa una regla especial de una sola consonante para diferenciarlo del 4.
 
 ## 2. Valor → sonido consonante final
@@ -80,7 +89,7 @@ de decodificar mentalmente a velocidad. No se convierte en error sin autorizaci�
 
 ## 4. BLOQUEO ABIERTO — figuras (12 de las 52 cartas)
 
-El operador aún no ha dictado las consonantes reservadas para Sota, Reina y Rey.
+El operador aún no ha dictado las consonantes reservadas para J, Q y K.
 Sin ese dato no se pueden validar 12 cartas.
 
 - **Dueño:** operador.
@@ -93,13 +102,18 @@ Sin ese dato no se pueden validar 12 cartas.
 ## 5. Origen de la semilla
 
 Las 52 palabras **no las inventa el agente** (§4.1 del brief prohíbe inventar
-contenido de dominio). El flujo es:
+contenido de dominio). Decidido con el operador (2026-08-12): a diferencia de lo
+que este documento planteaba originalmente (agente propone candidatas → operador
+aprueba), aquí **el operador dicta las 52 palabras directamente**, igual que hizo
+con `colgadero-100.md` — las quiere personalmente evocativas, no solo
+fonéticamente correctas. El flujo real:
 
 1. El agente implementa `validarPalabraNaipe(palabra, carta)` a partir de estas reglas.
-2. El agente **propone** candidatas que pasan el validador, presentadas como
-   sugerencias explícitamente marcadas como tales.
-3. El operador acepta, edita o reemplaza cada una desde el editor de la app.
-4. Solo las palabras aprobadas por el operador se persisten como semilla.
+2. El operador dicta las 52 palabras (aquí en el chat o, más adelante, desde el
+   editor de la app una vez exista).
+3. El validador las revisa; si alguna no cumple la regla, se avisa **sin bloquear**
+   (la lista es del operador) y se pregunta si quiere ajustarla.
+4. Solo las palabras dictadas por el operador se persisten como semilla.
 
 Una carta sin palabra aprobada existe en la BD con `contenido_reverso` vacío y queda
 excluida de las sesiones de repaso hasta que se llene.

@@ -7,7 +7,7 @@
 
 ## 1. Bloqueo conocido al empezar la fase
 
-Faltan las consonantes reservadas de **Sota, Reina y Rey** (12 de 52 cartas) —
+Faltan las consonantes reservadas de **J, Q y K** (12 de 52 cartas) —
 pendiente P-1 en `DECISIONS.md`. Al iniciar la Fase 3: **preguntar al operador y
 esperar**. Nunca inventarlas.
 

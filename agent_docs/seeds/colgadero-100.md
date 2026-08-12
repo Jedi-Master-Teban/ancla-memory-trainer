@@ -10,7 +10,7 @@ por otras que le parezcan más evocadoras.
 |---|---|---|---|---|---|---|---|
 | 1 | Tea | 26 | Nuez | 51 | Loto | 76 | Fosa |
 | 2 | Noé | 27 | Naife | 52 | Luna | 77 | Fofo |
-| 3 | Amo | 28 | Noche | 53 | Lima | 78 | Ficha |
+| 3 | Amo | 28 | Nicho | 53 | Lima | 78 | Ficha |
 | 4 | Oca | 29 | Nube | 54 | Loco | 79 | Fobia |
 | 5 | Ley | 30 | Mar | 55 | Lulú | 80 | Chorro |
 | 6 | Oso | 31 | Mito | 56 | Lazo | 81 | Choto |
@@ -19,10 +19,10 @@ por otras que le parezcan más evocadoras.
 | 9 | Ave | 34 | Meca | 59 | Lupa | 84 | Cheque |
 | 10 | Torre | 35 | Miel | 60 | Suero | 85 | Chal |
 | 11 | Teta | 36 | Mesa | 61 | Sota | 86 | Choza |
-| 12 | Tina | 37 | Mofa | 62 | Zona | 87 | Chafa |
+| 12 | Tina | 37 | Mufa | 62 | Zona | 87 | Chafa |
 | 13 | Tomo | 38 | Mecha | 63 | Sima | 88 | Chacha |
 | 14 | Taco | 39 | Mapa | 64 | Saco | 89 | Chapa |
-| 15 | Tela | 40 | Corro | 65 | Sol | 90 | Burra |
+| 15 | Tela | 40 | Carro | 65 | Sol | 90 | Burra |
 | 16 | Tez | 41 | Codo | 66 | Seso | 91 | Pito |
 | 17 | Tufo | 42 | Cuna | 67 | Sofá | 92 | Pino |
 | 18 | Techo | 43 | Cama | 68 | Acecho | 93 | Puma |

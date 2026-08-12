@@ -270,11 +270,40 @@ fallos antes de aceptar el diseño. `modulos/02-colgadero.md` §3 actualizado.
 Este mismo `aleatorizar` inyectable lo reusará la Fase 3 (Baraja Completa ya
 pide barajado con semilla — incluso podría compartir la función `barajar()`).
 
+## ADR-016 · 2026-08-12 · Aceptada — corrige terminología de ADR-004
+**Decisión:** las figuras del mazo se llaman **J, Q, K** en toda la documentación
+activa, nunca "Sota, Reina, Rey". Además, el origen de las 52 palabras cambia:
+**el operador las dicta directamente** (como hizo con `colgadero-100.md`), no
+"agente propone candidatas → operador aprueba" como decía originalmente
+`seeds/naipes-52.md` §5 / ADR-004.
+
+**Razón — terminología:** al preguntar por P-1, el operador aclaró que el mazo de
+referencia es el **francés estándar de 52 cartas con J/Q/K** (♠♦♣♥), no la baraja
+española tradicional (Oros/Copas/Espadas/Bastos, sin Reina, con Sota/Caballo/Rey).
+"Sota, Reina, Rey" mezclaba vocabulario de los dos mazos — de hecho la baraja
+española tradicional ni siquiera tiene Reina. Los **palos** (Regla 1: Espadas =
+Spades, Diamantes = Diamonds, Palos = Clubs, Corazones = Hearts) ya eran
+correctos, porque ya eran la traducción del mazo francés — solo las figuras
+estaban mal nombradas. `type Valor` en `naipes-52.md` §6 ya decía `'J'|'Q'|'K'`
+desde Plan Mode; el error estaba solo en la prosa. **Nunca usar iconografía de
+la baraja española en la UI** (§8.3 no la pide, y ahora está prohibida explícitamente).
+
+**Razón — origen de las palabras:** el operador prefiere palabras personalmente
+evocativas (como su colgadero-100) sobre palabras genéricas que solo cumplen la
+regla fonética mecánicamente. Dado que Lorayne depende de que la imagen le
+signifique algo específico a quien la usa, una palabra "correcta pero genérica"
+propuesta por el agente vale menos que una elegida por el operador mismo.
+
+**Consecuencia:** `seeds/naipes-52.md`, `modulos/03-naipes.md` y la fila P-1 de
+este archivo actualizados. `EditorNaipe.tsx` (Fase 3) sigue siendo necesario —
+el operador querrá editar palabras después igual que edita el colgadero — pero
+ya no como mecanismo de "aprobar sugerencias del agente".
+
 ## Pendientes de decisión
 
 | # | Tema | Dueño | Se necesita para |
 |---|---|---|---|
-| P-1 | Consonantes reservadas de Sota / Reina / Rey | Operador | Fase 3 |
+| P-1 | Consonantes reservadas de J / Q / K (mazo francés estándar, no baraja española — ver ADR-016) | Operador | Fase 3 |
 | P-2 | Visto bueno a ADR-002 (dirección inversa = misma tarjeta) | Operador | Fase 4 |
 | P-3 | ¿Palabra colgadero para el dígito `0` suelto y el trozo `00`? | Operador | Fase 4 |
 | P-4 | ¿`expo-notifications` dispara notificaciones locales en Expo Go con el SDK que se fije en Fase 0? | Agente (spike) | Fase 8 |
