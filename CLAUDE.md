@@ -107,7 +107,9 @@ vía Expo Go. Nunca avanzar con la fase anterior en estado dudoso.
 
 ## Estado actual
 
-Fase 0 sin empezar. Bloqueos abiertos: P-1…P-4 en `agent_docs/DECISIONS.md`.
+Fase 0 completa y verificada en Expo Go (iPhone real, SDK 54 — ver ADR-012).
+Fase 1 (Motor FSRS + esquema) sin empezar. Bloqueos abiertos: P-1…P-6 en
+`agent_docs/DECISIONS.md` (ninguno bloquea la Fase 1).
 
 ---
 
