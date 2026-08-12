@@ -107,10 +107,10 @@ vía Expo Go. Nunca avanzar con la fase anterior en estado dudoso.
 
 ## Estado actual
 
-Fases 0 y 1 completas y verificadas en Expo Go (iPhone real, SDK 54). Motor FSRS,
-esquema SQLite y repositorio listos (ADR-013, ADR-014). Fase 2 (Colgadero) sin
-empezar. Bloqueos abiertos: P-1…P-6 en `agent_docs/DECISIONS.md` (ninguno
-bloquea la Fase 2).
+Fases 0, 1 y 2 completas y verificadas en Expo Go (iPhone real, SDK 54). Colgadero
+funcional: decodificador fonético, 100 palabras sembradas, 3 modos de práctica con
+presentación barajada (ADR-015). Fase 3 (Naipes) sin empezar — **P-1 (consonantes
+de figuras) bloquea el inicio de esa fase, hay que preguntar al operador primero.**
 
 ---
 
