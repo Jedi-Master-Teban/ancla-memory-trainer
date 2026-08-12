@@ -1,5 +1,6 @@
 import { State } from 'ts-fsrs';
 import type { FilaTarjeta } from '../../db/tipos';
+import { barajar } from '../aleatorio';
 
 export interface OpcionesSesion {
   ahora: Date;
@@ -13,15 +14,6 @@ export interface OpcionesSesion {
 }
 
 const TOPE_POR_DEFECTO = 20;
-
-function barajar<T>(arr: T[]): T[] {
-  const copia = [...arr];
-  for (let i = copia.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copia[i], copia[j]] = [copia[j], copia[i]];
-  }
-  return copia;
-}
 
 /**
  * Selecciona y baraja las tarjetas de una sesión (modulos/02-colgadero.md §3):

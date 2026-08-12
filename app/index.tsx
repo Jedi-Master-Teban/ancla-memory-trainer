@@ -24,10 +24,13 @@ export default function Index() {
 
   return (
     <View style={styles.contenedor}>
-      <Text style={styles.titulo}>memory-trainer — Fase 2</Text>
+      <Text style={styles.titulo}>memory-trainer — Fase 3</Text>
       <Text style={styles.estado}>{estado}</Text>
       <Link href="/colgadero" style={styles.enlace}>
         Practicar Colgadero →
+      </Link>
+      <Link href="/naipes" style={styles.enlace}>
+        Practicar Naipes →
       </Link>
     </View>
   );

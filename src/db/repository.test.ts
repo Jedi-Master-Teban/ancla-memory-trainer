@@ -3,6 +3,7 @@ import { crearConexionDePrueba } from './conexionDePrueba';
 import { ejecutarMigraciones } from './migrations';
 import type { ConexionBD } from './tipos';
 import {
+  actualizarContenidoTarjeta,
   armarSesionDeMazo,
   calificarTarjeta,
   cerrarSesion,
@@ -71,6 +72,28 @@ describe('tarjeta', () => {
     expect(tarjeta.fsrs_state).toBe(State.New);
     expect(tarjeta.metadata_categoria).toBe(JSON.stringify({ numero: 1 }));
     expect(await listarTarjetasPorMazo(db, mazo.id)).toEqual([tarjeta]);
+  });
+
+  it('actualizarContenidoTarjeta edita el contenido sin tocar el estado FSRS', async () => {
+    const db = await bdLista();
+    const mazo = await crearMazo(db, { nombre: 'Colgadero', categoria: 'colgadero' }, AHORA);
+    const tarjeta = await crearTarjeta(
+      db,
+      { mazoId: mazo.id, categoria: 'colgadero', contenidoFrente: '1', contenidoReverso: 'Tea' },
+      AHORA
+    );
+    const sesion = await crearSesion(db, { modo: 'flash' }, AHORA);
+    const calificada = await calificarTarjeta(db, { tarjetaId: tarjeta.id, sesionId: sesion.id, calificacion: 'bien' }, AHORA);
+
+    await actualizarContenidoTarjeta(db, tarjeta.id, { contenidoReverso: 'Té', metadataCategoria: { numero: 1, editado: true } });
+
+    const editada = await obtenerTarjeta(db, tarjeta.id);
+    expect(editada?.contenido_reverso).toBe('Té');
+    expect(JSON.parse(editada?.metadata_categoria ?? '{}')).toEqual({ numero: 1, editado: true });
+    // mismo id, mismo estado FSRS que tenía tras calificar — no se reinició
+    expect(editada?.id).toBe(tarjeta.id);
+    expect(editada?.fsrs_state).toBe(calificada.fsrs_state);
+    expect(editada?.fsrs_estabilidad).toBe(calificada.fsrs_estabilidad);
   });
 });
 

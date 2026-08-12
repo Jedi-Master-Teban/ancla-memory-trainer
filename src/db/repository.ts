@@ -291,3 +291,24 @@ export async function resumenDeTarjeta(db: ConexionBD, tarjetaId: string, ahora:
     estadoVisual: estadoVisual(filaACardInput(tarjeta), ahora),
   };
 }
+
+/**
+ * Edita el contenido de una tarjeta (p. ej. EditorNaipe.tsx) sin tocar su
+ * estado FSRS — mismo `id`, mismo historial (seeds/colgadero-100.md: "editar
+ * una palabra no reinicia el estado FSRS de su tarjeta").
+ */
+export async function actualizarContenidoTarjeta(
+  db: ConexionBD,
+  tarjetaId: string,
+  datos: { contenidoReverso: string; metadataCategoria?: Record<string, unknown> }
+): Promise<void> {
+  if (datos.metadataCategoria !== undefined) {
+    await db.runAsync('UPDATE tarjeta SET contenido_reverso = ?, metadata_categoria = ? WHERE id = ?', [
+      datos.contenidoReverso,
+      JSON.stringify(datos.metadataCategoria),
+      tarjetaId,
+    ]);
+  } else {
+    await db.runAsync('UPDATE tarjeta SET contenido_reverso = ? WHERE id = ?', [datos.contenidoReverso, tarjetaId]);
+  }
+}
