@@ -243,6 +243,33 @@ antes de escribir `scheduler.ts` — Skill `verificar-api-libreria`, paso 6 de
 que el spec pedía, ahora con evidencia. `scheduler.ts` usa `get_retrievability` y
 `TypeConvert.state` en vez de reimplementarlos.
 
+## ADR-015 · 2026-08-12 · Aceptada
+**Decisión:** `armarSesion()` baraja la **presentación** final de la sesión
+(Fisher-Yates, vía un parámetro `aleatorizar` inyectable — mismo patrón que el
+reloj `ahora` de I-6). La **selección** de qué tarjetas entran no cambia:
+vencidas por urgencia, luego nuevas en orden de número.
+
+**Razón:** el operador probó una sesión real de 20 tarjetas en modo Reverso y
+notó que, al ir siempre en orden ascendente, la posición dentro de la sesión
+delataba el número sin necesidad de recordar nada (si vas por la tarjeta 25 de
+una sesión que arrancó en la 21, el rango ya está resuelto). §7.2/modulos/02
+nunca contemplaron esto — se verificó explícitamente contra todo `agent_docs/`
+(único "aleatorio" existente era el de Baraja Completa de naipes, §8.3, un
+concepto distinto) antes de asumir que hacía falta diseñarlo de cero.
+
+**Por qué la selección no cambió:** elegir las tarjetas nuevas en orden
+ascendente sigue siendo lo correcto — garantiza cobertura sistemática del
+corpus de 100 sin huecos. El problema era solo que ese orden de SELECCIÓN se
+filtraba a la PRESENTACIÓN. Separar ambas cosas resuelve el problema sin tocar
+la lógica de priorización ya probada.
+
+**Consecuencia:** los tests de orden exacto en `motor.test.ts` y
+`repository.test.ts` pasan `aleatorizar: (arr) => arr` para aislar la selección
+del barajado (si no, serían flaky). Se verificó 5 ejecuciones seguidas sin
+fallos antes de aceptar el diseño. `modulos/02-colgadero.md` §3 actualizado.
+Este mismo `aleatorizar` inyectable lo reusará la Fase 3 (Baraja Completa ya
+pide barajado con semilla — incluso podría compartir la función `barajar()`).
+
 ## Pendientes de decisión
 
 | # | Tema | Dueño | Se necesita para |

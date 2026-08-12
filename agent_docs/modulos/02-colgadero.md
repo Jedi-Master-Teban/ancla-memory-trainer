@@ -37,8 +37,15 @@ código y no se cambia sin ADR.
 Vía repositorio, nunca con SQL suelto en la pantalla:
 
 1. Tarjetas vencidas (`fecha_proxima_revision <= ahora`), más urgente primero.
-2. Si faltan para llenar la sesión, tarjetas nuevas en orden de número.
+2. Si faltan para llenar la sesión, tarjetas nuevas en orden de número (cobertura
+   sistemática del corpus, sin huecos).
 3. Tope por sesión configurable; por defecto 20 (§10: sesiones de 10–20 min).
+4. **La presentación final se baraja** (ADR-015). La selección de arriba decide
+   *cuáles* tarjetas entran; el orden en que se muestran es aleatorio. Sin esto,
+   en el modo Reverso la posición dentro de la sesión delata el número (si vas
+   por la tarjeta 25 de una sesión que arrancó en la 21, no hace falta recordar
+   nada). Hallazgo del operador probando la app real, no estaba en el diseño
+   original de este documento.
 
 ## 4. Estadísticas por palabra (§8.2)
 

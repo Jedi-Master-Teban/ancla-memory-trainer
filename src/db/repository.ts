@@ -1,5 +1,7 @@
-import type { CardInput } from 'ts-fsrs';
+import { Rating, type CardInput } from 'ts-fsrs';
 import { crearTarjetaNueva, programar, type Calificacion } from '../domain/fsrs/scheduler';
+import { estadoVisual, type EstadoVisual } from '../domain/fsrs/estado';
+import { armarSesion, type OpcionesSesion } from '../domain/sesion/motor';
 import type {
   Categoria,
   ConexionBD,
@@ -42,6 +44,10 @@ export async function obtenerMazo(db: ConexionBD, id: string): Promise<FilaMazo 
 
 export async function listarMazos(db: ConexionBD): Promise<FilaMazo[]> {
   return db.getAllAsync<FilaMazo>('SELECT * FROM mazo ORDER BY creado_en', []);
+}
+
+export async function obtenerMazoPorCategoria(db: ConexionBD, categoria: Categoria): Promise<FilaMazo | null> {
+  return db.getFirstAsync<FilaMazo>('SELECT * FROM mazo WHERE categoria = ? ORDER BY creado_en LIMIT 1', [categoria]);
 }
 
 // --- Tarjeta ---
@@ -116,6 +122,19 @@ export async function listarTarjetasPorMazo(db: ConexionBD, mazoId: string): Pro
     'SELECT * FROM tarjeta WHERE mazo_id = ? AND archivada = 0 ORDER BY fecha_proxima_revision',
     [mazoId]
   );
+}
+
+/**
+ * Arma una sesión de práctica para un mazo: trae sus tarjetas y delega la
+ * selección/orden a la lógica pura de `domain/sesion/motor.ts`.
+ */
+export async function armarSesionDeMazo(
+  db: ConexionBD,
+  mazoId: string,
+  opciones: OpcionesSesion
+): Promise<FilaTarjeta[]> {
+  const tarjetas = await listarTarjetasPorMazo(db, mazoId);
+  return armarSesion(tarjetas, opciones);
 }
 
 function filaACardInput(fila: FilaTarjeta): CardInput {
@@ -242,4 +261,33 @@ export async function cerrarSesion(
     'UPDATE sesion_estudio SET terminada_en = ?, duracion_segundos = ?, aciertos = ?, fallos = ? WHERE id = ?',
     [ahora.toISOString(), datos.duracionSegundos, datos.aciertos, datos.fallos, datos.sesionId]
   );
+}
+
+// --- Estadísticas por tarjeta (modulos/02-colgadero.md §4) ---
+
+export interface ResumenTarjeta {
+  vecesRevisada: number;
+  tasaAciertos: number | null;
+  proximaFecha: string;
+  estadoVisual: EstadoVisual;
+}
+
+/**
+ * Todo derivado de `revision`/`tarjeta` — nada de contadores paralelos que
+ * puedan desincronizarse (modulos/02-colgadero.md §4). "Acierto" = cualquier
+ * calificación distinta de "Otra vez" (mismo criterio que stores/sesion.ts).
+ */
+export async function resumenDeTarjeta(db: ConexionBD, tarjetaId: string, ahora: Date): Promise<ResumenTarjeta | null> {
+  const tarjeta = await obtenerTarjeta(db, tarjetaId);
+  if (!tarjeta) return null;
+
+  const revisiones = await listarRevisionesDeTarjeta(db, tarjetaId);
+  const aciertos = revisiones.filter((r) => r.calificacion !== Rating.Again).length;
+
+  return {
+    vecesRevisada: revisiones.length,
+    tasaAciertos: revisiones.length > 0 ? aciertos / revisiones.length : null,
+    proximaFecha: tarjeta.fecha_proxima_revision,
+    estadoVisual: estadoVisual(filaACardInput(tarjeta), ahora),
+  };
 }

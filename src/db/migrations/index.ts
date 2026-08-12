@@ -1,19 +1,21 @@
 import type { ConexionBD } from '../tipos';
 import * as m001 from './001_inicial';
+import * as m002 from './002_seed_colgadero';
 
 interface Migracion {
   version: number;
-  aplicar(db: ConexionBD): Promise<void>;
+  aplicar(db: ConexionBD, ahora: Date): Promise<void>;
 }
 
-const MIGRACIONES: Migracion[] = [m001];
+const MIGRACIONES: Migracion[] = [m001, m002];
 
 /**
  * Corredor de migraciones (MODELO-DATOS.md §3). Idempotente: cada migración solo
  * se aplica una vez, registrada en la tabla `migracion`. Nunca se editan
- * migraciones ya aplicadas — se añaden nuevas (Skill db-migracion).
+ * migraciones ya aplicadas — se añaden nuevas (Skill db-migracion). `ahora` es
+ * inyectable (I-6) para que las migraciones de siembra sean deterministas en tests.
  */
-export async function ejecutarMigraciones(db: ConexionBD, ahoraISO: () => string = () => new Date().toISOString()): Promise<void> {
+export async function ejecutarMigraciones(db: ConexionBD, ahora: Date = new Date()): Promise<void> {
   await db.execAsync(
     'CREATE TABLE IF NOT EXISTS migracion (version INTEGER PRIMARY KEY, aplicada_en TEXT NOT NULL);'
   );
@@ -23,7 +25,7 @@ export async function ejecutarMigraciones(db: ConexionBD, ahoraISO: () => string
 
   for (const migracion of MIGRACIONES) {
     if (aplicadas.has(migracion.version)) continue;
-    await migracion.aplicar(db);
-    await db.runAsync('INSERT INTO migracion (version, aplicada_en) VALUES (?, ?)', [migracion.version, ahoraISO()]);
+    await migracion.aplicar(db, ahora);
+    await db.runAsync('INSERT INTO migracion (version, aplicada_en) VALUES (?, ?)', [migracion.version, ahora.toISOString()]);
   }
 }

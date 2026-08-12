@@ -3,6 +3,7 @@ import { crearConexionDePrueba } from './conexionDePrueba';
 import { ejecutarMigraciones } from './migrations';
 import type { ConexionBD } from './tipos';
 import {
+  armarSesionDeMazo,
   calificarTarjeta,
   cerrarSesion,
   crearMazo,
@@ -11,6 +12,7 @@ import {
   listarRevisionesDeTarjeta,
   listarTarjetasPorMazo,
   obtenerMazo,
+  obtenerMazoPorCategoria,
   obtenerTarjeta,
 } from './repository';
 
@@ -35,6 +37,17 @@ describe('mazo', () => {
   it('devuelve null para un mazo que no existe', async () => {
     const db = await bdLista();
     expect(await obtenerMazo(db, 'no-existe')).toBeNull();
+  });
+
+  it('obtenerMazoPorCategoria encuentra el mazo colgadero sembrado por la migración', async () => {
+    const db = await bdLista();
+    const mazo = await obtenerMazoPorCategoria(db, 'colgadero');
+    expect(mazo?.categoria).toBe('colgadero');
+  });
+
+  it('obtenerMazoPorCategoria devuelve null si no hay mazo de esa categoría', async () => {
+    const db = await bdLista();
+    expect(await obtenerMazoPorCategoria(db, 'naipe')).toBeNull();
   });
 });
 
@@ -170,6 +183,73 @@ describe('migración — Skill db-migracion, paso 4: sobre BD con datos', () => 
     expect(await obtenerTarjeta(db, tarjeta.id)).toEqual(tarjeta);
 
     const versiones = await db.getAllAsync<{ version: number }>('SELECT version FROM migracion', []);
-    expect(versiones).toEqual([{ version: 1 }]);
+    expect(versiones).toEqual([{ version: 1 }, { version: 2 }]);
+  });
+});
+
+describe('migración 002 — siembra del colgadero', () => {
+  it('crea un mazo colgadero con las 100 palabras, cada una con estado FSRS real', async () => {
+    const db = crearConexionDePrueba();
+    await ejecutarMigraciones(db, AHORA);
+
+    const mazos = await db.getAllAsync<{ id: string; categoria: string }>(
+      "SELECT * FROM mazo WHERE categoria = 'colgadero'",
+      []
+    );
+    expect(mazos).toHaveLength(1);
+
+    const tarjetas = await listarTarjetasPorMazo(db, mazos[0].id);
+    expect(tarjetas).toHaveLength(100);
+    expect(tarjetas.every((t) => t.fsrs_state === State.New)).toBe(true);
+
+    const primera = tarjetas.find((t) => t.contenido_frente === '1');
+    expect(primera?.contenido_reverso).toBe('Tea');
+    expect(JSON.parse(primera?.metadata_categoria ?? '{}')).toEqual({ numero: 1 });
+  });
+
+  it('no duplica las 100 tarjetas si la app se reabre (migración ya aplicada)', async () => {
+    const db = crearConexionDePrueba();
+    await ejecutarMigraciones(db, AHORA);
+    await ejecutarMigraciones(db, new Date(AHORA.getTime() + 1000));
+    await ejecutarMigraciones(db, new Date(AHORA.getTime() + 2000));
+
+    const tarjetas = await db.getAllAsync<{ id: string }>(
+      "SELECT tarjeta.id FROM tarjeta JOIN mazo ON tarjeta.mazo_id = mazo.id WHERE mazo.categoria = 'colgadero'",
+      []
+    );
+    expect(tarjetas).toHaveLength(100);
+  });
+});
+
+describe('armarSesionDeMazo', () => {
+  it('arma una sesión real de 20 tarjetas nuevas desde el mazo recién sembrado', async () => {
+    const db = crearConexionDePrueba();
+    await ejecutarMigraciones(db, AHORA);
+    const mazos = await db.getAllAsync<{ id: string }>("SELECT id FROM mazo WHERE categoria = 'colgadero'", []);
+
+    // aleatorizar desactivado: esta prueba es sobre la SELECCIÓN (fetch + filtro
+    // correctos), no sobre el barajado de presentación — eso ya lo prueba
+    // motor.test.ts por separado.
+    const sesion = await armarSesionDeMazo(db, mazos[0].id, { ahora: AHORA, tope: 20, aleatorizar: (arr) => arr });
+
+    expect(sesion).toHaveLength(20);
+    expect(sesion.every((t) => t.fsrs_state === State.New)).toBe(true);
+    expect(sesion.map((t) => t.contenido_frente)).toEqual(
+      Array.from({ length: 20 }, (_, i) => String(i + 1))
+    );
+  });
+
+  it('por defecto baraja la presentación (no siempre devuelve 1..20 en orden)', async () => {
+    const db = crearConexionDePrueba();
+    await ejecutarMigraciones(db, AHORA);
+    const mazos = await db.getAllAsync<{ id: string }>("SELECT id FROM mazo WHERE categoria = 'colgadero'", []);
+
+    const enOrden = Array.from({ length: 20 }, (_, i) => String(i + 1));
+    // Con 20! ordenaciones posibles, la probabilidad de que el barajado real
+    // caiga justo en orden ascendente es, a efectos prácticos, cero.
+    const sesion = await armarSesionDeMazo(db, mazos[0].id, { ahora: AHORA, tope: 20 });
+
+    expect(sesion.map((t) => t.contenido_frente)).not.toEqual(enOrden);
+    expect(new Set(sesion.map((t) => t.contenido_frente))).toEqual(new Set(enOrden));
   });
 });

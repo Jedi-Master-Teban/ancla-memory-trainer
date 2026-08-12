@@ -2,7 +2,7 @@ import type { ConexionBD } from '../tipos';
 
 export const version = 1;
 
-export async function aplicar(db: ConexionBD): Promise<void> {
+export async function aplicar(db: ConexionBD, _ahora: Date): Promise<void> {
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS mazo (
       id TEXT PRIMARY KEY,

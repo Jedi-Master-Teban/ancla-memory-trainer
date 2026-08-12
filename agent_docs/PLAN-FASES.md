@@ -78,7 +78,7 @@ abriendo en el iPhone con la BD creada.
 | `src/domain/sesion/motor.test.ts` | selección y orden de tarjetas |
 | `src/stores/sesion.ts` | estado de la sesión en curso (Zustand) |
 | `src/components/Flashcard.tsx`, `BotonesCalificacion.tsx`, `PausaVisualizacion.tsx` | UI de tarjeta |
-| `app/(tabs)/colgadero.tsx` + `app/colgadero/{flash,reverso,velocidad}.tsx` | los 3 modos |
+| `app/colgadero/{index,flash,reverso,velocidad}.tsx` | los 3 modos (corregido: sin grupo `(tabs)`, consistente con Fases 3/4 — el tab bar real llega en la Fase 5) |
 | `src/components/EstadisticasPalabra.tsx` | veces revisada, aciertos, próxima fecha |
 
 **`done when` (§11):** se completa una sesión real de 20 tarjetas en el dispositivo sin crash.
