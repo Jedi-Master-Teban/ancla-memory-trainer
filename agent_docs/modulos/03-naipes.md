@@ -5,15 +5,12 @@
 - **Archivos:** `src/domain/fonetica/naipes.ts`, `src/seed/naipes.ts`,
   `app/naipes/*`, `src/components/EditorNaipe.tsx`
 
-## 1. Bloqueo conocido al empezar la fase
+## 1. Bloqueo P-1 — resuelto (ADR-017)
 
-Faltan las consonantes reservadas de **J, Q y K** (12 de 52 cartas) —
-pendiente P-1 en `DECISIONS.md`. Al iniciar la Fase 3: **preguntar al operador y
-esperar**. Nunca inventarlas.
-
-Lo que **sí** se puede construir sin ese dato: validador de las 40 cartas
-numéricas, editor CRUD, los cuatro modos de práctica y todos los tests. Las figuras
-lanzan un error explícito de "regla pendiente" hasta que llegue el dato.
+Ya no bloquea nada. Las figuras (J, Q, K) siguen la Regla 1 (empiezan con la
+letra del palo) pero no tienen restricción de sonido final — el operador asigna
+directamente la palabra de cada una de las 12, sin decodificar. Detalle en
+`seeds/naipes-52.md` §1 y §4.
 
 ## 2. Datos
 

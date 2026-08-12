@@ -299,11 +299,40 @@ este archivo actualizados. `EditorNaipe.tsx` (Fase 3) sigue siendo necesario —
 el operador querrá editar palabras después igual que edita el colgadero — pero
 ya no como mecanismo de "aprobar sugerencias del agente".
 
+## ADR-017 · 2026-08-12 · Aceptada — resuelve P-1 sin necesitar la regla original de Lorayne
+**Decisión:** las figuras (J, Q, K) siguen la **Regla 1** (empiezan con la letra
+del palo: E/D/P/C) pero **no tienen equivalente de Regla 2** — ninguna
+restricción de sonido consonante final. El operador elige libremente la palabra
+de cada una de las 12 cartas de figura, memorizada directamente, no decodificada.
+
+**Razón:** el operador cuestionó si hacía falta perseguir "la regla exacta de
+Lorayne" para J/Q/K en absoluto, con dos argumentos válidos: (1) el texto
+original es inglés traducido a español de España — ya se demostró con la
+confusión Sota/Reina/Rey (ADR-016) que esa cadena de traducción es lossy; (2) los
+naipes son un conjunto **cerrado** de 52 — no hay necesidad de una regla
+*generativa* como la Regla 2 (que existe porque reutiliza la tabla fonética de
+§7.2 para un rango de valores 0-9 que si tiene estructura sistemática). Para 3
+figuras × 4 palos, una "regla especial de una consonante" no sería más que 3
+entradas fijas en una tabla — exactamente equivalente a que el operador asigne
+la palabra de cada figura directamente, que es lo que ya iba a hacer de todos
+modos (ADR-016: el operador dicta las 52 palabras, no aprueba candidatas).
+
+**Por qué Regla 1 sí se mantiene:** consistencia visual con las 40 cartas
+numéricas, a coste cero — no requería ningún dato nuevo del operador, así que se
+adoptó como default y se le avisó para que corrija si prefiere lo contrario.
+
+**Consecuencia:** `validarPalabraNaipe` valida el marcador de palo para las 12
+figuras igual que para las 40 numéricas, pero no aplica ninguna regla de
+"último sonido" a las figuras. `cartaDesdePalabra` para figuras es una búsqueda
+directa contra las 12 palabras asignadas, no una decodificación fonética.
+**P-1 queda resuelto — nada bloquea ya el inicio de la Fase 3.**
+`seeds/naipes-52.md` actualizado.
+
 ## Pendientes de decisión
 
 | # | Tema | Dueño | Se necesita para |
 |---|---|---|---|
-| P-1 | Consonantes reservadas de J / Q / K (mazo francés estándar, no baraja española — ver ADR-016) | Operador | Fase 3 |
+| ~~P-1~~ | ~~Consonantes reservadas de J / Q / K~~ — **resuelto por ADR-017**, ya no bloquea nada | — | — |
 | P-2 | Visto bueno a ADR-002 (dirección inversa = misma tarjeta) | Operador | Fase 4 |
 | P-3 | ¿Palabra colgadero para el dígito `0` suelto y el trozo `00`? | Operador | Fase 4 |
 | P-4 | ¿`expo-notifications` dispara notificaciones locales en Expo Go con el SDK que se fije en Fase 0? | Agente (spike) | Fase 8 |

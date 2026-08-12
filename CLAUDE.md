@@ -109,8 +109,9 @@ vía Expo Go. Nunca avanzar con la fase anterior en estado dudoso.
 
 Fases 0, 1 y 2 completas y verificadas en Expo Go (iPhone real, SDK 54). Colgadero
 funcional: decodificador fonético, 100 palabras sembradas, 3 modos de práctica con
-presentación barajada (ADR-015). Fase 3 (Naipes) sin empezar — **P-1 (consonantes
-de figuras) bloquea el inicio de esa fase, hay que preguntar al operador primero.**
+presentación barajada (ADR-015). Fase 3 (Naipes) arrancando — P-1 resuelto sin
+bloqueo (ADR-017): las figuras J/Q/K solo siguen Regla 1 (palo), sin restricción
+de sonido.
 
 ---
 

@@ -32,9 +32,12 @@ consonante del valor.
 > Ejemplo del operador: para "10 de Espadas" se necesita una palabra que empiece con
 > E y termine en sonido R, porque 10 codifica a R.
 
-**Figuras (J, Q, K):** no tienen un dígito natural 11–13 limpio. Lorayne
-les asigna consonantes reservadas distintas — p. ej. "K de Palos" empieza con P
-(palo) y usa una regla especial de una sola consonante para diferenciarlo del 4.
+**Figuras (J, Q, K):** no tienen un dígito natural 11–13 limpio ni tabla fonética
+que decodificar. Siguen la Regla 1 (empiezan con la letra del palo) pero **no
+tienen Regla 2**: sin restricción de sonido final. El operador asigna la palabra
+de cada una de las 12 directamente, memorizada sin decodificar (ADR-017 — no
+hacía falta perseguir la convención original de Lorayne para un conjunto cerrado
+de 12 cartas que el operador iba a dictar de todos modos).
 
 ## 2. Valor → sonido consonante final
 
@@ -50,7 +53,7 @@ les asigna consonantes reservadas distintas — p. ej. "K de Palos" empieza con 
 | 8 | 8 | Ch, G(ga,go,gu) |
 | 9 | 9 | V, B, P |
 | 10 | 0 | R, RR |
-| J / Q / K | — | **PENDIENTE** (ver §4) |
+| J / Q / K | — | Sin restricción — solo Regla 1 (ADR-017) |
 
 ## 3. Asimetría crítica del marcador de palo (la trampa de este módulo)
 
@@ -87,17 +90,13 @@ bloqueante** cuando la palabra tiene más de un sonido consonante después del
 marcador, porque la forma estricta (marcador + exactamente un sonido) es más fácil
 de decodificar mentalmente a velocidad. No se convierte en error sin autorización.
 
-## 4. BLOQUEO ABIERTO — figuras (12 de las 52 cartas)
+## 4. Figuras — resuelto (ADR-017, ya no es un bloqueo)
 
-El operador aún no ha dictado las consonantes reservadas para J, Q y K.
-Sin ese dato no se pueden validar 12 cartas.
-
-- **Dueño:** operador.
-- **Se necesita al:** inicio de la Fase 3.
-- **No bloquea la Fase 3 completa:** el editor CRUD, el validador de las 40 cartas
-  numéricas y los 4 modos de práctica se construyen igual.
-- **Prohibido:** que el agente invente las consonantes de figuras. Si al llegar a la
-  Fase 3 el dato no está, se pregunta y se espera.
+Bloqueaba el inicio de la Fase 3 mientras se buscaba una convención de
+consonante reservada para J/Q/K. Se resolvió eliminando esa necesidad: al ser
+un conjunto cerrado de 12 cartas que el operador dicta directamente (§5), no
+hace falta una regla generativa — solo Regla 1 (palo). Ver ADR-017 para el
+razonamiento completo.
 
 ## 5. Origen de la semilla
 
@@ -127,10 +126,13 @@ type Valor = 'A'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9'|'10'|'J'|'Q'|'K';
 type Carta = { palo: Palo; valor: Valor };
 
 inicialDePalo(palo: Palo): string;
-sonidosDeValor(valor: Valor): string[];
+esFigura(valor: Valor): boolean;                    // J | Q | K
+sonidosDeValor(valor: Valor): string[] | null;      // null para figuras: sin restricción
 validarPalabraNaipe(palabra: string, carta: Carta):
   { valida: boolean; motivo?: string; advertencias: string[] };
-cartaDesdePalabra(palabra: string): Carta | null;   // decodificación inversa
+cartaDesdePalabra(palabra: string, palabrasAsignadas: Map<string, Carta>): Carta | null;
+  // numéricas: decodificación fonética. Figuras: búsqueda directa en
+  // palabrasAsignadas (no hay nada que decodificar — ADR-017).
 ```
 
 ## 7. Contrato de test obligatorio (Fase 3)
@@ -140,6 +142,9 @@ cartaDesdePalabra(palabra: string): Carta | null;   // decodificación inversa
 2. "10 de Espadas" acepta una palabra E…R y rechaza una E…T.
 3. Corazones rechaza una palabra que empieza por `ch`, con motivo legible.
 4. Una palabra con consonantes intermedias es **válida con advertencia**, no inválida.
-5. `cartaDesdePalabra(p)` es inversa de `validarPalabraNaipe` para toda palabra válida.
-6. Las 12 figuras lanzan un error explícito de "regla pendiente" mientras §4 siga abierto
-   — nunca un resultado inventado.
+5. `cartaDesdePalabra(p)` es inversa de `validarPalabraNaipe` para toda palabra
+   numérica válida (vía decodificación) y para toda figura presente en
+   `palabrasAsignadas` (vía búsqueda directa).
+6. Una figura (J/Q/K) es válida si y solo si empieza con la letra del palo
+   correcto — cualquier terminación. Rechaza si empieza con la letra equivocada,
+   con motivo legible. Nunca aplica una restricción de sonido final a una figura.
