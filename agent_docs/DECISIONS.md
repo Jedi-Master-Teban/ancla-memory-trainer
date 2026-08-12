@@ -208,6 +208,41 @@ error, no hace falta releer el código fuente de `expo-router` para esta versió
 ajuste de versión de plataforma externa, no de diseño propio. **Nuevo pendiente:**
 ver P-6 abajo, sobre cuándo revisitar SDK 57.
 
+## ADR-013 · 2026-08-12 · Aceptada
+**Decisión:** API real de `ts-fsrs@5.4.1` y `expo-sqlite@16.0.10` (SDK 54), leída de
+`node_modules/ts-fsrs/dist/index.d.ts` y `node_modules/expo-sqlite/build/*.d.ts`
+antes de escribir `scheduler.ts` — Skill `verificar-api-libreria`, paso 6 de
+`modulos/01-motor-fsrs.md`.
+
+**Hallazgos de `ts-fsrs` que el spec original no anticipaba:**
+- La fábrica es `fsrs(params?): FSRS`, función suelta, no `new FSRS()` directo
+  (aunque la clase también se exporta).
+- `Rating`: `Manual=0, Again=1, Hard=2, Good=3, Easy=4`. `Grade` = los 4 sin Manual.
+- `State`: `New=0, Learning=1, Review=2, Relearning=3`.
+- **`get_retrievability(card, now?, format?: false): number` existe en la
+  librería.** `estadoVisual()` no necesita reimplementar la curva de olvido a
+  mano — se llama a la librería, tal como exige el invariante I-7.
+- `Card.elapsed_days` está **deprecado, se elimina en la versión 6.0.0**. No se
+  persiste (ya no estaba en el esquema de `MODELO-DATOS.md`, confirmado correcto).
+- `CardInput` acepta `due`/`last_review` como `Date | number | string` — un ISO
+  string guardado en SQLite se puede pasar tal cual, sin parsear a mano.
+- `TypeConvert.state(value): State` normaliza `State | StateType` (número o
+  string) — se usa en `estadoVisual()` en vez de comparar a mano.
+- `f.repeat(card, now)` devuelve los 4 grados a la vez (`IPreview`); `f.next(card,
+  now, grade)` devuelve uno. El wrapper usa `next()` para calificar.
+
+**Hallazgos de `expo-sqlite` que confirman el plan sin cambios:**
+- `openDatabaseAsync`, `execAsync`, `runAsync`, `getAllAsync`, `getFirstAsync`,
+  `withTransactionAsync` — todos existen tal como se asumió en la Skill
+  `verificacion` (los greps de convención de la Fase 0 ya buscaban estos nombres).
+- **No hay mecanismo de versionado de esquema integrado** (`SQLiteOpenOptions` no
+  tiene nada de esto) — confirma que la tabla `migracion` propia de
+  `MODELO-DATOS.md` §3 es necesaria, no redundante.
+
+**Consecuencia:** ninguna decisión de arquitectura cambia; esto es la verificación
+que el spec pedía, ahora con evidencia. `scheduler.ts` usa `get_retrievability` y
+`TypeConvert.state` en vez de reimplementarlos.
+
 ## Pendientes de decisión
 
 | # | Tema | Dueño | Se necesita para |
@@ -218,3 +253,37 @@ ver P-6 abajo, sobre cuándo revisitar SDK 57.
 | P-4 | ¿`expo-notifications` dispara notificaciones locales en Expo Go con el SDK que se fije en Fase 0? | Agente (spike) | Fase 8 |
 | P-5 | Simulador de iOS sin runtime descargado (`xcrun simctl list runtimes` vacío). Xcode está instalado pero falta la plataforma iOS, una descarga de varios GB que normalmente pide contraseña de administrador. No bloquea ninguna fase (el objetivo real es Expo Go en el iPhone físico), pero impide usar el simulador como verificación intermedia. | Operador | Ninguna fase (solo conveniencia) |
 | P-6 | El proyecto quedó fijado en SDK 54 por ADR-012, no en "la última" a propósito. Antes de subir de SDK en cualquier fase futura, verificar primero contra `apps.apple.com/us/app/expo-go/id982107779` (o preguntar al operador qué ve en Expo Go) que la nueva versión ya está disponible en el App Store — nunca asumir que "más nueva" significa "usable". | Agente | Cualquier fase futura que toque versión de Expo SDK |
+
+## ADR-014 · 2026-08-12 · Aceptada
+**Decisión:** `src/db/tipos.ts` define una interfaz propia `ConexionBD`
+(`execAsync`/`runAsync`/`getAllAsync`/`getFirstAsync`/`withTransactionAsync`),
+sin importar nada de `expo-sqlite`. `client.ts` la satisface con la BD real del
+dispositivo; `repository.test.ts` la satisface con un adaptador sobre
+`node:sqlite` (`src/db/conexionDePrueba.ts`).
+
+**Razón, con evidencia:** `expo-sqlite` es un módulo nativo real (bindings JSI).
+Se comprobó empíricamente que **no corre bajo Jest**: `openDatabaseAsync` revienta
+con `TypeError: _ExpoSQLite.default.NativeDatabase is not a constructor` porque
+el módulo nativo no existe fuera de un runtime iOS/Android/Expo Go. `PLAN-FASES.md`
+asumía que `repository.test.ts` podría probar directo contra `expo-sqlite`; esa
+suposición era falsa.
+
+La alternativa de mockear la BD con un objeto JS en memoria se descartó: no
+probaría el DDL/DML real, y `db-migracion` Paso 4 exige probar migraciones sobre
+una BD **con datos**, no sobre una simulación. `node:sqlite` (built-in de Node
+desde v22, confirmado disponible: `node -v` → v22.22.3) ejecuta el mismo motor
+SQLite real, así que los tests siguen siendo honestos.
+
+**Consecuencia:** `src/db/tipos.ts` no importa `expo-sqlite` ni siquiera como
+tipo. Solo `client.ts` lo hace (verificado con grep: única línea `import ...
+from 'expo-sqlite'` del proyecto). Cualquier fase futura que añada tablas sigue
+este mismo patrón para sus propios tests de repositorio.
+
+**Hallazgo adicional, corregido antes de commitear:** el esquema de `tarjeta` en
+`MODELO-DATOS.md` y la migración `001_inicial.ts` no tenían columna para
+`learning_steps` de `ts-fsrs` (campo requerido de `Card`/`CardInput`, distinto de
+`elapsed_days` que sí está deprecado). Sin persistirlo, releer una tarjeta desde
+la BD reiniciaría su paso de aprendizaje a 0 en cada carga — pérdida silenciosa de
+estado, justo lo que el invariante I-2 prohíbe. Se añadió `fsrs_learning_steps`
+a la tabla, a `FilaTarjeta` y al mapeo `filaACardInput`/`calificarTarjeta` antes de
+que ningún archivo con el hueco se commiteara. `MODELO-DATOS.md` §2.2 actualizado.

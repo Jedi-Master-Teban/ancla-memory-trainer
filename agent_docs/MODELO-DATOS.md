@@ -55,6 +55,7 @@ de la racha (ver 2.6).
 `contenido_frente` TEXT · `contenido_reverso` TEXT ·
 `fsrs_state` INTEGER · `fsrs_dificultad` REAL · `fsrs_estabilidad` REAL ·
 `fsrs_reps` INTEGER · `fsrs_lapses` INTEGER · `fsrs_scheduled_days` INTEGER ·
+`fsrs_learning_steps` INTEGER ·
 `fecha_ultima_revision` TEXT NULL · `fecha_proxima_revision` TEXT NOT NULL ·
 `metadata_categoria` TEXT NOT NULL DEFAULT '{}' (JSON) ·
 `creada_en` TEXT · `archivada` INTEGER DEFAULT 0
