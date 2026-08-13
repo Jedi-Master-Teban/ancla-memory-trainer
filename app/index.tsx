@@ -24,7 +24,6 @@ export default function Index() {
 
   return (
     <View style={styles.contenedor}>
-      <Text style={styles.titulo}>memory-trainer — Fase 3</Text>
       <Text style={styles.estado}>{estado}</Text>
       <Link href="/colgadero" style={styles.enlace}>
         Practicar Colgadero →
@@ -38,7 +37,6 @@ export default function Index() {
 
 const styles = StyleSheet.create({
   contenedor: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#1e1e2e', gap: 12 },
-  titulo: { color: '#ffffff', fontSize: 16 },
   estado: { color: '#a6adc8', fontSize: 14 },
   enlace: { color: '#89b4fa', fontSize: 16, marginTop: 12 },
 });

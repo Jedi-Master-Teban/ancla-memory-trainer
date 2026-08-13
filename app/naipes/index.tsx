@@ -1,4 +1,4 @@
-import { Link, router } from 'expo-router';
+import { Link } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { EditorNaipe } from '../../src/components/EditorNaipe';
@@ -79,13 +79,6 @@ export default function NaipesIndex() {
 
   return (
     <ScrollView style={estilos.contenedor} contentContainerStyle={estilos.contenido}>
-      <View style={estilos.filaSuperior}>
-        <Pressable onPress={() => router.back()}>
-          <Text style={estilos.enlace}>← Volver</Text>
-        </Pressable>
-      </View>
-      <Text style={estilos.titulo}>Naipes</Text>
-
       {filas.length === 0 ? (
         <Text style={estilos.aviso}>
           Todavía no hay mazo naipe sembrado — falta completar src/seed/naipes.ts y correr la migración.
@@ -126,9 +119,7 @@ export default function NaipesIndex() {
 const estilos = StyleSheet.create({
   contenedor: { flex: 1, backgroundColor: '#1e1e2e' },
   contenido: { padding: 24, gap: 12 },
-  filaSuperior: { flexDirection: 'row' },
   centro: { flex: 1, backgroundColor: '#1e1e2e', alignItems: 'center', justifyContent: 'center' },
-  titulo: { color: '#ffffff', fontSize: 24, fontWeight: '700', marginBottom: 8 },
   subtitulo: { color: '#ffffff', fontSize: 18, fontWeight: '600', marginTop: 16 },
   aviso: { color: '#f9e2af' },
   error: { color: '#f38ba8', padding: 24, textAlign: 'center' },
@@ -145,5 +136,4 @@ const estilos = StyleSheet.create({
   },
   etiquetaCarta: { color: '#ffffff', fontWeight: '600' },
   palabraCarta: { color: '#a6adc8' },
-  enlace: { color: '#89b4fa', fontSize: 16 },
 });
