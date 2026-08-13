@@ -107,11 +107,12 @@ vía Expo Go. Nunca avanzar con la fase anterior en estado dudoso.
 
 ## Estado actual
 
-Fases 0-3 completas y verificadas en Expo Go (iPhone real, SDK 54). Colgadero y
-Naipes funcionales: decodificador fonético, 52+100 palabras sembradas, 4 modos de
-práctica (incl. Baraja Completa), navegación nativa por Stack (ADR-018, no Slot).
-Fase 4 (Listas y números) sin empezar — revisar P-2 y P-3 en
-`agent_docs/DECISIONS.md` al entrar.
+Fases 0-4 completas y verificadas en Expo Go (iPhone real, SDK 54). Colgadero,
+Naipes, Listas Encadenadas y Números Importantes funcionales: decodificador
+fonético, 52+100 palabras sembradas, eslabones por identidad de objeto
+(ADR-020), descomposición numérica con casos Oro/Rara (ADR-019), navegación
+nativa por Stack (ADR-018, no Slot; `headerBackTitle` va en la pantalla de
+destino, no en la de origen). Fase 5 sin empezar — ver `agent_docs/PLAN-FASES.md`.
 
 ---
 
