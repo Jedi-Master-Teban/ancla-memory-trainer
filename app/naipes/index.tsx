@@ -79,6 +79,11 @@ export default function NaipesIndex() {
 
   return (
     <ScrollView style={estilos.contenedor} contentContainerStyle={estilos.contenido}>
+      <View style={estilos.filaSuperior}>
+        <Pressable onPress={() => router.back()}>
+          <Text style={estilos.enlace}>← Volver</Text>
+        </Pressable>
+      </View>
       <Text style={estilos.titulo}>Naipes</Text>
 
       {filas.length === 0 ? (
@@ -114,10 +119,6 @@ export default function NaipesIndex() {
           )}
         </>
       ) : null}
-
-      <Pressable onPress={() => router.back()}>
-        <Text style={estilos.enlace}>← Volver</Text>
-      </Pressable>
     </ScrollView>
   );
 }
@@ -125,6 +126,7 @@ export default function NaipesIndex() {
 const estilos = StyleSheet.create({
   contenedor: { flex: 1, backgroundColor: '#1e1e2e' },
   contenido: { padding: 24, gap: 12 },
+  filaSuperior: { flexDirection: 'row' },
   centro: { flex: 1, backgroundColor: '#1e1e2e', alignItems: 'center', justifyContent: 'center' },
   titulo: { color: '#ffffff', fontSize: 24, fontWeight: '700', marginBottom: 8 },
   subtitulo: { color: '#ffffff', fontSize: 18, fontWeight: '600', marginTop: 16 },
@@ -143,5 +145,5 @@ const estilos = StyleSheet.create({
   },
   etiquetaCarta: { color: '#ffffff', fontWeight: '600' },
   palabraCarta: { color: '#a6adc8' },
-  enlace: { color: '#89b4fa', fontSize: 16, marginTop: 16 },
+  enlace: { color: '#89b4fa', fontSize: 16 },
 });
