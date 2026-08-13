@@ -328,6 +328,38 @@ directa contra las 12 palabras asignadas, no una decodificación fonética.
 **P-1 queda resuelto — nada bloquea ya el inicio de la Fase 3.**
 `seeds/naipes-52.md` actualizado.
 
+## ADR-018 · 2026-08-12 · Aceptada
+**Decisión:** `app/_layout.tsx` usa `<Stack>` de `expo-router`, no `<Slot>`.
+Cabecera nativa oscura (`headerStyle`/`headerTintColor`/`contentStyle` en
+`screenOptions`), con un `<Stack.Screen name="..." options={{ title }}>` por
+ruta para los títulos en español. `index` además fija
+`headerBackTitle: 'Inicio'` para que las pantallas siguientes no muestren
+"memory-trainer" como texto del botón de volver.
+
+**Razón:** `Slot` (elegido en la Fase 0 sin discutirlo explícitamente, por ser
+la opción más simple para una sola pantalla) no da gesto nativo de deslizar ni
+botón de back en ninguna pantalla. El operador reportó dos síntomas del mismo
+problema: `colgadero/index.tsx` no tenía forma de volver al menú principal, y
+las 7 pantallas de sesión activa (Flash/Reverso/Velocidad × 2 categorías,
+Baraja Completa) no tenían forma de salir a mitad de sesión — solo al
+terminar. Parchear pantalla por pantalla con un botón "Volver" manual (como
+se hizo primero en los dos `index.tsx`) resuelve el síntoma reportado pero no
+el problema de fondo, y obliga a acordarse de repetirlo en cada pantalla
+nueva de las fases que faltan.
+
+**Consecuencia — regla para fases futuras:** toda ruta nueva se declara en
+`app/_layout.tsx` como `<Stack.Screen name="ruta/archivo" options={{ title:
+'...' }} />` para que tenga título correcto. No hace falta (ni se debe)
+añadir un botón "Volver" manual a mano — el back nativo ya cubre eso. Se
+retiraron los títulos y botones "Volver" que habían quedado duplicados con
+la cabecera en `app/index.tsx`, `colgadero/index.tsx` y `naipes/index.tsx`.
+`SafeAreaView` de ADR-anterior (fix del choque con el notch en
+`naipes/index.tsx`) se retiró del layout raíz: la cabecera nativa ya respeta
+el área segura superior por sí sola, mantenerlo habría duplicado el espacio
+vacío arriba. `SafeAreaProvider` se conserva como contexto disponible para
+`useSafeAreaInsets()` si alguna pantalla futura lo necesita para el borde
+inferior.
+
 ## Pendientes de decisión
 
 | # | Tema | Dueño | Se necesita para |
