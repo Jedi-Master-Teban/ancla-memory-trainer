@@ -71,3 +71,36 @@ export interface FilaSesionEstudio {
   fallos: number;
   modo: string;
 }
+
+export interface FilaLista {
+  id: string;
+  nombre: string;
+  segundos_estudio: number;
+  creada_en: string;
+}
+
+export interface FilaListaObjeto {
+  id: string;
+  lista_id: string;
+  posicion: number;
+  texto: string;
+}
+
+export interface FilaNumeroImportante {
+  id: string;
+  etiqueta: string;
+  digitos: string;
+  creado_en: string;
+}
+
+/** Forma de `tarjeta.metadata_categoria` cuando `categoria === 'lista_item'` (ADR-020). */
+export interface MetadataListaItem {
+  lista_id: string;
+  id_objeto_a: string;
+  id_objeto_b: string;
+}
+
+/** Forma de `tarjeta.metadata_categoria` cuando `categoria === 'numero'`. */
+export interface MetadataNumero {
+  numero_id: string;
+}

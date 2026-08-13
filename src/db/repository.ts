@@ -1,4 +1,5 @@
 import { Rating, type CardInput } from 'ts-fsrs';
+import { diffEslabones, type ObjetoLista } from '../domain/cadena/eslabones';
 import { crearTarjetaNueva, programar, type Calificacion } from '../domain/fsrs/scheduler';
 import { estadoVisual, type EstadoVisual } from '../domain/fsrs/estado';
 import { armarSesion, type OpcionesSesion } from '../domain/sesion/motor';
@@ -6,10 +7,15 @@ import type {
   Categoria,
   ConexionBD,
   Direccion,
+  FilaLista,
+  FilaListaObjeto,
   FilaMazo,
+  FilaNumeroImportante,
   FilaRevision,
   FilaSesionEstudio,
   FilaTarjeta,
+  MetadataListaItem,
+  MetadataNumero,
 } from './tipos';
 
 function generarId(): string {
@@ -293,22 +299,336 @@ export async function resumenDeTarjeta(db: ConexionBD, tarjetaId: string, ahora:
 }
 
 /**
- * Edita el contenido de una tarjeta (p. ej. EditorNaipe.tsx) sin tocar su
- * estado FSRS — mismo `id`, mismo historial (seeds/colgadero-100.md: "editar
- * una palabra no reinicia el estado FSRS de su tarjeta").
+ * Edita el contenido de una tarjeta (p. ej. EditorNaipe.tsx, eslabones de
+ * lista, dígitos de un número) sin tocar su estado FSRS — mismo `id`, mismo
+ * historial (seeds/colgadero-100.md: "editar una palabra no reinicia el
+ * estado FSRS de su tarjeta").
  */
 export async function actualizarContenidoTarjeta(
   db: ConexionBD,
   tarjetaId: string,
-  datos: { contenidoReverso: string; metadataCategoria?: Record<string, unknown> }
+  datos: { contenidoFrente?: string; contenidoReverso?: string; metadataCategoria?: Record<string, unknown> }
 ): Promise<void> {
-  if (datos.metadataCategoria !== undefined) {
-    await db.runAsync('UPDATE tarjeta SET contenido_reverso = ?, metadata_categoria = ? WHERE id = ?', [
-      datos.contenidoReverso,
-      JSON.stringify(datos.metadataCategoria),
-      tarjetaId,
-    ]);
-  } else {
-    await db.runAsync('UPDATE tarjeta SET contenido_reverso = ? WHERE id = ?', [datos.contenidoReverso, tarjetaId]);
+  const campos: string[] = [];
+  const valores: (string | null)[] = [];
+
+  if (datos.contenidoFrente !== undefined) {
+    campos.push('contenido_frente = ?');
+    valores.push(datos.contenidoFrente);
   }
+  if (datos.contenidoReverso !== undefined) {
+    campos.push('contenido_reverso = ?');
+    valores.push(datos.contenidoReverso);
+  }
+  if (datos.metadataCategoria !== undefined) {
+    campos.push('metadata_categoria = ?');
+    valores.push(JSON.stringify(datos.metadataCategoria));
+  }
+  if (campos.length === 0) return;
+
+  await db.runAsync(`UPDATE tarjeta SET ${campos.join(', ')} WHERE id = ?`, [...valores, tarjetaId]);
+}
+
+// --- Lista / lista_objeto / eslabones (§8.4, ADR-020) ---
+
+export async function crearLista(
+  db: ConexionBD,
+  datos: { nombre: string; segundosEstudio: number },
+  ahora: Date
+): Promise<FilaLista> {
+  const fila: FilaLista = {
+    id: generarId(),
+    nombre: datos.nombre,
+    segundos_estudio: datos.segundosEstudio,
+    creada_en: ahora.toISOString(),
+  };
+  await db.runAsync('INSERT INTO lista (id, nombre, segundos_estudio, creada_en) VALUES (?, ?, ?, ?)', [
+    fila.id,
+    fila.nombre,
+    fila.segundos_estudio,
+    fila.creada_en,
+  ]);
+  return fila;
+}
+
+export async function obtenerLista(db: ConexionBD, id: string): Promise<FilaLista | null> {
+  return db.getFirstAsync<FilaLista>('SELECT * FROM lista WHERE id = ?', [id]);
+}
+
+export async function listarListas(db: ConexionBD): Promise<FilaLista[]> {
+  return db.getAllAsync<FilaLista>('SELECT * FROM lista ORDER BY creada_en', []);
+}
+
+export async function actualizarLista(
+  db: ConexionBD,
+  id: string,
+  datos: { nombre?: string; segundosEstudio?: number }
+): Promise<void> {
+  const campos: string[] = [];
+  const valores: (string | number)[] = [];
+  if (datos.nombre !== undefined) {
+    campos.push('nombre = ?');
+    valores.push(datos.nombre);
+  }
+  if (datos.segundosEstudio !== undefined) {
+    campos.push('segundos_estudio = ?');
+    valores.push(datos.segundosEstudio);
+  }
+  if (campos.length === 0) return;
+  await db.runAsync(`UPDATE lista SET ${campos.join(', ')} WHERE id = ?`, [...valores, id]);
+}
+
+export async function listarObjetosDeLista(db: ConexionBD, listaId: string): Promise<FilaListaObjeto[]> {
+  return db.getAllAsync<FilaListaObjeto>('SELECT * FROM lista_objeto WHERE lista_id = ? ORDER BY posicion', [
+    listaId,
+  ]);
+}
+
+/**
+ * Reemplaza el conjunto de objetos de una lista por `objetos` (nuevo orden y
+ * contenido) y sincroniza sus eslabones vía `diffEslabones` (identidad por id
+ * de objeto, ADR-020): nunca reescribe el contenido de un eslabón existente
+ * conservando su estado FSRS (04-listas-cadena.md §3) — lo que no cambió de
+ * adyacencia se conserva íntegro; solo su contenido de texto se resincroniza
+ * si el objeto fue editado.
+ */
+export async function guardarObjetosDeLista(
+  db: ConexionBD,
+  listaId: string,
+  objetos: { id?: string; texto: string }[],
+  ahora: Date
+): Promise<FilaListaObjeto[]> {
+  const anterioresFilas = await listarObjetosDeLista(db, listaId);
+  const anteriores: ObjetoLista[] = anterioresFilas.map((f) => ({ id: f.id, posicion: f.posicion, texto: f.texto }));
+
+  const nuevasFilas: FilaListaObjeto[] = objetos.map((o, i) => ({
+    id: o.id ?? generarId(),
+    lista_id: listaId,
+    posicion: i,
+    texto: o.texto,
+  }));
+  const nuevos: ObjetoLista[] = nuevasFilas.map((f) => ({ id: f.id, posicion: f.posicion, texto: f.texto }));
+
+  const diff = diffEslabones(anteriores, nuevos);
+  const idsAntes = new Set(anterioresFilas.map((f) => f.id));
+  const idsDespues = new Set(nuevasFilas.map((f) => f.id));
+  const mazo = await obtenerMazoPorCategoria(db, 'lista_item');
+  if (!mazo) {
+    throw new Error('No existe el mazo lista_item — falta correr la migración 004');
+  }
+  const tarjetasDeLaLista = (await listarTarjetasPorMazo(db, mazo.id)).filter(
+    (t) => (JSON.parse(t.metadata_categoria) as MetadataListaItem).lista_id === listaId
+  );
+
+  await db.withTransactionAsync(async () => {
+    for (const filaVieja of anterioresFilas) {
+      if (!idsDespues.has(filaVieja.id)) {
+        await db.runAsync('DELETE FROM lista_objeto WHERE id = ?', [filaVieja.id]);
+      }
+    }
+    for (const filaNueva of nuevasFilas) {
+      if (idsAntes.has(filaNueva.id)) {
+        await db.runAsync('UPDATE lista_objeto SET posicion = ?, texto = ? WHERE id = ?', [
+          filaNueva.posicion,
+          filaNueva.texto,
+          filaNueva.id,
+        ]);
+      } else {
+        await db.runAsync('INSERT INTO lista_objeto (id, lista_id, posicion, texto) VALUES (?, ?, ?, ?)', [
+          filaNueva.id,
+          filaNueva.lista_id,
+          filaNueva.posicion,
+          filaNueva.texto,
+        ]);
+      }
+    }
+
+    for (const eslabon of diff.aArchivar) {
+      const tarjeta = tarjetasDeLaLista.find((t) => {
+        const m = JSON.parse(t.metadata_categoria) as MetadataListaItem;
+        return m.id_objeto_a === eslabon.idObjetoA && m.id_objeto_b === eslabon.idObjetoB;
+      });
+      if (tarjeta) {
+        await db.runAsync('UPDATE tarjeta SET archivada = 1 WHERE id = ?', [tarjeta.id]);
+      }
+    }
+
+    for (const eslabon of diff.aCrear) {
+      await crearTarjeta(
+        db,
+        {
+          mazoId: mazo.id,
+          categoria: 'lista_item',
+          contenidoFrente: eslabon.textoA,
+          contenidoReverso: eslabon.textoB,
+          metadataCategoria: { lista_id: listaId, id_objeto_a: eslabon.idObjetoA, id_objeto_b: eslabon.idObjetoB },
+        },
+        ahora
+      );
+    }
+
+    for (const eslabon of diff.sinCambios) {
+      const tarjeta = tarjetasDeLaLista.find((t) => {
+        const m = JSON.parse(t.metadata_categoria) as MetadataListaItem;
+        return m.id_objeto_a === eslabon.idObjetoA && m.id_objeto_b === eslabon.idObjetoB;
+      });
+      if (tarjeta && (tarjeta.contenido_frente !== eslabon.textoA || tarjeta.contenido_reverso !== eslabon.textoB)) {
+        await actualizarContenidoTarjeta(db, tarjeta.id, {
+          contenidoFrente: eslabon.textoA,
+          contenidoReverso: eslabon.textoB,
+        });
+      }
+    }
+  });
+
+  return nuevasFilas;
+}
+
+/**
+ * Eslabones vigentes de una lista, en orden de presentación — derivado al
+ * vuelo uniendo `id_objeto_a` contra la posición actual en `lista_objeto`
+ * (ADR-020: nunca se guarda un número de posición aparte).
+ */
+export async function listarEslabonesDeLista(db: ConexionBD, listaId: string): Promise<FilaTarjeta[]> {
+  const mazo = await obtenerMazoPorCategoria(db, 'lista_item');
+  if (!mazo) return [];
+
+  const objetos = await listarObjetosDeLista(db, listaId);
+  const posicionPorId = new Map(objetos.map((o) => [o.id, o.posicion]));
+
+  const tarjetas = (await listarTarjetasPorMazo(db, mazo.id)).filter(
+    (t) => (JSON.parse(t.metadata_categoria) as MetadataListaItem).lista_id === listaId
+  );
+
+  return tarjetas.sort((a, b) => {
+    const posA = posicionPorId.get((JSON.parse(a.metadata_categoria) as MetadataListaItem).id_objeto_a) ?? 0;
+    const posB = posicionPorId.get((JSON.parse(b.metadata_categoria) as MetadataListaItem).id_objeto_a) ?? 0;
+    return posA - posB;
+  });
+}
+
+/**
+ * Borra la lista (CASCADE sobre lista_objeto vía FK) y archiva sus eslabones.
+ * `revision` nunca se toca (04-listas-cadena.md §3).
+ */
+export async function eliminarLista(db: ConexionBD, listaId: string): Promise<void> {
+  const eslabones = await listarEslabonesDeLista(db, listaId);
+  await db.withTransactionAsync(async () => {
+    for (const eslabon of eslabones) {
+      await db.runAsync('UPDATE tarjeta SET archivada = 1 WHERE id = ?', [eslabon.id]);
+    }
+    await db.runAsync('DELETE FROM lista WHERE id = ?', [listaId]);
+  });
+}
+
+// --- Número importante (§8.5) ---
+
+export async function crearNumeroImportante(
+  db: ConexionBD,
+  datos: { etiqueta: string; digitos: string },
+  ahora: Date
+): Promise<{ fila: FilaNumeroImportante; tarjeta: FilaTarjeta }> {
+  const mazo = await obtenerMazoPorCategoria(db, 'numero');
+  if (!mazo) {
+    throw new Error('No existe el mazo numero — falta correr la migración 004');
+  }
+
+  const fila: FilaNumeroImportante = {
+    id: generarId(),
+    etiqueta: datos.etiqueta,
+    digitos: datos.digitos,
+    creado_en: ahora.toISOString(),
+  };
+
+  let tarjeta!: FilaTarjeta;
+  await db.withTransactionAsync(async () => {
+    await db.runAsync('INSERT INTO numero_importante (id, etiqueta, digitos, creado_en) VALUES (?, ?, ?, ?)', [
+      fila.id,
+      fila.etiqueta,
+      fila.digitos,
+      fila.creado_en,
+    ]);
+    tarjeta = await crearTarjeta(
+      db,
+      {
+        mazoId: mazo.id,
+        categoria: 'numero',
+        contenidoFrente: fila.etiqueta,
+        contenidoReverso: fila.digitos,
+        metadataCategoria: { numero_id: fila.id },
+      },
+      ahora
+    );
+  });
+
+  return { fila, tarjeta };
+}
+
+export async function obtenerNumeroImportante(db: ConexionBD, id: string): Promise<FilaNumeroImportante | null> {
+  return db.getFirstAsync<FilaNumeroImportante>('SELECT * FROM numero_importante WHERE id = ?', [id]);
+}
+
+export async function listarNumerosImportantes(db: ConexionBD): Promise<FilaNumeroImportante[]> {
+  return db.getAllAsync<FilaNumeroImportante>('SELECT * FROM numero_importante ORDER BY creado_en', []);
+}
+
+export async function obtenerTarjetaDeNumero(db: ConexionBD, numeroId: string): Promise<FilaTarjeta | null> {
+  const mazo = await obtenerMazoPorCategoria(db, 'numero');
+  if (!mazo) return null;
+  const tarjetas = await listarTarjetasPorMazo(db, mazo.id);
+  return (
+    tarjetas.find((t) => (JSON.parse(t.metadata_categoria) as MetadataNumero).numero_id === numeroId) ?? null
+  );
+}
+
+/**
+ * Edita etiqueta/dígitos sin reiniciar el estado FSRS de su tarjeta
+ * (05-numeros.md §4); lo anota en la metadata como registro honesto para el
+ * panel de retención.
+ */
+export async function editarNumeroImportante(
+  db: ConexionBD,
+  id: string,
+  datos: { etiqueta?: string; digitos?: string }
+): Promise<void> {
+  const actual = await obtenerNumeroImportante(db, id);
+  if (!actual) {
+    throw new Error(`No existe el número ${id}`);
+  }
+  const tarjeta = await obtenerTarjetaDeNumero(db, id);
+
+  await db.withTransactionAsync(async () => {
+    const campos: string[] = [];
+    const valores: string[] = [];
+    if (datos.etiqueta !== undefined) {
+      campos.push('etiqueta = ?');
+      valores.push(datos.etiqueta);
+    }
+    if (datos.digitos !== undefined) {
+      campos.push('digitos = ?');
+      valores.push(datos.digitos);
+    }
+    if (campos.length > 0) {
+      await db.runAsync(`UPDATE numero_importante SET ${campos.join(', ')} WHERE id = ?`, [...valores, id]);
+    }
+
+    if (tarjeta) {
+      const metadataAnterior = JSON.parse(tarjeta.metadata_categoria) as MetadataNumero & { editado?: boolean };
+      await actualizarContenidoTarjeta(db, tarjeta.id, {
+        contenidoFrente: datos.etiqueta ?? actual.etiqueta,
+        contenidoReverso: datos.digitos ?? actual.digitos,
+        metadataCategoria: { ...metadataAnterior, editado: true },
+      });
+    }
+  });
+}
+
+export async function eliminarNumeroImportante(db: ConexionBD, id: string): Promise<void> {
+  const tarjeta = await obtenerTarjetaDeNumero(db, id);
+  await db.withTransactionAsync(async () => {
+    if (tarjeta) {
+      await db.runAsync('UPDATE tarjeta SET archivada = 1 WHERE id = ?', [tarjeta.id]);
+    }
+    await db.runAsync('DELETE FROM numero_importante WHERE id = ?', [id]);
+  });
 }

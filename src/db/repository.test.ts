@@ -1,20 +1,37 @@
 import { State } from 'ts-fsrs';
 import { crearConexionDePrueba } from './conexionDePrueba';
+import * as m001 from './migrations/001_inicial';
+import * as m002 from './migrations/002_seed_colgadero';
+import * as m003 from './migrations/003_seed_naipes';
 import { ejecutarMigraciones } from './migrations';
-import type { ConexionBD } from './tipos';
+import type { ConexionBD, MetadataListaItem, MetadataNumero } from './tipos';
 import {
   actualizarContenidoTarjeta,
   armarSesionDeMazo,
   calificarTarjeta,
   cerrarSesion,
+  crearLista,
   crearMazo,
+  crearNumeroImportante,
   crearSesion,
   crearTarjeta,
+  editarNumeroImportante,
+  eliminarLista,
+  eliminarNumeroImportante,
+  guardarObjetosDeLista,
+  listarEslabonesDeLista,
+  listarListas,
+  listarNumerosImportantes,
+  listarObjetosDeLista,
   listarRevisionesDeTarjeta,
   listarTarjetasPorMazo,
+  obtenerLista,
   obtenerMazo,
   obtenerMazoPorCategoria,
+  obtenerNumeroImportante,
   obtenerTarjeta,
+  obtenerTarjetaDeNumero,
+  actualizarLista,
 } from './repository';
 
 const AHORA = new Date('2026-01-01T00:00:00.000Z');
@@ -22,6 +39,16 @@ const AHORA = new Date('2026-01-01T00:00:00.000Z');
 async function bdLista(): Promise<ConexionBD> {
   const db = crearConexionDePrueba();
   await ejecutarMigraciones(db);
+  return db;
+}
+
+async function bdEnVersion3(): Promise<ConexionBD> {
+  const db = crearConexionDePrueba();
+  await db.execAsync('CREATE TABLE IF NOT EXISTS migracion (version INTEGER PRIMARY KEY, aplicada_en TEXT NOT NULL);');
+  for (const m of [m001, m002, m003]) {
+    await m.aplicar(db, AHORA);
+    await db.runAsync('INSERT INTO migracion (version, aplicada_en) VALUES (?, ?)', [m.version, AHORA.toISOString()]);
+  }
   return db;
 }
 
@@ -46,10 +73,22 @@ describe('mazo', () => {
     expect(mazo?.categoria).toBe('colgadero');
   });
 
-  it('obtenerMazoPorCategoria devuelve null si no hay mazo de esa categoría', async () => {
-    const db = await bdLista();
-    // 'numero' no tiene migración de siembra todavía (llega en la Fase 4)
+  it('obtenerMazoPorCategoria devuelve null si no hay mazo de esa categoría (antes de la migración 004)', async () => {
+    const db = await bdEnVersion3();
     expect(await obtenerMazoPorCategoria(db, 'numero')).toBeNull();
+    expect(await obtenerMazoPorCategoria(db, 'lista_item')).toBeNull();
+  });
+
+  it('la migración 004 siembra los mazos lista_item y numero, vacíos (ADR-020)', async () => {
+    const db = await bdLista();
+
+    const listaItem = await obtenerMazoPorCategoria(db, 'lista_item');
+    const numero = await obtenerMazoPorCategoria(db, 'numero');
+
+    expect(listaItem?.categoria).toBe('lista_item');
+    expect(numero?.categoria).toBe('numero');
+    expect(await listarTarjetasPorMazo(db, listaItem!.id)).toEqual([]);
+    expect(await listarTarjetasPorMazo(db, numero!.id)).toEqual([]);
   });
 });
 
@@ -207,7 +246,7 @@ describe('migración — Skill db-migracion, paso 4: sobre BD con datos', () => 
     expect(await obtenerTarjeta(db, tarjeta.id)).toEqual(tarjeta);
 
     const versiones = await db.getAllAsync<{ version: number }>('SELECT version FROM migracion', []);
-    expect(versiones).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }]);
+    expect(versiones).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }, { version: 4 }]);
   });
 });
 
@@ -280,6 +319,76 @@ describe('migración 003 — siembra de naipes', () => {
   });
 });
 
+describe('migración 004 — listas y números (aditiva, sin siembra) — Skill db-migracion pasos 4-5', () => {
+  it('sobre una BD en versión 3 con datos reales: los datos previos sobreviven y las tablas nuevas quedan listas', async () => {
+    const db = await bdEnVersion3();
+
+    // Datos representativos de un dispositivo real ya en uso: mazo, tarjeta
+    // con historial FSRS, sesión y revisión — justo lo que se perdería si
+    // 004 tocara algo fuera de sus tablas nuevas.
+    const mazo = await crearMazo(db, { nombre: 'Colgadero', categoria: 'colgadero' }, AHORA);
+    const tarjeta = await crearTarjeta(
+      db,
+      { mazoId: mazo.id, categoria: 'colgadero', contenidoFrente: '1', contenidoReverso: 'Tea' },
+      AHORA
+    );
+    const sesion = await crearSesion(db, { modo: 'flash' }, AHORA);
+    const calificada = await calificarTarjeta(
+      db,
+      { tarjetaId: tarjeta.id, sesionId: sesion.id, calificacion: 'bien' },
+      AHORA
+    );
+
+    // Migra a la versión 4: el runner ve 1-3 ya aplicadas y solo corre 004.
+    await ejecutarMigraciones(db, AHORA);
+
+    expect(await obtenerTarjeta(db, tarjeta.id)).toEqual(calificada);
+    const revisiones = await listarRevisionesDeTarjeta(db, tarjeta.id);
+    expect(revisiones).toHaveLength(1);
+
+    await db.runAsync('INSERT INTO lista (id, nombre, segundos_estudio, creada_en) VALUES (?, ?, ?, ?)', [
+      'lista-1',
+      'Compras',
+      30,
+      AHORA.toISOString(),
+    ]);
+    await db.runAsync('INSERT INTO lista_objeto (id, lista_id, posicion, texto) VALUES (?, ?, ?, ?)', [
+      'obj-1',
+      'lista-1',
+      0,
+      'Leche',
+    ]);
+    await db.runAsync('INSERT INTO numero_importante (id, etiqueta, digitos, creado_en) VALUES (?, ?, ?, ?)', [
+      'num-1',
+      'Clave caja fuerte',
+      '0453',
+      AHORA.toISOString(),
+    ]);
+
+    const listas = await db.getAllAsync<{ id: string }>('SELECT id FROM lista', []);
+    expect(listas).toHaveLength(1);
+    const numeros = await db.getAllAsync<{ digitos: string }>('SELECT digitos FROM numero_importante', []);
+    expect(numeros[0].digitos).toBe('0453');
+  });
+
+  it('idempotente: aplicar dos veces seguidas no duplica ni falla', async () => {
+    const db = await bdEnVersion3();
+    await ejecutarMigraciones(db, AHORA);
+    await ejecutarMigraciones(db, AHORA);
+
+    const versiones = await db.getAllAsync<{ version: number }>('SELECT version FROM migracion', []);
+    expect(versiones.map((v) => v.version)).toEqual([1, 2, 3, 4]);
+  });
+
+  it('arranque desde cero: las 4 migraciones corren en orden sin error', async () => {
+    const db = crearConexionDePrueba();
+    await expect(ejecutarMigraciones(db, AHORA)).resolves.not.toThrow();
+
+    const versiones = await db.getAllAsync<{ version: number }>('SELECT version FROM migracion', []);
+    expect(versiones.map((v) => v.version)).toEqual([1, 2, 3, 4]);
+  });
+});
+
 describe('armarSesionDeMazo', () => {
   it('arma una sesión real de 20 tarjetas nuevas desde el mazo recién sembrado', async () => {
     const db = crearConexionDePrueba();
@@ -310,5 +419,277 @@ describe('armarSesionDeMazo', () => {
 
     expect(sesion.map((t) => t.contenido_frente)).not.toEqual(enOrden);
     expect(new Set(sesion.map((t) => t.contenido_frente))).toEqual(new Set(enOrden));
+  });
+});
+
+describe('lista — CRUD', () => {
+  it('crea y recupera una lista', async () => {
+    const db = await bdLista();
+    const lista = await crearLista(db, { nombre: 'Compras', segundosEstudio: 30 }, AHORA);
+    expect(await obtenerLista(db, lista.id)).toEqual(lista);
+  });
+
+  it('listarListas devuelve todas en orden de creación', async () => {
+    const db = await bdLista();
+    const a = await crearLista(db, { nombre: 'A', segundosEstudio: 30 }, AHORA);
+    const b = await crearLista(db, { nombre: 'B', segundosEstudio: 30 }, new Date(AHORA.getTime() + 1000));
+    expect(await listarListas(db)).toEqual([a, b]);
+  });
+
+  it('actualizarLista renombra y cambia el tiempo de estudio sin tocar sus objetos', async () => {
+    const db = await bdLista();
+    const lista = await crearLista(db, { nombre: 'Compras', segundosEstudio: 30 }, AHORA);
+    await guardarObjetosDeLista(db, lista.id, [{ texto: 'uno' }], AHORA);
+
+    await actualizarLista(db, lista.id, { nombre: 'Mercado', segundosEstudio: 45 });
+
+    const actualizada = await obtenerLista(db, lista.id);
+    expect(actualizada?.nombre).toBe('Mercado');
+    expect(actualizada?.segundos_estudio).toBe(45);
+    expect(await listarObjetosDeLista(db, lista.id)).toHaveLength(1);
+  });
+});
+
+describe('guardarObjetosDeLista — sincroniza eslabones vía diffEslabones (ADR-020)', () => {
+  it('lista nueva de 4 objetos produce exactamente 3 eslabones, cada uno con su metadata', async () => {
+    const db = await bdLista();
+    const lista = await crearLista(db, { nombre: 'Cadena', segundosEstudio: 30 }, AHORA);
+
+    const objetos = await guardarObjetosDeLista(
+      db,
+      lista.id,
+      [{ texto: 'martillo' }, { texto: 'elefante' }, { texto: 'semáforo' }, { texto: 'guitarra' }],
+      AHORA
+    );
+
+    expect(objetos.map((o) => o.texto)).toEqual(['martillo', 'elefante', 'semáforo', 'guitarra']);
+
+    const eslabones = await listarEslabonesDeLista(db, lista.id);
+    expect(eslabones).toHaveLength(3);
+    expect(eslabones.map((e) => `${e.contenido_frente}→${e.contenido_reverso}`)).toEqual([
+      'martillo→elefante',
+      'elefante→semáforo',
+      'semáforo→guitarra',
+    ]);
+    expect(eslabones.every((e) => e.fsrs_state === State.New)).toBe(true);
+
+    const metadata = JSON.parse(eslabones[0].metadata_categoria) as MetadataListaItem;
+    expect(metadata).toEqual({ lista_id: lista.id, id_objeto_a: objetos[0].id, id_objeto_b: objetos[1].id });
+  });
+
+  it('insertar un objeto en medio archiva 1 eslabón y crea 2, sin tocar el histórico del que no cambió de adyacencia', async () => {
+    const db = await bdLista();
+    const lista = await crearLista(db, { nombre: 'Cadena', segundosEstudio: 30 }, AHORA);
+    const objetos = await guardarObjetosDeLista(
+      db,
+      lista.id,
+      [{ texto: 'martillo' }, { texto: 'elefante' }, { texto: 'semáforo' }],
+      AHORA
+    );
+    const eslabonesAntes = await listarEslabonesDeLista(db, lista.id);
+    const sesion = await crearSesion(db, { modo: 'estudiar' }, AHORA);
+    const martilloElefanteCalificado = await calificarTarjeta(
+      db,
+      { tarjetaId: eslabonesAntes[0].id, sesionId: sesion.id, calificacion: 'bien' },
+      AHORA
+    );
+
+    const nuevos = await guardarObjetosDeLista(
+      db,
+      lista.id,
+      [
+        { id: objetos[0].id, texto: 'martillo' },
+        { id: objetos[1].id, texto: 'elefante' },
+        { texto: 'ventana' },
+        { id: objetos[2].id, texto: 'semáforo' },
+      ],
+      AHORA
+    );
+    expect(nuevos).toHaveLength(4);
+
+    const eslabonesDespues = await listarEslabonesDeLista(db, lista.id);
+    expect(eslabonesDespues).toHaveLength(3);
+
+    const martilloElefanteDespues = eslabonesDespues.find((e) => e.contenido_frente === 'martillo');
+    expect(martilloElefanteDespues?.id).toBe(martilloElefanteCalificado.id);
+    expect(martilloElefanteDespues?.fsrs_state).toBe(martilloElefanteCalificado.fsrs_state);
+    expect(martilloElefanteDespues?.fsrs_estabilidad).toBe(martilloElefanteCalificado.fsrs_estabilidad);
+
+    expect(
+      eslabonesDespues.some((e) => e.contenido_frente === 'elefante' && e.contenido_reverso === 'semáforo')
+    ).toBe(false);
+    const archivada = await obtenerTarjeta(db, eslabonesAntes[1].id);
+    expect(archivada?.archivada).toBe(1);
+
+    expect(
+      eslabonesDespues.find((e) => e.contenido_frente === 'elefante' && e.contenido_reverso === 'ventana')
+        ?.fsrs_state
+    ).toBe(State.New);
+    expect(
+      eslabonesDespues.find((e) => e.contenido_frente === 'ventana' && e.contenido_reverso === 'semáforo')
+        ?.fsrs_state
+    ).toBe(State.New);
+  });
+
+  it('un eslabón que no cambió de adyacencia pero se desplazó de posición conserva su tarjeta e id', async () => {
+    const db = await bdLista();
+    const lista = await crearLista(db, { nombre: 'Cadena', segundosEstudio: 30 }, AHORA);
+    const objetos = await guardarObjetosDeLista(
+      db,
+      lista.id,
+      [{ texto: 'uno' }, { texto: 'dos' }, { texto: 'tres' }, { texto: 'cuatro' }],
+      AHORA
+    );
+    const tresCuatroAntes = (await listarEslabonesDeLista(db, lista.id)).find((e) => e.contenido_frente === 'tres');
+
+    await guardarObjetosDeLista(
+      db,
+      lista.id,
+      [
+        { texto: 'nuevo' },
+        { id: objetos[0].id, texto: 'uno' },
+        { id: objetos[1].id, texto: 'dos' },
+        { id: objetos[2].id, texto: 'tres' },
+        { id: objetos[3].id, texto: 'cuatro' },
+      ],
+      AHORA
+    );
+
+    const eslabonesDespues = await listarEslabonesDeLista(db, lista.id);
+    const tresCuatroDespues = eslabonesDespues.find((e) => e.contenido_frente === 'tres');
+    expect(tresCuatroDespues?.id).toBe(tresCuatroAntes?.id);
+    // La presentación en orden refleja la posición vigente, derivada al vuelo.
+    expect(eslabonesDespues.map((e) => e.contenido_frente)).toEqual(['nuevo', 'uno', 'dos', 'tres']);
+  });
+
+  it('eliminar el último objeto archiva su eslabón de entrada sin crear ninguno', async () => {
+    const db = await bdLista();
+    const lista = await crearLista(db, { nombre: 'Cadena', segundosEstudio: 30 }, AHORA);
+    const objetos = await guardarObjetosDeLista(
+      db,
+      lista.id,
+      [{ texto: 'uno' }, { texto: 'dos' }, { texto: 'tres' }],
+      AHORA
+    );
+
+    await guardarObjetosDeLista(
+      db,
+      lista.id,
+      [
+        { id: objetos[0].id, texto: 'uno' },
+        { id: objetos[1].id, texto: 'dos' },
+      ],
+      AHORA
+    );
+
+    const eslabones = await listarEslabonesDeLista(db, lista.id);
+    expect(eslabones).toHaveLength(1);
+    expect(eslabones[0].contenido_frente).toBe('uno');
+    expect(await listarObjetosDeLista(db, lista.id)).toHaveLength(2);
+  });
+
+  it('editar el texto de un objeto sin cambiar su adyacencia sincroniza el contenido del eslabón sin tocar su estado FSRS', async () => {
+    const db = await bdLista();
+    const lista = await crearLista(db, { nombre: 'Cadena', segundosEstudio: 30 }, AHORA);
+    const objetos = await guardarObjetosDeLista(db, lista.id, [{ texto: 'uno' }, { texto: 'dos' }], AHORA);
+    const sesion = await crearSesion(db, { modo: 'estudiar' }, AHORA);
+    const eslabon = (await listarEslabonesDeLista(db, lista.id))[0];
+    const calificado = await calificarTarjeta(
+      db,
+      { tarjetaId: eslabon.id, sesionId: sesion.id, calificacion: 'bien' },
+      AHORA
+    );
+
+    await guardarObjetosDeLista(
+      db,
+      lista.id,
+      [
+        { id: objetos[0].id, texto: 'uno' },
+        { id: objetos[1].id, texto: 'DOS-EDITADO' },
+      ],
+      AHORA
+    );
+
+    const editado = (await listarEslabonesDeLista(db, lista.id))[0];
+    expect(editado.id).toBe(calificado.id);
+    expect(editado.contenido_reverso).toBe('DOS-EDITADO');
+    expect(editado.fsrs_state).toBe(calificado.fsrs_state);
+    expect(editado.fsrs_estabilidad).toBe(calificado.fsrs_estabilidad);
+  });
+});
+
+describe('eliminarLista', () => {
+  it('borra la lista y sus objetos (CASCADE) y archiva sus eslabones sin borrar revision', async () => {
+    const db = await bdLista();
+    const lista = await crearLista(db, { nombre: 'Cadena', segundosEstudio: 30 }, AHORA);
+    await guardarObjetosDeLista(db, lista.id, [{ texto: 'uno' }, { texto: 'dos' }], AHORA);
+    const eslabon = (await listarEslabonesDeLista(db, lista.id))[0];
+    const sesion = await crearSesion(db, { modo: 'estudiar' }, AHORA);
+    await calificarTarjeta(db, { tarjetaId: eslabon.id, sesionId: sesion.id, calificacion: 'bien' }, AHORA);
+
+    await eliminarLista(db, lista.id);
+
+    expect(await obtenerLista(db, lista.id)).toBeNull();
+    expect(await listarObjetosDeLista(db, lista.id)).toEqual([]);
+    expect(await listarEslabonesDeLista(db, lista.id)).toEqual([]);
+    const tarjetaArchivada = await obtenerTarjeta(db, eslabon.id);
+    expect(tarjetaArchivada?.archivada).toBe(1);
+    expect(await listarRevisionesDeTarjeta(db, eslabon.id)).toHaveLength(1);
+  });
+});
+
+describe('numero_importante — CRUD', () => {
+  it('crea un número con su tarjeta asociada, conservando ceros a la izquierda', async () => {
+    const db = await bdLista();
+    const { fila, tarjeta } = await crearNumeroImportante(
+      db,
+      { etiqueta: 'Clave caja fuerte', digitos: '0453' },
+      AHORA
+    );
+
+    expect(fila.digitos).toBe('0453');
+    expect(tarjeta.contenido_frente).toBe('Clave caja fuerte');
+    expect(tarjeta.contenido_reverso).toBe('0453');
+    expect(tarjeta.fsrs_state).toBe(State.New);
+    const metadata = JSON.parse(tarjeta.metadata_categoria) as MetadataNumero;
+    expect(metadata.numero_id).toBe(fila.id);
+
+    expect(await obtenerNumeroImportante(db, fila.id)).toEqual(fila);
+    expect(await listarNumerosImportantes(db)).toEqual([fila]);
+    expect(await obtenerTarjetaDeNumero(db, fila.id)).toEqual(tarjeta);
+  });
+
+  it('editarNumeroImportante cambia los dígitos sin reiniciar el estado FSRS, y lo anota en la metadata', async () => {
+    const db = await bdLista();
+    const { fila, tarjeta } = await crearNumeroImportante(db, { etiqueta: 'PIN', digitos: '1234' }, AHORA);
+    const sesion = await crearSesion(db, { modo: 'repasar' }, AHORA);
+    const calificada = await calificarTarjeta(
+      db,
+      { tarjetaId: tarjeta.id, sesionId: sesion.id, calificacion: 'bien' },
+      AHORA
+    );
+
+    await editarNumeroImportante(db, fila.id, { digitos: '5678' });
+
+    const filaEditada = await obtenerNumeroImportante(db, fila.id);
+    expect(filaEditada?.digitos).toBe('5678');
+
+    const tarjetaEditada = await obtenerTarjetaDeNumero(db, fila.id);
+    expect(tarjetaEditada?.contenido_reverso).toBe('5678');
+    expect(tarjetaEditada?.fsrs_state).toBe(calificada.fsrs_state);
+    expect(tarjetaEditada?.fsrs_estabilidad).toBe(calificada.fsrs_estabilidad);
+    const metadata = JSON.parse(tarjetaEditada?.metadata_categoria ?? '{}');
+    expect(metadata.editado).toBe(true);
+  });
+
+  it('eliminarNumeroImportante borra el número y archiva su tarjeta', async () => {
+    const db = await bdLista();
+    const { fila, tarjeta } = await crearNumeroImportante(db, { etiqueta: 'PIN', digitos: '1234' }, AHORA);
+
+    await eliminarNumeroImportante(db, fila.id);
+
+    expect(await obtenerNumeroImportante(db, fila.id)).toBeNull();
+    const tarjetaArchivada = await obtenerTarjeta(db, tarjeta.id);
+    expect(tarjetaArchivada?.archivada).toBe(1);
   });
 });

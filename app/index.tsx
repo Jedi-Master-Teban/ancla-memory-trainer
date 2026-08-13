@@ -31,6 +31,12 @@ export default function Index() {
       <Link href="/naipes" style={styles.enlace}>
         Practicar Naipes →
       </Link>
+      <Link href="/listas" style={styles.enlace}>
+        Listas Encadenadas →
+      </Link>
+      <Link href="/numeros" style={styles.enlace}>
+        Números Importantes →
+      </Link>
     </View>
   );
 }

@@ -22,10 +22,14 @@ colgadero correspondientes, con la explicación fonética de cada una:
          M(3)+T(1)      C(4)+L(5)
 ```
 
-La regla de troceo, el caso impar y los casos abiertos (`00` y el `0` suelto) están
-en `decodificacion-fonetica.md` §5. **No se resuelven aquí ni se improvisan**: si
-aparece un trozo sin colgadero, se muestra el dígito crudo marcado como "sin
-colgadero" y se deja constancia. Pendiente P-3 en `DECISIONS.md`.
+La regla de troceo, el caso impar y los casos especiales de cero (`00` → "Rara",
+`0` suelto → "Oro") están resueltos en `decodificacion-fonetica.md` §5 (ADR-019).
+Fuera de esos dos casos, la palabra de cada trozo se busca en vivo contra las
+palabras colgadero vigentes (nunca la semilla estática ni un valor persistido):
+si el operador vació o cambió esa palabra desde que se guardó el número, el
+trozo puede quedar sin colgadero. Ese caso **no revienta**: se muestra el
+dígito crudo marcado como "sin colgadero" y se deja constancia; no se
+improvisa una palabra para rellenarlo.
 
 ## 3. Modo de repaso
 
@@ -50,5 +54,6 @@ Cubierto por el `done when` conjunto de la Fase 4. Aporte específico de este m�
 1. Test: `3145` → `[31, 45]` → `["Mito", "Cola"]`.
 2. Test: número impar de dígitos → el dígito suelto queda **al final**.
 3. Test: `0453` conserva el cero inicial y no se convierte en `453`.
-4. Test: un trozo `00` no revienta — devuelve el marcador de "sin colgadero".
+4. Test: un trozo `00` resuelve a "Rara" y un `0` suelto a "Oro" (ADR-019); un
+   valor sin palabra en la búsqueda vigente no revienta — la palabra queda `null`.
 5. En el iPhone: guardar un número real, ver su descomposición, repasarlo.

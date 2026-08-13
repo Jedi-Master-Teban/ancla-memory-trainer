@@ -25,9 +25,15 @@ Confirmar con el operador antes de implementar.
 - `lista(id, nombre, segundos_estudio, creada_en)`
 - `lista_objeto(id, lista_id, posicion, texto)`
 - Eslabones = filas de `tarjeta` con `categoria='lista_item'` y
-  `metadata_categoria = { lista_id, posicion_a }`
+  `metadata_categoria = { lista_id, id_objeto_a, id_objeto_b }` — identidad por
+  id de `lista_objeto`, no por posición (ADR-020): así se reconoce el mismo
+  eslabón aunque se desplace de posición por una inserción anterior en la
+  lista, y solo se archiva/crea cuando la **adyacencia** cambia de verdad.
 
-Frente del eslabón: el objeto en `posicion_a`. Reverso: el objeto siguiente.
+Frente del eslabón: el texto del objeto `id_objeto_a`. Reverso: el texto del
+objeto `id_objeto_b`. El orden de presentación (para el modo de estudio) se
+deriva uniendo `id_objeto_a` contra la posición vigente en `lista_objeto` —
+nunca se guarda un número de posición aparte que se pueda desincronizar.
 
 ## 3. Reordenar, insertar y borrar (la parte delicada)
 

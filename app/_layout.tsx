@@ -14,6 +14,15 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
  * espacio vacío arriba. SafeAreaProvider se deja como contexto disponible
  * por si alguna pantalla futura necesita useSafeAreaInsets() para el borde
  * inferior (isla de inicio).
+ *
+ * `headerBackTitle` va en la pantalla DE DESTINO, no en `index`: React
+ * Navigation resuelve el texto del botón "atrás" como
+ * `headerBackTitle ?? tituloDeLaPantallaAnterior` (fuente:
+ * @react-navigation/native-stack/.../useHeaderConfigProps.js, `label:
+ * headerBackTitle ?? headerBack?.title`) — es una propiedad de quien
+ * MUESTRA el botón, no de quien lo hereda. Puesto en `index` nunca hacía
+ * nada (index es la primera pantalla, no tiene botón de atrás propio); por
+ * eso el botón seguía diciendo "memory-trainer" pese a reiniciar la app.
  */
 export default function RootLayout() {
   return (
@@ -26,16 +35,22 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: '#1e1e2e' },
         }}
       >
-        <Stack.Screen name="index" options={{ title: 'memory-trainer', headerBackTitle: 'Inicio' }} />
-        <Stack.Screen name="colgadero/index" options={{ title: 'Colgadero' }} />
+        <Stack.Screen name="index" options={{ title: 'memory-trainer' }} />
+        <Stack.Screen name="colgadero/index" options={{ title: 'Colgadero', headerBackTitle: 'Inicio' }} />
         <Stack.Screen name="colgadero/flash" options={{ title: 'Fonética Flash' }} />
         <Stack.Screen name="colgadero/reverso" options={{ title: 'Reverso' }} />
         <Stack.Screen name="colgadero/velocidad" options={{ title: 'Velocidad' }} />
-        <Stack.Screen name="naipes/index" options={{ title: 'Naipes' }} />
+        <Stack.Screen name="naipes/index" options={{ title: 'Naipes', headerBackTitle: 'Inicio' }} />
         <Stack.Screen name="naipes/flash" options={{ title: 'Fonética Flash' }} />
         <Stack.Screen name="naipes/reverso" options={{ title: 'Reverso' }} />
         <Stack.Screen name="naipes/velocidad" options={{ title: 'Velocidad' }} />
         <Stack.Screen name="naipes/baraja-completa" options={{ title: 'Baraja Completa' }} />
+        <Stack.Screen name="listas/index" options={{ title: 'Listas', headerBackTitle: 'Inicio' }} />
+        <Stack.Screen name="listas/[id]" options={{ title: 'Lista' }} />
+        <Stack.Screen name="listas/estudiar" options={{ title: 'Estudiar' }} />
+        <Stack.Screen name="numeros/index" options={{ title: 'Números', headerBackTitle: 'Inicio' }} />
+        <Stack.Screen name="numeros/nuevo" options={{ title: 'Número nuevo' }} />
+        <Stack.Screen name="numeros/repasar" options={{ title: 'Repasar' }} />
       </Stack>
     </SafeAreaProvider>
   );

@@ -69,7 +69,7 @@ dos consultas calientes (armar sesión, contar pendientes por categoría).
 |---|---|
 | `colgadero` | `{ numero: 1..100 }` |
 | `naipe` | `{ palo, valor, aprobada_por_operador: bool }` |
-| `lista_item` | `{ lista_id, posicion_a }` — el eslabón A→B |
+| `lista_item` | `{ lista_id, id_objeto_a, id_objeto_b }` — el eslabón A→B, por id de `lista_objeto` (ADR-020; no por posición, para poder identificar el mismo eslabón aunque se desplace de posición) |
 | `numero` | `{ numero_id }` |
 
 ### 2.3 `revision` (log inmutable, una fila por calificación)

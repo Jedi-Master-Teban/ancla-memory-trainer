@@ -425,3 +425,37 @@ la BD reiniciaría su paso de aprendizaje a 0 en cada carga — pérdida silenci
 estado, justo lo que el invariante I-2 prohíbe. Se añadió `fsrs_learning_steps`
 a la tabla, a `FilaTarjeta` y al mapeo `filaACardInput`/`calificarTarjeta` antes de
 que ningún archivo con el hueco se commiteara. `MODELO-DATOS.md` §2.2 actualizado.
+
+## ADR-020 · 2026-08-12 · Aceptada — corrige el esquema de `metadata_categoria` de `lista_item` en MODELO-DATOS.md §2.2 y modulos/04-listas-cadena.md §2
+
+**Decisión:** el `metadata_categoria` de una tarjeta `lista_item` es
+`{ lista_id, id_objeto_a, id_objeto_b }` — los ids de fila de `lista_objeto` —
+en vez del `{ lista_id, posicion_a }` documentado en Plan Mode. Ya no se guarda
+`posicion_a`: el orden de presentación se deriva en el momento uniendo
+`id_objeto_a` contra `lista_objeto.posicion` (mismo principio que ADR de
+`resumenDeTarjeta`: nada de contadores paralelos que se puedan desincronizar).
+
+**Razón:** `src/domain/cadena/eslabones.ts` (Fase 4) calcula qué eslabones
+archivar/crear al editar una lista comparando el **id de objeto**, no la
+posición — es la única forma de cumplir la regla ya aprobada en
+`04-listas-cadena.md` §3 ("insertar en medio rompe **un** eslabón y crea
+**dos**"). Se verificó con test (`eslabones.test.ts`): identificar por
+posición en vez de por id, ante una inserción en medio, rompe 2 eslabones y
+crea 3 — viola la regla aprobada. Si `metadata_categoria` solo guardara
+`posicion_a`, el repositorio no tendría cómo encontrar "la tarjeta del par
+(objetoA, objetoB)" para decidir si conservarla; necesitaría comparar por
+posición y caería en el mismo error.
+
+**Consecuencia:** `MODELO-DATOS.md` §2.2 y `agent_docs/modulos/04-listas-cadena.md`
+§2 actualizados a la nueva forma. `src/db/repository.ts` fetch-y-filtra en JS
+(mismo patrón que `armarSesion`/`resumenDeTarjeta`), no `json_extract` en SQL:
+el volumen por lista es pequeño y mantiene toda la lógica de forma de metadata
+en TypeScript tipado en vez de en cadenas SQL.
+
+**Además, sin ADR propio por seguir un patrón ya aceptado (Fase 1):** la
+migración `004_listas_numeros.ts` crea, además de las tablas, un mazo
+`categoria='lista_item'` ("Listas") y otro `categoria='numero'` ("Números"),
+ambos vacíos — mismo criterio de "un mazo por categoría" que ya regía
+`colgadero`/`naipe` desde `obtenerMazoPorCategoria`. Sin esto, cada función de
+CRUD tendría que comprobar y crear el mazo bajo demanda, una rama de más en
+cada escritura.
