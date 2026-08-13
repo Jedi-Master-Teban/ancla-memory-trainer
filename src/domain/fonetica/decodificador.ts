@@ -17,7 +17,7 @@ export interface ResultadoDecodificacion {
 
 const SIN_VALOR = new Set(['a', 'e', 'i', 'o', 'u', 'h', 'w', 'x', 'y']);
 
-function normalizar(palabra: string): string {
+export function normalizar(palabra: string): string {
   return palabra
     .toLowerCase()
     .replace(/á/g, 'a')

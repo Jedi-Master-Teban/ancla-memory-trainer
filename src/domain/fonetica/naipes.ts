@@ -3,7 +3,7 @@
  * estándar de 52 cartas, J/Q/K (ADR-016 — no baraja española). Reglas y su
  * razonamiento completo en agent_docs/seeds/naipes-52.md.
  */
-import { decodificar } from './decodificador';
+import { decodificar, normalizar } from './decodificador';
 
 export type Palo = 'espadas' | 'diamantes' | 'palos' | 'corazones';
 export type Valor = 'A' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | 'J' | 'Q' | 'K';
@@ -106,7 +106,7 @@ export function validarPalabraNaipe(palabra: string, carta: Carta): ResultadoVal
     return { valida: false, motivo: 'La palabra no puede estar vacía', advertencias };
   }
 
-  const normalizada = palabra.toLowerCase();
+  const normalizada = normalizar(palabra);
   const marcador = inicialDePalo(carta.palo);
 
   if (!normalizada.startsWith(marcador)) {
@@ -187,7 +187,7 @@ export function validarPalabraNaipe(palabra: string, carta: Carta): ResultadoVal
  * figuras no tienen firma fonética propia. Ver naipes.test.ts.
  */
 export function cartaDesdePalabra(palabra: string, palabrasAsignadas: Map<string, Carta>): Carta | null {
-  const normalizada = palabra.toLowerCase();
+  const normalizada = normalizar(palabra);
 
   const asignada = palabrasAsignadas.get(normalizada);
   if (asignada) return asignada;

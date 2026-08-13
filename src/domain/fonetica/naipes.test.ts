@@ -146,6 +146,15 @@ describe('validarPalabraNaipe — casos base', () => {
     const resultado = validarPalabraNaipe('D', { palo: 'diamantes', valor: 'A' });
     expect(resultado.valida).toBe(false);
   });
+
+  it('REGRESIÓN: una palabra cuya letra de palo lleva tilde (É) se reconoce igual que sin tilde', () => {
+    // "Éxito" para A de Espadas: é→e (marcador), x sin valor, t(1). Bug real
+    // encontrado ayudando al operador — el chequeo de marcador comparaba
+    // contra el carácter con tilde literal en vez de normalizar primero.
+    const resultado = validarPalabraNaipe('Éxito', { palo: 'espadas', valor: 'A' });
+    expect(resultado.valida).toBe(true);
+    expect(resultado.advertencias).toEqual([]);
+  });
 });
 
 describe('cartaDesdePalabra — contrato 5: inversa de validarPalabraNaipe', () => {

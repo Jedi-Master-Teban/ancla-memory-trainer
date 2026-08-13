@@ -48,7 +48,8 @@ describe('mazo', () => {
 
   it('obtenerMazoPorCategoria devuelve null si no hay mazo de esa categoría', async () => {
     const db = await bdLista();
-    expect(await obtenerMazoPorCategoria(db, 'naipe')).toBeNull();
+    // 'numero' no tiene migración de siembra todavía (llega en la Fase 4)
+    expect(await obtenerMazoPorCategoria(db, 'numero')).toBeNull();
   });
 });
 
@@ -206,7 +207,7 @@ describe('migración — Skill db-migracion, paso 4: sobre BD con datos', () => 
     expect(await obtenerTarjeta(db, tarjeta.id)).toEqual(tarjeta);
 
     const versiones = await db.getAllAsync<{ version: number }>('SELECT version FROM migracion', []);
-    expect(versiones).toEqual([{ version: 1 }, { version: 2 }]);
+    expect(versiones).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }]);
   });
 });
 
@@ -241,6 +242,41 @@ describe('migración 002 — siembra del colgadero', () => {
       []
     );
     expect(tarjetas).toHaveLength(100);
+  });
+});
+
+describe('migración 003 — siembra de naipes', () => {
+  it('crea un mazo naipe con las 52 cartas, cada una con estado FSRS real y palabra del operador', async () => {
+    const db = crearConexionDePrueba();
+    await ejecutarMigraciones(db, AHORA);
+
+    const mazos = await db.getAllAsync<{ id: string }>("SELECT id FROM mazo WHERE categoria = 'naipe'", []);
+    expect(mazos).toHaveLength(1);
+
+    const tarjetas = await listarTarjetasPorMazo(db, mazos[0].id);
+    expect(tarjetas).toHaveLength(52);
+    expect(tarjetas.every((t) => t.fsrs_state === State.New)).toBe(true);
+    expect(tarjetas.every((t) => t.contenido_reverso.length > 0)).toBe(true);
+
+    const asDeEspadas = tarjetas.find((t) => t.contenido_frente === 'A♠');
+    expect(asDeEspadas?.contenido_reverso).toBe('Éxodo');
+    expect(JSON.parse(asDeEspadas?.metadata_categoria ?? '{}')).toEqual({
+      palo: 'espadas',
+      valor: 'A',
+      aprobada_por_operador: true,
+    });
+  });
+
+  it('no duplica las 52 cartas si la app se reabre', async () => {
+    const db = crearConexionDePrueba();
+    await ejecutarMigraciones(db, AHORA);
+    await ejecutarMigraciones(db, new Date(AHORA.getTime() + 1000));
+
+    const tarjetas = await db.getAllAsync<{ id: string }>(
+      "SELECT tarjeta.id FROM tarjeta JOIN mazo ON tarjeta.mazo_id = mazo.id WHERE mazo.categoria = 'naipe'",
+      []
+    );
+    expect(tarjetas).toHaveLength(52);
   });
 });
 

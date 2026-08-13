@@ -1,13 +1,14 @@
 import type { ConexionBD } from '../tipos';
 import * as m001 from './001_inicial';
 import * as m002 from './002_seed_colgadero';
+import * as m003 from './003_seed_naipes';
 
 interface Migracion {
   version: number;
   aplicar(db: ConexionBD, ahora: Date): Promise<void>;
 }
 
-const MIGRACIONES: Migracion[] = [m001, m002];
+const MIGRACIONES: Migracion[] = [m001, m002, m003];
 
 /**
  * Corredor de migraciones (MODELO-DATOS.md §3). Idempotente: cada migración solo
