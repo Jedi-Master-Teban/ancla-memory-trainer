@@ -104,3 +104,17 @@ export interface MetadataListaItem {
 export interface MetadataNumero {
   numero_id: string;
 }
+
+export interface FilaDiaPractica {
+  fecha_local: string;
+  tarjetas_revisadas: number;
+  meta_cumplida: number;
+  congelador_usado: number;
+}
+
+export interface FilaRachaConfig {
+  id: number;
+  meta_diaria: number;
+  congeladores_disponibles: number;
+  hora_recordatorio: string;
+}

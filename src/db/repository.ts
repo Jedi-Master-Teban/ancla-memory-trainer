@@ -1,16 +1,20 @@
-import { Rating, type CardInput } from 'ts-fsrs';
+import { Rating, State } from 'ts-fsrs';
 import { diffEslabones, type ObjetoLista } from '../domain/cadena/eslabones';
-import { crearTarjetaNueva, programar, type Calificacion } from '../domain/fsrs/scheduler';
+import { crearTarjetaNueva, filaTarjetaACardInput, programar, type Calificacion } from '../domain/fsrs/scheduler';
 import { estadoVisual, type EstadoVisual } from '../domain/fsrs/estado';
+import { calcularRacha, fechaLocal, type ResultadoRacha } from '../domain/racha/calculo';
+import { mezclarSesion } from '../domain/sesion/mezcla';
 import { armarSesion, type OpcionesSesion } from '../domain/sesion/motor';
 import type {
   Categoria,
   ConexionBD,
   Direccion,
+  FilaDiaPractica,
   FilaLista,
   FilaListaObjeto,
   FilaMazo,
   FilaNumeroImportante,
+  FilaRachaConfig,
   FilaRevision,
   FilaSesionEstudio,
   FilaTarjeta,
@@ -143,25 +147,52 @@ export async function armarSesionDeMazo(
   return armarSesion(tarjetas, opciones);
 }
 
-function filaACardInput(fila: FilaTarjeta): CardInput {
-  return {
-    due: fila.fecha_proxima_revision,
-    stability: fila.fsrs_estabilidad,
-    difficulty: fila.fsrs_dificultad,
-    elapsed_days: 0,
-    scheduled_days: fila.fsrs_scheduled_days,
-    learning_steps: fila.fsrs_learning_steps,
-    reps: fila.fsrs_reps,
-    lapses: fila.fsrs_lapses,
-    state: fila.fsrs_state,
-    last_review: fila.fecha_ultima_revision,
-  };
+async function tablaExiste(db: ConexionBD, nombre: string): Promise<boolean> {
+  const fila = await db.getFirstAsync<{ name: string }>(
+    "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+    [nombre]
+  );
+  return fila !== null;
+}
+
+/**
+ * Registra la práctica de hoy en `dia_practica` (§8.7, ADR-020-style: se
+ * llama desde `calificarTarjeta`, no desde cada pantalla, para que las
+ * cuatro categorías alimenten la racha con cero cambios en las pantallas ya
+ * escritas). Guarda contra una BD anterior a la migración 005: el test de
+ * migración 004 (`repository.test.ts`, `bdEnVersion3`) califica tarjetas
+ * sobre un esquema real de esa época — en producción esto nunca ocurre
+ * (`client.ts` siempre migra antes de entregar la conexión).
+ */
+async function registrarPracticaDelDia(db: ConexionBD, ahora: Date): Promise<void> {
+  if (!(await tablaExiste(db, 'racha_config'))) return;
+
+  const config = await obtenerConfigRacha(db);
+  const fecha = fechaLocal(ahora);
+  const actual = await obtenerDiaPractica(db, fecha);
+  const tarjetasRevisadas = (actual?.tarjetas_revisadas ?? 0) + 1;
+  const metaCumplida = tarjetasRevisadas >= config.meta_diaria ? 1 : 0;
+
+  if (actual) {
+    await db.runAsync('UPDATE dia_practica SET tarjetas_revisadas = ?, meta_cumplida = ? WHERE fecha_local = ?', [
+      tarjetasRevisadas,
+      metaCumplida,
+      fecha,
+    ]);
+  } else {
+    await db.runAsync(
+      'INSERT INTO dia_practica (fecha_local, tarjetas_revisadas, meta_cumplida, congelador_usado) VALUES (?, ?, ?, 0)',
+      [fecha, tarjetasRevisadas, metaCumplida]
+    );
+  }
 }
 
 /**
  * Califica una tarjeta: la programa vía `scheduler.ts` (invariante I-1),
  * persiste el nuevo estado FSRS y escribe una fila en `revision` (invariante
- * I-4) — siempre juntas, nunca una sin la otra.
+ * I-4) — siempre juntas, nunca una sin la otra. También registra la
+ * práctica de hoy (racha, §8.7) en la misma transacción: nunca penaliza,
+ * cualquier calificación cuenta igual para `tarjetas_revisadas`.
  */
 export async function calificarTarjeta(
   db: ConexionBD,
@@ -173,7 +204,7 @@ export async function calificarTarjeta(
     throw new Error(`No existe la tarjeta ${datos.tarjetaId}`);
   }
 
-  const cardInput = filaACardInput(filaActual);
+  const cardInput = filaTarjetaACardInput(filaActual);
   const estabilidadAntes = filaActual.fsrs_estabilidad;
   const { card, log } = programar(cardInput, datos.calificacion, ahora);
 
@@ -227,6 +258,8 @@ export async function calificarTarjeta(
         datos.direccion ?? null,
       ]
     );
+
+    await registrarPracticaDelDia(db, ahora);
   });
 
   return filaNueva;
@@ -294,7 +327,7 @@ export async function resumenDeTarjeta(db: ConexionBD, tarjetaId: string, ahora:
     vecesRevisada: revisiones.length,
     tasaAciertos: revisiones.length > 0 ? aciertos / revisiones.length : null,
     proximaFecha: tarjeta.fecha_proxima_revision,
-    estadoVisual: estadoVisual(filaACardInput(tarjeta), ahora),
+    estadoVisual: estadoVisual(filaTarjetaACardInput(tarjeta), ahora),
   };
 }
 
@@ -630,5 +663,138 @@ export async function eliminarNumeroImportante(db: ConexionBD, id: string): Prom
       await db.runAsync('UPDATE tarjeta SET archivada = 1 WHERE id = ?', [tarjeta.id]);
     }
     await db.runAsync('DELETE FROM numero_importante WHERE id = ?', [id]);
+  });
+}
+
+// --- Racha (§8.7, agent_docs/modulos/07-racha.md) ---
+
+export async function obtenerConfigRacha(db: ConexionBD): Promise<FilaRachaConfig> {
+  const fila = await db.getFirstAsync<FilaRachaConfig>('SELECT * FROM racha_config WHERE id = 1', []);
+  if (!fila) {
+    throw new Error('No existe racha_config — falta correr la migración 005');
+  }
+  return fila;
+}
+
+export async function actualizarConfigRacha(
+  db: ConexionBD,
+  cambios: { metaDiaria?: number; congeladoresDisponibles?: number; horaRecordatorio?: string }
+): Promise<void> {
+  const campos: string[] = [];
+  const valores: (string | number)[] = [];
+  if (cambios.metaDiaria !== undefined) {
+    campos.push('meta_diaria = ?');
+    valores.push(cambios.metaDiaria);
+  }
+  if (cambios.congeladoresDisponibles !== undefined) {
+    campos.push('congeladores_disponibles = ?');
+    valores.push(cambios.congeladoresDisponibles);
+  }
+  if (cambios.horaRecordatorio !== undefined) {
+    campos.push('hora_recordatorio = ?');
+    valores.push(cambios.horaRecordatorio);
+  }
+  if (campos.length === 0) return;
+  await db.runAsync(`UPDATE racha_config SET ${campos.join(', ')} WHERE id = 1`, valores);
+}
+
+export async function obtenerDiaPractica(db: ConexionBD, fecha: string): Promise<FilaDiaPractica | null> {
+  return db.getFirstAsync<FilaDiaPractica>('SELECT * FROM dia_practica WHERE fecha_local = ?', [fecha]);
+}
+
+/**
+ * TODAS las filas, sin acotar a ~90 días: una racha real más larga no debe
+ * truncarse por el propio fetch (el heatmap sí recorta a 90 en la UI; el
+ * paseo hacia atrás de `calcularRacha` ya está acotado por el primer hueco).
+ */
+export async function listarDiasPractica(db: ConexionBD): Promise<FilaDiaPractica[]> {
+  return db.getAllAsync<FilaDiaPractica>('SELECT * FROM dia_practica ORDER BY fecha_local', []);
+}
+
+export async function calcularRachaActual(db: ConexionBD, ahora: Date): Promise<ResultadoRacha> {
+  const [dias, config] = await Promise.all([listarDiasPractica(db), obtenerConfigRacha(db)]);
+  return calcularRacha(dias, config, ahora);
+}
+
+/**
+ * Congela manualmente un día pasado que no cumplió la meta (§8.7 — sin
+ * recarga automática, decisión del operador en Plan Mode de Fase 5).
+ */
+export async function aplicarCongelador(db: ConexionBD, fechaObjetivo: string, ahora: Date): Promise<void> {
+  const config = await obtenerConfigRacha(db);
+  if (config.congeladores_disponibles <= 0) {
+    throw new Error('No quedan congeladores disponibles');
+  }
+  if (fechaObjetivo >= fechaLocal(ahora)) {
+    throw new Error('Solo se puede aplicar un congelador a un día ya pasado');
+  }
+  const dia = await obtenerDiaPractica(db, fechaObjetivo);
+  if (dia?.meta_cumplida === 1) {
+    throw new Error(`El día ${fechaObjetivo} ya cumplió la meta, no necesita congelador`);
+  }
+  if (dia?.congelador_usado === 1) {
+    throw new Error(`El día ${fechaObjetivo} ya tiene un congelador aplicado`);
+  }
+
+  await db.withTransactionAsync(async () => {
+    if (dia) {
+      await db.runAsync('UPDATE dia_practica SET congelador_usado = 1 WHERE fecha_local = ?', [fechaObjetivo]);
+    } else {
+      await db.runAsync(
+        'INSERT INTO dia_practica (fecha_local, tarjetas_revisadas, meta_cumplida, congelador_usado) VALUES (?, 0, 0, 1)',
+        [fechaObjetivo]
+      );
+    }
+    await db.runAsync(
+      'UPDATE racha_config SET congeladores_disponibles = congeladores_disponibles - 1 WHERE id = 1',
+      []
+    );
+  });
+}
+
+/**
+ * Agregado real en SQL (no fetch-y-cuenta en JS) — pedido explícito de
+ * 09-dashboard.md §3. Duplica angostamente la definición de "pendiente" de
+ * `motor.ts` (vencida O nueva); mitigado con `State.New` parametrizado (no
+ * hardcodeado) y una prueba cruzada contra `armarSesion` en el test.
+ */
+export async function contarPendientesPorCategoria(
+  db: ConexionBD,
+  ahora: Date
+): Promise<{ categoria: Categoria; pendientes: number }[]> {
+  return db.getAllAsync<{ categoria: Categoria; pendientes: number }>(
+    `SELECT mazo.categoria AS categoria, COUNT(*) AS pendientes
+     FROM tarjeta
+     JOIN mazo ON tarjeta.mazo_id = mazo.id
+     WHERE tarjeta.archivada = 0
+       AND (tarjeta.fsrs_state = ? OR tarjeta.fecha_proxima_revision <= ?)
+     GROUP BY mazo.categoria`,
+    [State.New, ahora.toISOString()]
+  );
+}
+
+/**
+ * Sesión mixta priorizada entre todas las categorías (§8.9) — mismo patrón
+ * que `armarSesionDeMazo` envolviendo `armarSesion`, aquí envolviendo
+ * `mezclarSesion`.
+ */
+export async function armarSesionMixta(db: ConexionBD, ahora: Date, topeSesion?: number): Promise<FilaTarjeta[]> {
+  const config = await obtenerConfigRacha(db);
+  const mazos = await listarMazos(db);
+  const listasDeTarjetas = await Promise.all(mazos.map((m) => listarTarjetasPorMazo(db, m.id)));
+  return mezclarSesion(listasDeTarjetas.flat(), { ahora, metaDiaria: config.meta_diaria, topeSesion });
+}
+
+/**
+ * Borra todo `dia_practica` y devuelve `congeladores_disponibles` al valor
+ * sembrado por la migración 005 (2). NO es parte de ningún módulo del brief
+ * — conveniencia pedida por el operador para limpiar datos de prueba
+ * mientras se verifica esta fase en el dispositivo. Candidata a quitarse (o
+ * a confirmarse como función real) antes de cerrar la Fase 5.
+ */
+export async function reiniciarHistorialPractica(db: ConexionBD): Promise<void> {
+  await db.withTransactionAsync(async () => {
+    await db.runAsync('DELETE FROM dia_practica', []);
+    await db.runAsync('UPDATE racha_config SET congeladores_disponibles = 2 WHERE id = 1', []);
   });
 }

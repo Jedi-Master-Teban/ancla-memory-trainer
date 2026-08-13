@@ -13,7 +13,7 @@ export interface OpcionesSesion {
   aleatorizar?: <T>(arr: T[]) => T[];
 }
 
-const TOPE_POR_DEFECTO = 20;
+export const TOPE_POR_DEFECTO = 20;
 
 /**
  * Selecciona y baraja las tarjetas de una sesión (modulos/02-colgadero.md §3):

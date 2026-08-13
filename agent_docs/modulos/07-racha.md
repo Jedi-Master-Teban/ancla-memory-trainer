@@ -55,7 +55,10 @@ tenerlo. Por eso está en el brief y por eso **es manual**: el usuario decide ga
 - **Indicador de racha:** llama que cambia de intensidad; apagada/tenue si está en
   riesgo avanzada la noche (§10). Animación simple — sin Reanimated complejo ni Skia (§6).
 - **Heatmap de ~90 días:** una celda por día, intensidad según tarjetas revisadas.
-  Los días congelados se distinguen visualmente de los cumplidos.
+  Los días congelados se distinguen visualmente de los cumplidos. Pendiente de
+  Fase 8 (investigado en Fase 5, no implementado todavía): tooltip al tocar una
+  celda con la fecha exacta y la cantidad de tarjetas — patrón estándar en
+  heatmaps estilo GitHub que el `Heatmap90.tsx` actual no tiene.
 - **Notificación local nocturna** de racha en riesgo → Fase 8, sujeta al spike P-4.
 
 ## 6. Casos borde que el test debe cubrir

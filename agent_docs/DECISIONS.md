@@ -459,3 +459,65 @@ ambos vacíos — mismo criterio de "un mazo por categoría" que ya regía
 `colgadero`/`naipe` desde `obtenerMazoPorCategoria`. Sin esto, cada función de
 CRUD tendría que comprobar y crear el mazo bajo demanda, una rama de más en
 cada escritura.
+
+## ADR-021 · 2026-08-13 · Aceptada
+
+**Decisión:** tres precisiones de diseño de Fase 5 sobre lo que
+`07-racha.md`/`09-dashboard.md` dejaban a nivel de esbozo, no de firma
+implementable.
+
+**`calcularRacha(dias, config, ahora: Date)`, no `hoy: string`:** el doc
+esbozaba `hoy` como fecha simple, pero `estado: 'en_riesgo'` exige comparar la
+hora actual contra `hora_recordatorio` — una fecha sin hora no alcanza.
+`ahora: Date` se inyecta (I-6) y `fechaLocal(ahora)` se deriva adentro.
+
+**`meta_cumplida` se lee de la fila guardada, nunca se recalcula contra el
+`meta_diaria` vigente:** si se recalculara, subir la meta mañana rompería
+retroactivamente un día que ya cumplió con la meta de ayer — perdería una
+racha ya ganada. Es una excepción angosta y deliberada a "derivar, no
+guardar" (ADR-006), igual que `fecha_local` ya es un hecho fijado en el
+tiempo, no recalculado en cada lectura.
+
+**`mezclarSesion` intercala rachas largas de una sola categoría solo DENTRO
+de vencidas y solo DENTRO de nuevas, nunca cruzando el límite entre ambas:**
+la alternativa (intercalar sobre la lista ya unida) puede adelantar una
+tarjeta nueva por delante de una vencida genuinamente más urgente con tal de
+romper una racha de categoría — invierte la prioridad que el propio doc pone
+como paso 1-2, antes que el paso 4 de intercalado.
+
+**Consecuencia:** `filaACardInput` (antes privada en `repository.ts`) se
+movió a `scheduler.ts`, renombrada `filaTarjetaACardInput` y exportada:
+`mezclarSesion` la necesita para `retrievability()` en el desempate de
+vencidas, y `repository.ts` ya importa `mezclarSesion` para
+`armarSesionMixta` — mantenerla en `repository.ts` habría creado un ciclo.
+Reubicación pura, sin cambio de comportamiento; `calificarTarjeta` y
+`resumenDeTarjeta` la importan desde su nueva ubicación.
+
+## ADR-022 · 2026-08-13 · Aceptada
+
+**Decisión:** el volteo de las cartas de naipes (Fase 8, pedido por el
+operador) se construye con la `Animated` API nativa de `react-native` —
+**no** con Three.js, aunque el operador preguntó explícitamente por esa
+opción.
+
+**Razón, con evidencia:** el puente de Three.js a React Native
+(`expo-gl`+`expo-three`/`react-three-fiber`) tiene, verificado por
+investigación externa el 2026-08-13: desajustes de versión de `expo-gl` entre
+lo que trae el SDK de Expo y lo que exige `react-three-fiber`, que rompen en
+dispositivos reales; el simulador de iOS no lo soporta bien tampoco; y, más
+grave, Apple deprecó OpenGL en iOS, con reportes de starters de Expo+Three.js
+que dejaron de cargar en iPhones modernos. El brief exige Expo Go sobre un
+iPhone real sin development build (§3) — un riesgo de "no carga en tu
+iPhone" no es aceptable para una animación de pulido. Además, un volteo de
+carta plana es una transformación 2D con perspectiva, no una escena 3D: un
+motor 3D completo (contexto GL, cámara, malla, texturas) es la herramienta
+equivocada para el problema y contradice PROJECT_BRIEF.md §9 ("optimizar
+simplicidad de código, no rendimiento del dispositivo").
+
+**Consecuencia:** cero dependencias nuevas para esto. Librerías maduras de
+React Native (`react-native-flip-card`, `react-native-card-flip`,
+`react-native-gesture-flip-card`) quedan como referencia de diseño, no como
+dependencia — mismo criterio que todo componente de UI de este proyecto hasta
+ahora (`Flashcard.tsx`, `EditorNaipe.tsx`, `PausaVisualizacion.tsx`: RN puro,
+sin librerías de UI externas). Detalle completo, con fuentes, en
+`PLAN-FASES.md` §Fase 8 y `modulos/03-naipes.md` §7.

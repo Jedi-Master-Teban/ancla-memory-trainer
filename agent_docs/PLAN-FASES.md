@@ -203,6 +203,66 @@ doc oficial de esa versión, no de memoria.
   de §11 no es alcanzable bajo la restricción "solo Expo Go" (§3). La decisión de
   pasar o no a development build es **del operador**, no del agente.
 
+**Diseño visual pedido por el operador (2026-08-13), investigado durante la Fase 5,
+por implementar aquí — ver `modulos/03-naipes.md` §7 y `modulos/07-racha.md` §5:**
+
+- **Racha:** `IndicadorRacha.tsx` (llama + contador) ya sigue el mismo patrón que
+  usa Duolingo — confirmado por investigación externa, no una suposición propia.
+  `Heatmap90.tsx` sigue el patrón de GitHub (contribution graph) pero le falta lo
+  que ese patrón normalmente trae: **tooltip al tocar una celda** con la fecha
+  exacta y la cantidad de tarjetas revisadas ese día.
+- **Naipes — diseño de carta real:** hoy `naipes/*` solo muestra `contenido_frente`
+  como texto plano (p. ej. "A♠"). El operador pidió que el modo de repaso muestre
+  un diseño de carta real (esquinas con rango+palo, rojo/negro por palo) y una
+  animación de **voltear la carta** para revelar la palabra colgadero, en vez del
+  reverso apareciendo de golpe como hoy.
+  - **Viable sin librerías nuevas** (investigado, no asumido): el volteo se logra
+    con la `Animated` API ya incluida en `react-native` (`Animated.Value` +
+    `interpolate()` + `transform: [{rotateY}]` + `backfaceVisibility: 'hidden'`),
+    el mismo patrón que usan los tutoriales que evitan Reanimated a propósito. El
+    diseño de la carta (esquinas, centro) se logra con Flexbox/View/Text puro, sin
+    SVG ni imágenes. Cero dependencias nuevas — respeta PROJECT_BRIEF.md §10
+    ("evitar librerías pesadas de animación... salvo necesidad estricta").
+  - Afecta `app/naipes/{flash,reverso,velocidad,baraja-completa}.tsx` y
+    probablemente un componente nuevo, p. ej. `src/components/CartaVisual.tsx`.
+
+**React Native vs. Three.js para el volteo — pregunta del operador, resuelta con
+investigación (2026-08-13), no por preferencia:**
+
+- **Three.js queda descartado — no por gusto, por un riesgo concreto de
+  compatibilidad.** El puente a React Native (`expo-gl` + `expo-three` /
+  `react-three-fiber`) tiene, a la fecha de esta investigación: (1) desajustes de
+  versión entre el `expo-gl` que trae el SDK de Expo y el que espera
+  `react-three-fiber`, que rompen en **dispositivos reales**; (2) el simulador de
+  iOS "no funciona bien" con Three.js+EXGL, así que ni siquiera sirve como
+  verificación intermedia; (3) más grave — **Apple dejó de dar soporte a OpenGL en
+  iOS**, y hay reportes de starters de Expo+Three.js que ya no corren en iPhones
+  modernos. El brief exige Expo Go sobre un iPhone real, sin development build
+  (§3) — un riesgo de "no carga en tu iPhone" no es aceptable para una animación
+  de pulido. Fuentes: [expo/expo-three](https://github.com/expo/expo-three),
+  [discusión r3f sobre expo-gl](https://github.com/pmndrs/react-three-fiber/discussions/2219),
+  [estado de r3f en Expo](https://trifonstatkov.medium.com/the-current-state-of-using-react-three-fiber-in-react-native-expo-c65918593eaf).
+- **Motor 3D real es, además, la herramienta equivocada para el problema.** Voltear
+  una carta plana es una transformación 2D con perspectiva (`rotateY`), no una
+  escena 3D — Three.js exige montar contexto GL, cámara, escena, malla y texturas
+  para lograr el mismo resultado visual que un `Animated.Value` ya da con un par de
+  líneas. Contradice PROJECT_BRIEF.md §9 ("optimizar simplicidad de código, no
+  rendimiento del dispositivo").
+- **"Ejemplos que sirvan" sí existen, y son de React Native, no de Three.js:**
+  varias librerías maduras hacen exactamente este volteo —
+  [react-native-flip-card](https://github.com/moschan/react-native-flip-card),
+  [react-native-card-flip](https://github.com/lhandel/react-native-card-flip),
+  [react-native-gesture-flip-card](https://github.com/JungHsuan/react-native-gesture-flip-card).
+  Recomendación: usarlas como **referencia de diseño** (fricción, perspectiva,
+  callback `onFlipEnd`), no como dependencia — coherente con que, en 5 fases,
+  cada componente de UI de este proyecto (`Flashcard.tsx`, `EditorNaipe.tsx`,
+  `PausaVisualizacion.tsx`) se construyó a mano con RN puro, sin librerías de UI
+  externas. Si al implementar la fricción/perspectiva a mano resulta más
+  complicado de lo esperado, instalar `react-native-flip-card` (paquete pequeño,
+  sin dependencias nativas propias) es la alternativa de respaldo — a decidir en
+  Fase 8, no ahora.
+- **Veredicto: React Native (`Animated` nativo), no Three.js.**
+
 | Archivo | Para qué |
 |---|---|
 | `src/notificaciones/racha.ts` | permisos y programación del recordatorio |

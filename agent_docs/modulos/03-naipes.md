@@ -64,3 +64,18 @@ Evidencia exigida:
 4. Confirmación de que las 52 filas correspondientes entraron en `revision`.
 5. Estado explícito del bloqueo P-1: resuelto, o declarado como pendiente con las
    12 cartas de figuras marcadas sin aprobar.
+
+## 7. Diseño visual real de la carta — pendiente de Fase 8
+
+Fuera de alcance de esta fase (que fue solo funcional: `contenido_frente` como
+texto plano, p. ej. "A♠"). El operador pidió, y se investigó durante la Fase 5,
+que el modo de repaso muestre una carta con diseño real (esquinas rango+palo,
+colores rojo/negro) y una animación de voltear para revelar la palabra
+colgadero. Viable con la `Animated` API nativa de `react-native`, sin
+dependencias nuevas — detalle completo en `PLAN-FASES.md`, sección de Fase 8.
+
+**React Native, no Three.js** (pregunta directa del operador, ya investigada):
+el puente `expo-gl`/Three.js tiene problemas de compatibilidad reales en iOS —
+Apple deprecó OpenGL en el sistema, y hay reportes de que deja de cargar en
+iPhones modernos — inaceptable bajo la restricción de "solo Expo Go en un
+iPhone real" (§3 del brief). Ver el detalle y las fuentes en `PLAN-FASES.md`.
