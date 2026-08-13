@@ -106,21 +106,23 @@ palabra codifica un número (§8.5), y sirve como salida legible en los tests.
 ## 5. Codificación inversa (número → palabras colgadero)
 
 Usada por el módulo de Números Importantes (§8.5). **No genera palabras nuevas:**
-solo busca en la lista semilla de 100 (ver `seeds/colgadero-100.md`).
+busca en la lista semilla de 100 (ver `seeds/colgadero-100.md`) más los dos casos
+especiales de `0`/`00` resueltos abajo (ADR-019) — nunca inventa una palabra fuera
+de estas fuentes.
 
 Regla de troceo: pares de dígitos de izquierda a derecha, preservando el orden de
 lectura. Si la cantidad de dígitos es impar, el dígito sobrante queda **al final**
-y se resuelve con el colgadero 1–9.
+y se resuelve con el colgadero 1–9 (o con "Oro" si ese dígito sobrante es un `0`).
 
 - `12345` → `12 | 34 | 5` → Tina, Meca, Ley
 - `3001234567` → `30 | 01 | 23 | 45 | 67` → …
 
-### Casos abiertos (NO inventar solución)
+### Casos especiales de cero (ADR-019 — resueltos)
 
-| Caso | Estado | Nota |
+| Caso | Palabra | Nota |
 |---|---|---|
-| Trozo `00` | **ABIERTO** | No existe colgadero 0 ni 00. Por defecto se muestra el dígito crudo y se marca visualmente como "sin colgadero". |
-| Dígito suelto final `0` | **ABIERTO** | Mismo tratamiento. Si el operador quiere una palabra para el 0 (p. ej. "Oro"), la define él; el agente no la inventa. |
+| Trozo `00` | **Rara** | r-a-r-a → decodifica a `00`. Verificada contra `decodificar()` real. No vive en `COLGADERO_100` (no es un peg 1-100) — es un caso especial que consume `descomposicion.ts` directamente. |
+| Dígito suelto final `0` | **Oro** | o-r-o → decodifica a `0`. Mismo tratamiento: caso especial, no un peg de `COLGADERO_100`. |
 | Trozo con cero a la izquierda (`01`, `07`) | Resuelto | Se lee como el colgadero 1 y 7 respectivamente, mostrando el cero en la etiqueta. |
 
 ## 6. Corpus mínimo de test (Jest, Fase 2)

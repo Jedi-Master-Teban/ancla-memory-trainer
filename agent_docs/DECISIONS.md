@@ -360,13 +360,34 @@ vacío arriba. `SafeAreaProvider` se conserva como contexto disponible para
 `useSafeAreaInsets()` si alguna pantalla futura lo necesita para el borde
 inferior.
 
+## ADR-019 · 2026-08-12 · Aceptada
+**Decisión:** dos resoluciones del operador al entrar a la Fase 4.
+
+**P-2 confirmado, sin cambios a ADR-002:** el eslabón A→B de una lista es una
+sola tarjeta FSRS. Si en una sesión se prueban las direcciones normal e
+inversa, se califica con la **peor** de las dos notas. ADR-002 queda
+confirmado tal cual se propuso — su estado pasa de "Propuesta" a aceptado por
+este ADR, sin reabrir el razonamiento ya escrito ahí.
+
+**P-3 resuelto:** el colgadero del dígito `0` suelto es **"Oro"** (o-r-o →
+decodifica a `0`, un solo sonido); el del trozo `00` es **"Rara"** (r-a-r-a →
+decodifica a `00`, dos sonidos). Ambas verificadas contra `decodificar()` real
+antes de proponerlas, aprobadas por el operador. No entran a `COLGADERO_100`
+(son casos especiales de la descomposición de números, no palabras 1-100 que
+se practiquen en el modo Colgadero) — viven en una estructura separada que
+consume `src/domain/numeros/descomposicion.ts`.
+
+**Consecuencia:** `decodificacion-fonetica.md` §5 actualizado — los dos casos
+que decía "ABIERTO — NO inventar solución" pasan a "Resuelto". P-2 y P-3 se
+retiran de la tabla de pendientes.
+
 ## Pendientes de decisión
 
 | # | Tema | Dueño | Se necesita para |
 |---|---|---|---|
 | ~~P-1~~ | ~~Consonantes reservadas de J / Q / K~~ — **resuelto por ADR-017**, ya no bloquea nada | — | — |
-| P-2 | Visto bueno a ADR-002 (dirección inversa = misma tarjeta) | Operador | Fase 4 |
-| P-3 | ¿Palabra colgadero para el dígito `0` suelto y el trozo `00`? | Operador | Fase 4 |
+| ~~P-2~~ | ~~Visto bueno a ADR-002~~ — **confirmado por ADR-019**, ya no bloquea nada | — | — |
+| ~~P-3~~ | ~~Palabra colgadero para `0`/`00`~~ — **resuelto por ADR-019** (Oro/Rara), ya no bloquea nada | — | — |
 | P-4 | ¿`expo-notifications` dispara notificaciones locales en Expo Go con el SDK que se fije en Fase 0? | Agente (spike) | Fase 8 |
 | P-5 | Simulador de iOS sin runtime descargado (`xcrun simctl list runtimes` vacío). Xcode está instalado pero falta la plataforma iOS, una descarga de varios GB que normalmente pide contraseña de administrador. No bloquea ninguna fase (el objetivo real es Expo Go en el iPhone físico), pero impide usar el simulador como verificación intermedia. | Operador | Ninguna fase (solo conveniencia) |
 | P-6 | El proyecto quedó fijado en SDK 54 por ADR-012, no en "la última" a propósito. Antes de subir de SDK en cualquier fase futura, verificar primero contra `apps.apple.com/us/app/expo-go/id982107779` (o preguntar al operador qué ve en Expo Go) que la nueva versión ya está disponible en el App Store — nunca asumir que "más nueva" significa "usable". | Agente | Cualquier fase futura que toque versión de Expo SDK |
