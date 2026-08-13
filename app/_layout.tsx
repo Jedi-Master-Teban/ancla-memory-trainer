@@ -26,7 +26,7 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: '#1e1e2e' },
         }}
       >
-        <Stack.Screen name="index" options={{ title: 'memory-trainer' }} />
+        <Stack.Screen name="index" options={{ title: 'memory-trainer', headerBackTitle: 'Inicio' }} />
         <Stack.Screen name="colgadero/index" options={{ title: 'Colgadero' }} />
         <Stack.Screen name="colgadero/flash" options={{ title: 'Fonética Flash' }} />
         <Stack.Screen name="colgadero/reverso" options={{ title: 'Reverso' }} />
