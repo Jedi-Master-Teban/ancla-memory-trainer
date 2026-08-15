@@ -220,3 +220,47 @@ describe('mezclarSesion — intercalado (evita rachas largas de la misma categor
     expect(ultimaVencidaIdx).toBeLessThan(primeraNuevaIdx);
   });
 });
+
+describe('mezclarSesion — ninguna categoría monopoliza las vencidas', () => {
+  it('un backlog grande en una categoría no deja a las demás en cero: reparto proporcional, sobrante relleno por urgencia', () => {
+    const colgaderos = Array.from({ length: 3 }, (_, i) => vencida(`c${i}`, 'colgadero', 10 + i));
+    const naipes = Array.from({ length: 25 }, (_, i) => vencida(`n${i}`, 'naipe', 10 + i));
+    const listas = [vencida('l0', 'lista_item', 10)];
+    const numeros = [vencida('num0', 'numero', 10)];
+
+    const sesion = mezclarSesion([...colgaderos, ...naipes, ...listas, ...numeros], {
+      ahora: AHORA,
+      metaDiaria: 20,
+    });
+
+    expect(sesion).toHaveLength(20);
+    // cupo por categoría = ceil(20/4) = 5: colgadero, lista y número (con menos
+    // de 5 cada una) entran completas; naipe se limita a 5 en el primer reparto
+    // y se lleva el resto del tope (10 más) porque las demás ya no tienen más
+    // que dar — nunca porque se le dejó copar el tope desde el principio.
+    expect(sesion.filter((t) => t.categoria === 'colgadero')).toHaveLength(3);
+    expect(sesion.filter((t) => t.categoria === 'lista_item')).toHaveLength(1);
+    expect(sesion.filter((t) => t.categoria === 'numero')).toHaveLength(1);
+    expect(sesion.filter((t) => t.categoria === 'naipe')).toHaveLength(15);
+  });
+
+  it('dos categorías igual de sobrecargadas se reparten el tope a la mitad', () => {
+    const naipes = Array.from({ length: 15 }, (_, i) => vencida(`n${i}`, 'naipe', 10 + i));
+    const colgaderos = Array.from({ length: 15 }, (_, i) => vencida(`c${i}`, 'colgadero', 10 + i));
+
+    const sesion = mezclarSesion([...naipes, ...colgaderos], { ahora: AHORA, metaDiaria: 20 });
+
+    expect(sesion).toHaveLength(20);
+    expect(sesion.filter((t) => t.categoria === 'naipe')).toHaveLength(10);
+    expect(sesion.filter((t) => t.categoria === 'colgadero')).toHaveLength(10);
+  });
+
+  it('sin riesgo de monopolio (pocas vencidas en total), el orden por urgencia cruzando categorías no cambia', () => {
+    const pocoAtrasada = vencida('poco', 'colgadero', 1);
+    const muyAtrasada = vencida('mucho', 'naipe', 10);
+
+    const sesion = mezclarSesion([pocoAtrasada, muyAtrasada], { ahora: AHORA, metaDiaria: 20 });
+
+    expect(sesion.map((t) => t.id)).toEqual(['mucho', 'poco']);
+  });
+});

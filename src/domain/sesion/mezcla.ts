@@ -31,6 +31,42 @@ function seleccionarNuevas(nuevasPorCategoria: Map<Categoria, FilaTarjeta[]>, cu
 }
 
 /**
+ * Ninguna categoría puede aportar más de su "cupo justo" (tope / número de
+ * categorías con vencidas, redondeado hacia arriba) — un backlog grande en
+ * una sola categoría (p. ej. muchos `fsrs_lapses` reprogramando la misma
+ * tarjeta una y otra vez) ya no puede copar el tope entero y dejar a las
+ * demás en cero. Dentro de ese límite se respeta el orden de urgencia
+ * recibido tal cual; lo que sobra porque alguna categoría no llegó a su
+ * cupo se rellena con las tarjetas diferidas, también en orden de urgencia
+ * — por eso una categoría muy sobrecargada sigue absorbiendo más que un
+ * cupo justo cuando de verdad no hay nadie más a quien darle esos huecos.
+ */
+function limitarVencidasPorCategoria(ordenadasPorUrgencia: FilaTarjeta[], cupo: number): FilaTarjeta[] {
+  const categorias = new Set(ordenadasPorUrgencia.map((t) => t.categoria));
+  if (categorias.size === 0) return [];
+  const cupoPorCategoria = Math.ceil(cupo / categorias.size);
+
+  const seleccionadas: FilaTarjeta[] = [];
+  const diferidas: FilaTarjeta[] = [];
+  const usadasPorCategoria = new Map<Categoria, number>();
+
+  for (const t of ordenadasPorUrgencia) {
+    const usadas = usadasPorCategoria.get(t.categoria) ?? 0;
+    if (seleccionadas.length < cupo && usadas < cupoPorCategoria) {
+      seleccionadas.push(t);
+      usadasPorCategoria.set(t.categoria, usadas + 1);
+    } else {
+      diferidas.push(t);
+    }
+  }
+  for (const t of diferidas) {
+    if (seleccionadas.length >= cupo) break;
+    seleccionadas.push(t);
+  }
+  return seleccionadas;
+}
+
+/**
  * Evita más de `TOPE_CONSECUTIVAS_MISMA_CATEGORIA` tarjetas seguidas de la
  * misma categoría, intercambiando con la más cercana de categoría distinta
  * MÁS ADELANTE en el mismo array — nunca fuera de él. `mezclarSesion` la
@@ -57,9 +93,12 @@ function intercalar(tarjetas: FilaTarjeta[]): FilaTarjeta[] {
 /**
  * Sesión mixta priorizada entre TODAS las categorías activas (§8.9,
  * agent_docs/modulos/09-dashboard.md §2). Vencidas primero (mayor retraso,
- * empate por menor retrievability), luego nuevas repartidas para que
- * ninguna categoría monopolice, con un tope duro y sin rachas largas de una
- * sola categoría. Nunca cruza nuevas por delante de vencidas.
+ * empate por menor retrievability), pero sin que una categoría con backlog
+ * grande monopolice todo el tope y deje a las demás en cero — hallazgo real
+ * en dispositivo (Fase 6): un lote grande de naipes con muchos lapses
+ * llenaba las 20 tarjetas de la sesión y "mixta" dejaba de serlo. Nuevas
+ * repartidas por el mismo motivo. Tope duro, sin rachas largas de una sola
+ * categoría, y nunca cruza nuevas por delante de vencidas.
  */
 export function mezclarSesion(tarjetas: FilaTarjeta[], opciones: OpcionesMezcla): FilaTarjeta[] {
   const { ahora, metaDiaria } = opciones;
@@ -68,7 +107,7 @@ export function mezclarSesion(tarjetas: FilaTarjeta[], opciones: OpcionesMezcla)
 
   const activas = tarjetas.filter((t) => t.archivada === 0);
 
-  const vencidas = activas
+  const vencidasOrdenadas = activas
     .filter((t) => t.fsrs_state !== State.New && new Date(t.fecha_proxima_revision).getTime() <= ahoraMs)
     .sort((a, b) => {
       const diferenciaFecha =
@@ -77,8 +116,8 @@ export function mezclarSesion(tarjetas: FilaTarjeta[], opciones: OpcionesMezcla)
       return (
         retrievability(filaTarjetaACardInput(a), ahora) - retrievability(filaTarjetaACardInput(b), ahora)
       );
-    })
-    .slice(0, topeSesion);
+    });
+  const vencidas = limitarVencidasPorCategoria(vencidasOrdenadas, topeSesion);
 
   const nuevasPorCategoria = new Map<Categoria, FilaTarjeta[]>();
   for (const t of activas) {

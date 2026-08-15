@@ -521,3 +521,45 @@ dependencia — mismo criterio que todo componente de UI de este proyecto hasta
 ahora (`Flashcard.tsx`, `EditorNaipe.tsx`, `PausaVisualizacion.tsx`: RN puro,
 sin librerías de UI externas). Detalle completo, con fuentes, en
 `PLAN-FASES.md` §Fase 8 y `modulos/03-naipes.md` §7.
+
+## ADR-023 · 2026-08-15 · Aceptada
+
+**Decisión:** `mezclarSesion` (`src/domain/sesion/mezcla.ts`) le pone tope
+por categoría también a las **vencidas**, no solo a las nuevas. Nueva función
+`limitarVencidasPorCategoria`: ninguna categoría puede aportar más de
+`ceil(topeSesion / categorías con vencidas)`; lo que un cupo no llena porque
+esa categoría no tenía tantas se rellena con las tarjetas diferidas, en el
+mismo orden de urgencia recibido.
+
+**Razón, hallazgo real en dispositivo:** el operador reportó que "Practicar
+ahora" solo mostraba naipes. Causa confirmada leyendo el código (no
+hipótesis): `09-dashboard.md` §2 solo exige repartir entre categorías para
+las **nuevas** ("para que una categoría con muchas tarjetas nuevas no
+monopolice la sesión") — nunca lo dice de las vencidas, y la implementación
+original tomaba las vencidas por urgencia global sin ningún tope por
+categoría antes de rellenar con nuevas. Un lote grande de naipes con
+`fsrs_lapses` altos (de las pruebas de Baraja Completa de esta misma sesión)
+vuelve a esas tarjetas vencidas una y otra vez con intervalos cortos
+(Learning/Relearning) — suficientes para llenar las 20 tarjetas del tope por
+sí solas, dejando `cupoNuevas = max(0, 20 − vencidas.length) = 0`: cero
+espacio para cualquier otra categoría, vencida o nueva.
+
+**Por qué reparto proporcional y no round-robin plano (como `seleccionarNuevas`):**
+el archivo ya tenía un test que fija como invariante el orden de urgencia
+cruzando categorías cuando no hay riesgo de monopolio (`mezcla.test.ts`,
+"ordena las vencidas por mayor retraso primero, cruzando categorías",
+preexistente a este ADR). Un round-robin ciego por categoría habría roto ese
+test — alternar categorías sin mirar la urgencia real habría antepuesto una
+tarjeta apenas vencida a una gravemente vencida de otra categoría, incluso
+sin ningún backlog grande de por medio. El reparto proporcional con
+diferido-y-relleno preserva la urgencia intacta salvo en el caso exacto que
+había que corregir: cuando SÍ hay riesgo real de monopolio.
+
+**Consecuencia:** ninguna. Comportamiento sin cambios cuando ninguna
+categoría se acerca a monopolizar el tope (los 3 tests preexistentes que
+ejercitan vencidas de más de una categoría siguen pasando con el mismo orden
+exacto, verificado analíticamente antes de tocar el código). 3 tests nuevos
+en `mezcla.test.ts` cubren el caso asimétrico (un backlog grande no vacía a
+las demás), el caso simétrico (dos categorías igual de sobrecargadas se
+reparten el tope a la mitad) y el caso sin riesgo (el orden de urgencia
+cruzando categorías no cambia).
