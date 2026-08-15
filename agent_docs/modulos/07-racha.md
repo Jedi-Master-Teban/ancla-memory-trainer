@@ -86,3 +86,17 @@ Se cierra en dos tiempos y se dice así, sin fingir:
 - **Confirmación (día +1):** el operador abre la app al día siguiente y confirma que
   el contador subió a 2. Hasta entonces la fase queda marcada
   **"cerrada a la espera de confirmación de 2 días"** — nunca "hecha" sin ese dato.
+
+**Confirmación recibida (2026-08-14), con una nota honesta.** El operador no usó la
+app el día 1 a propósito ("para que no apareciera actividad"), así que lo que se
+confirmó no fue "el contador subió a 2" sino el caso borde vecino: sin ninguna fila
+de `dia_practica`, al reabrir al día siguiente la racha se mantiene en 0 y el
+estado en `activa` (no salta a `rota` antes de la hora de recordatorio) —
+exactamente el caso cubierto en `calculo.test.ts` ("sin ningún día registrado,
+antes de la hora de recordatorio"). Confirma que no hay pérdida de datos ni cálculo
+raro al cruzar un día real, pero **no** confirma todavía que una racha con
+progreso real (`tarjetas_revisadas > 0`, `meta_cumplida = 1`) sobreviva un día
+completo — el operador, informado de esta diferencia, decidió aceptar esta
+confirmación como suficiente para cerrar la fase igual. Si en el futuro aparece
+una duda real sobre la persistencia de una racha con progreso, repetir la prueba
+con una sesión completada de por medio antes de confiar en el resultado.

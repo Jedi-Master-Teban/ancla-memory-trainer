@@ -112,13 +112,16 @@ Naipes, Listas Encadenadas y Números Importantes funcionales: decodificador
 fonético, 52+100 palabras sembradas, eslabones por identidad de objeto
 (ADR-020), descomposición numérica con casos Oro/Rara (ADR-019), navegación
 nativa por Stack (ADR-018, no Slot; `headerBackTitle` va en la pantalla de
-destino, no en la de origen). Fase 5 (Racha y Dashboard) implementada y en
-verificación en el iPhone real (2026-08-13): racha con congelador manual,
-sesión mixta priorizada, dashboard como pantalla de inicio — **cerrada a la
-espera de confirmación de 2 días** (07-racha.md §7): falta que el operador
-confirme mañana que el contador de racha persiste correctamente. No marcar
-como "hecha" hasta esa confirmación. Diseño visual de Fase 8 (pulido) ya
-investigado y documentado por adelantado — ver `PLAN-FASES.md` §Fase 8.
+destino, no en la de origen). Fase 5 (Racha y Dashboard) **completa y
+cerrada** (2026-08-13→14): racha con congelador manual, sesión mixta
+priorizada, dashboard como pantalla de inicio. Confirmación de 2 días
+recibida (07-racha.md §7) — con una nota honesta: el operador no tocó la app
+el primer día, así que confirma que la racha en cero persiste bien entre
+reinicios, pero no probó todavía que una racha con progreso real sobreviva un
+día completo; queda como candidato a una prueba más exigente si surge duda
+más adelante. Diseño visual de Fase 8 (pulido) ya investigado y documentado
+por adelantado — ver `PLAN-FASES.md` §Fase 8. Fase 6 (Panel de Retención)
+sin empezar.
 
 ---
 
