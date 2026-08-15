@@ -563,3 +563,73 @@ en `mezcla.test.ts` cubren el caso asimétrico (un backlog grande no vacía a
 las demás), el caso simétrico (dos categorías igual de sobrecargadas se
 reparten el tope a la mitad) y el caso sin riesgo (el orden de urgencia
 cruzando categorías no cambia).
+
+## ADR-024 · 2026-08-15 · Aceptada
+
+**Decisión:** se agrega `expo-sharing` como dependencia nueva (no listada en
+la tabla de stack de `CLAUDE.md`), usada solo desde `app/estadisticas.tsx`
+detrás de un botón "Exportar BD (verificación)". `src/db/client.ts` expone
+`rutaArchivoBD()`, que devuelve `db.databasePath` (propiedad real de
+`expo-sqlite`, verificada en `node_modules/expo-sqlite/build/SQLiteDatabase.d.ts`
+y en el nativo `SQLiteModule.swift`: es `URL.path` de iOS, sin esquema —
+por eso quien la usa antepone `file://` a mano, no aquí).
+
+**Razón:** el `done when` de la Fase 6 exige comparar la pantalla contra SQL
+manual sobre la BD real del dispositivo (`08-panel-retencion.md`), pero el
+plan original nunca resolvió el *cómo*: Expo Go no expone su sandbox a
+Finder/Files, y el brief prohíbe backend (§3) — no hay canal remoto para
+consultar la BD tampoco. Sin un mecanismo de exportación, ese `done when`
+era, en la práctica, irrealizable. `expo-file-system` no hizo falta:
+`databasePath` ya resuelve la ruta sin él. `expo-sharing` sí es
+indispensable — es el único mecanismo de este proyecto (sin backend, sin
+dev client) para sacar un archivo del sandbox de Expo Go hacia el
+dispositivo del operador (AirDrop, Guardar en Archivos, etc.). Verificado
+contra la doc oficial de Expo SDK 54: ambos paquetes están "Included in
+Expo Go" — cero riesgo de requerir development build.
+
+**Consecuencia:** `ConexionBD` (ADR-014) no se toca — `rutaArchivoBD()` vive
+fuera de esa interfaz a propósito, porque el adaptador de tests
+(`node:sqlite`) no tiene ningún archivo real que exportar. Utilidad de
+depuración, no parte de ningún módulo del brief — mismo criterio que
+`reiniciarHistorialPractica` (Fase 5): candidata a confirmarse como
+permanente o a quitarse una vez cerrada la Fase 6, no una decisión tomada
+aquí de una vez por todas.
+
+## Corrección a ADR-023 · 2026-08-15
+
+**No se reabre la decisión** (el reparto proporcional sigue siendo correcto
+y necesario) — se corrige únicamente la causa que ADR-023 atribuía al
+backlog real de naipes.
+
+**Lo que decía ADR-023:** "un lote grande de naipes con `fsrs_lapses` altos
+... reprograma esas tarjetas vencidas una y otra vez con intervalos cortos
+(Learning/Relearning)".
+
+**Lo que muestran los datos reales** (BD exportada del dispositivo del
+operador vía el botón de la Fase 6, consultada con `sqlite3` directamente,
+2026-08-15): las 52 tarjetas de naipe en el backlog tienen `fsrs_lapses = 0`
+— ninguna, sin excepción (`SELECT fsrs_lapses, fsrs_state, COUNT(*) FROM
+tarjeta WHERE categoria='naipe' AND archivada=0 GROUP BY fsrs_lapses,
+fsrs_state` → una sola fila: `0|1|52`). `fsrs_reps = 6` en todas, con
+`fecha_ultima_revision`/`fecha_proxima_revision` separadas por ~60 segundos
+exactos entre sí — el primer paso de aprendizaje de `ts-fsrs`, nunca
+graduado a Review. Un lapse (por definición de FSRS) es una reprobación
+**desde** Review; una tarjeta que nunca sale de Learning no puede acumular
+lapses aunque se repruebe seis veces seguidas.
+
+**Causa real, tal como la muestra el dato:** 52 tarjetas revisadas 5-6 veces
+cada una en un lapso de segundos (mismo patrón de timestamps agrupados),
+todas calificadas mal, todas ancladas al primer paso de aprendizaje
+(~1 minuto) — compatible con una pasada de prueba mecánica por la Baraja
+Completa, no con acumulación orgánica de lapses. La estructura del
+problema que ADR-023 corrige (vencidas sin tope por categoría) es la misma
+de todos modos: una categoría con reintervalos de ~1 minuto vuelve a estar
+vencida casi de inmediato, así que 52 tarjetas así bastan para copar
+igualmente el tope de 20.
+
+**Por qué queda como corrección aparte y no como edición de ADR-023:**
+convención de este archivo — nunca reescribir un ADR ya aceptado, se
+supersede/corrige con una entrada nueva. `src/domain/sesion/mezcla.ts`
+(comentarios) ya actualizado con la explicación correcta; el mensaje del
+commit `b2a2dfe` no se toca (registro histórico de lo que se creía cierto en
+ese momento, no un error del proceso).

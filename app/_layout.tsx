@@ -54,6 +54,8 @@ export default function RootLayout() {
         <Stack.Screen name="racha" options={{ title: 'Tu racha', headerBackTitle: 'Inicio' }} />
         <Stack.Screen name="practicar" options={{ title: 'Practicar', headerBackTitle: 'Inicio' }} />
         <Stack.Screen name="practica-libre" options={{ title: 'Práctica libre', headerBackTitle: 'Inicio' }} />
+        <Stack.Screen name="estadisticas" options={{ title: 'Estadísticas', headerBackTitle: 'Inicio' }} />
+        <Stack.Screen name="historial-sesiones" options={{ title: 'Historial de sesiones' }} />
       </Stack>
     </SafeAreaProvider>
   );

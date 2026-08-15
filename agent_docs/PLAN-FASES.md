@@ -159,7 +159,7 @@ dos días distintos.
 |---|---|
 | `src/domain/estadisticas/retencion.ts` + test | métricas puras sobre `revision` |
 | `src/db/repository.ts` | consultas agregadas |
-| `app/(tabs)/estadisticas.tsx` | panel |
+| `app/estadisticas.tsx` | panel |
 | `src/components/TarjetasProblematicas.tsx` | peores primero, enlace a editar |
 | `agent_docs/consultas-verificacion.sql` | **una consulta manual por métrica** |
 

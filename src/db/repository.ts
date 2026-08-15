@@ -3,6 +3,7 @@ import { diffEslabones, type ObjetoLista } from '../domain/cadena/eslabones';
 import { crearTarjetaNueva, filaTarjetaACardInput, programar, type Calificacion } from '../domain/fsrs/scheduler';
 import { estadoVisual, type EstadoVisual } from '../domain/fsrs/estado';
 import { calcularRacha, fechaLocal, type ResultadoRacha } from '../domain/racha/calculo';
+import { calcularPanelRetencion, type PanelRetencion, type Ventana } from '../domain/estadisticas/retencion';
 import { mezclarSesion } from '../domain/sesion/mezcla';
 import { armarSesion, type OpcionesSesion } from '../domain/sesion/motor';
 import type {
@@ -780,9 +781,15 @@ export async function contarPendientesPorCategoria(
  */
 export async function armarSesionMixta(db: ConexionBD, ahora: Date, topeSesion?: number): Promise<FilaTarjeta[]> {
   const config = await obtenerConfigRacha(db);
+  const tarjetas = await listarTodasLasTarjetas(db);
+  return mezclarSesion(tarjetas, { ahora, metaDiaria: config.meta_diaria, topeSesion });
+}
+
+/** Todas las tarjetas activas de todos los mazos — nombra el mismo fetch que ya hacía `armarSesionMixta` a mano. */
+export async function listarTodasLasTarjetas(db: ConexionBD): Promise<FilaTarjeta[]> {
   const mazos = await listarMazos(db);
-  const listasDeTarjetas = await Promise.all(mazos.map((m) => listarTarjetasPorMazo(db, m.id)));
-  return mezclarSesion(listasDeTarjetas.flat(), { ahora, metaDiaria: config.meta_diaria, topeSesion });
+  const listas = await Promise.all(mazos.map((m) => listarTarjetasPorMazo(db, m.id)));
+  return listas.flat();
 }
 
 /**
@@ -797,4 +804,36 @@ export async function reiniciarHistorialPractica(db: ConexionBD): Promise<void> 
     await db.runAsync('DELETE FROM dia_practica', []);
     await db.runAsync('UPDATE racha_config SET congeladores_disponibles = 2 WHERE id = 1', []);
   });
+}
+
+// --- Panel de retención (§8.8, agent_docs/modulos/08-panel-retencion.md) ---
+
+/** TODAS las filas, sin acotar — el recorte por ventana es lógica pura de retencion.ts, no SQL. */
+export async function listarTodasLasRevisiones(db: ConexionBD): Promise<FilaRevision[]> {
+  return db.getAllAsync<FilaRevision>('SELECT * FROM revision ORDER BY fecha', []);
+}
+
+/**
+ * Historial de sesiones (§3), más reciente primero — distinto del orden
+ * ascendente de `listarRevisionesDeTarjeta` (esa traza una tarjeta en el
+ * tiempo; esta es un feed de actividad). No filtra sesiones sin cerrar
+ * (`terminada_en` NULL): ocultarlas desalinearía el conteo mostrado del
+ * `COUNT(*)` real de la consulta de verificación.
+ */
+export async function listarSesionesEstudio(db: ConexionBD): Promise<FilaSesionEstudio[]> {
+  return db.getAllAsync<FilaSesionEstudio>('SELECT * FROM sesion_estudio ORDER BY iniciada_en DESC', []);
+}
+
+/**
+ * Detalle de una sesión = sus filas de revision (§3) — eje distinto de
+ * `listarRevisionesDeTarjeta`, que filtra por tarjeta, no por sesión.
+ */
+export async function listarRevisionesDeSesion(db: ConexionBD, sesionId: string): Promise<FilaRevision[]> {
+  return db.getAllAsync<FilaRevision>('SELECT * FROM revision WHERE sesion_id = ? ORDER BY fecha', [sesionId]);
+}
+
+/** Wrapper — mismo patrón que `calcularRachaActual` sobre `calcularRacha`. */
+export async function obtenerPanelRetencion(db: ConexionBD, ventana: Ventana, ahora: Date): Promise<PanelRetencion> {
+  const [tarjetas, revisiones] = await Promise.all([listarTodasLasTarjetas(db), listarTodasLasRevisiones(db)]);
+  return calcularPanelRetencion(tarjetas, revisiones, ventana, ahora);
 }

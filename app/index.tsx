@@ -128,6 +128,10 @@ export default function Index() {
           {totalPendientes > 0 ? 'Practicar ahora' : 'Todo al día — practicar de todas formas'}
         </Text>
       </Pressable>
+
+      <Link href="/estadisticas" style={estilos.enlaceEstadisticas}>
+        Ver estadísticas →
+      </Link>
     </ScrollView>
   );
 }
@@ -139,6 +143,7 @@ const estilos = StyleSheet.create({
   error: { color: '#f38ba8', padding: 24, textAlign: 'center' },
   filaRacha: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   enlaceRacha: { color: '#89b4fa' },
+  enlaceEstadisticas: { color: '#89b4fa', textAlign: 'center', marginTop: 4 },
   bloqueMeta: { gap: 6 },
   textoMeta: { color: '#a6adc8', fontSize: 15 },
   barraFondo: { height: 8, backgroundColor: '#313244', borderRadius: 4, overflow: 'hidden' },

@@ -121,7 +121,16 @@ reinicios, pero no probó todavía que una racha con progreso real sobreviva un
 día completo; queda como candidato a una prueba más exigente si surge duda
 más adelante. Diseño visual de Fase 8 (pulido) ya investigado y documentado
 por adelantado — ver `PLAN-FASES.md` §Fase 8. Fase 6 (Panel de Retención)
-sin empezar.
+**completa y cerrada** (2026-08-15): panel por categoría/ventana, tarjetas
+problemáticas, historial de sesiones en pantalla propia (feedback real de
+dispositivo — no inline). `done when` verificado con SQL manual contra la
+BD real exportada del dispositivo (`agent_docs/consultas-verificacion.sql`,
+botón "Exportar BD" vía `expo-sharing`, ADR-024): los 4 porcentajes de
+retención, los 4 conteos de estado por categoría y las 52 tarjetas
+problemáticas coinciden exactamente. En el camino: `mezclarSesion` corregida
+para que ninguna categoría monopolice las vencidas (ADR-023, corrección de
+causa en Corrección-a-ADR-023 — el mecanismo real era Learning atascado, no
+lapses).
 
 ---
 

@@ -33,17 +33,22 @@ import {
   listarListas,
   listarNumerosImportantes,
   listarObjetosDeLista,
+  listarRevisionesDeSesion,
   listarRevisionesDeTarjeta,
+  listarSesionesEstudio,
   listarTarjetasPorMazo,
+  listarTodasLasRevisiones,
+  listarTodasLasTarjetas,
   obtenerConfigRacha,
-  reiniciarHistorialPractica,
   obtenerDiaPractica,
   obtenerLista,
   obtenerMazo,
   obtenerMazoPorCategoria,
   obtenerNumeroImportante,
+  obtenerPanelRetencion,
   obtenerTarjeta,
   obtenerTarjetaDeNumero,
+  reiniciarHistorialPractica,
 } from './repository';
 
 const AHORA = new Date('2026-01-01T00:00:00.000Z');
@@ -1000,5 +1005,87 @@ describe('calificarTarjeta — registra la práctica del día (racha, §8.7)', (
     await expect(
       calificarTarjeta(db, { tarjetaId: tarjeta.id, sesionId: sesion.id, calificacion: 'bien' }, AHORA)
     ).resolves.not.toThrow();
+  });
+});
+
+describe('panel de retención — fetch amplio (§8.8)', () => {
+  it('listarTodasLasTarjetas trae tarjetas de todos los mazos, sin archivadas', async () => {
+    const db = await bdLista();
+    const mazoColgadero = await crearMazo(db, { nombre: 'Colgadero', categoria: 'colgadero' }, AHORA);
+    const mazoNaipe = await crearMazo(db, { nombre: 'Naipes', categoria: 'naipe' }, AHORA);
+    const activa = await crearTarjeta(
+      db,
+      { mazoId: mazoColgadero.id, categoria: 'colgadero', contenidoFrente: '1', contenidoReverso: 'Tea' },
+      AHORA
+    );
+    const otraCategoria = await crearTarjeta(
+      db,
+      { mazoId: mazoNaipe.id, categoria: 'naipe', contenidoFrente: 'A♠', contenidoReverso: 'Ancla' },
+      AHORA
+    );
+
+    const todas = await listarTodasLasTarjetas(db);
+
+    const ids = todas.map((t) => t.id);
+    expect(ids).toContain(activa.id);
+    expect(ids).toContain(otraCategoria.id);
+  });
+
+  it('listarTodasLasRevisiones trae revisiones de distintas tarjetas y sesiones, en orden de fecha', async () => {
+    const db = await bdLista();
+    const mazo = await crearMazo(db, { nombre: 'Colgadero', categoria: 'colgadero' }, AHORA);
+    const t1 = await crearTarjeta(db, { mazoId: mazo.id, categoria: 'colgadero', contenidoFrente: '1', contenidoReverso: 'Tea' }, AHORA);
+    const t2 = await crearTarjeta(db, { mazoId: mazo.id, categoria: 'colgadero', contenidoFrente: '2', contenidoReverso: 'Noé' }, AHORA);
+    const sesion = await crearSesion(db, { modo: 'flash' }, AHORA);
+
+    await calificarTarjeta(db, { tarjetaId: t1.id, sesionId: sesion.id, calificacion: 'bien' }, AHORA);
+    const masTarde = new Date(AHORA.getTime() + 1000);
+    await calificarTarjeta(db, { tarjetaId: t2.id, sesionId: sesion.id, calificacion: 'otra_vez' }, masTarde);
+
+    const revisiones = await listarTodasLasRevisiones(db);
+
+    expect(revisiones.map((r) => r.tarjeta_id)).toEqual([t1.id, t2.id]);
+  });
+
+  it('listarSesionesEstudio ordena de más reciente a más antigua e incluye sesiones sin cerrar', async () => {
+    const db = await bdLista();
+    const primera = await crearSesion(db, { modo: 'flash' }, AHORA);
+    const segunda = await crearSesion(db, { modo: 'reverso' }, new Date(AHORA.getTime() + 1000));
+    await cerrarSesion(db, { sesionId: primera.id, duracionSegundos: 60, aciertos: 5, fallos: 1 }, AHORA);
+    // segunda queda sin cerrar (terminada_en NULL) — debe seguir apareciendo
+
+    const sesiones = await listarSesionesEstudio(db);
+
+    expect(sesiones.map((s) => s.id)).toEqual([segunda.id, primera.id]);
+  });
+
+  it('listarRevisionesDeSesion aísla las filas de una sesión de las de otra', async () => {
+    const db = await bdLista();
+    const mazo = await crearMazo(db, { nombre: 'Colgadero', categoria: 'colgadero' }, AHORA);
+    const tarjeta = await crearTarjeta(db, { mazoId: mazo.id, categoria: 'colgadero', contenidoFrente: '1', contenidoReverso: 'Tea' }, AHORA);
+    const sesionA = await crearSesion(db, { modo: 'flash' }, AHORA);
+    const sesionB = await crearSesion(db, { modo: 'flash' }, AHORA);
+
+    await calificarTarjeta(db, { tarjetaId: tarjeta.id, sesionId: sesionA.id, calificacion: 'bien' }, AHORA);
+    await calificarTarjeta(db, { tarjetaId: tarjeta.id, sesionId: sesionB.id, calificacion: 'otra_vez' }, AHORA);
+
+    const revisionesA = await listarRevisionesDeSesion(db, sesionA.id);
+
+    expect(revisionesA).toHaveLength(1);
+    expect(revisionesA[0].sesion_id).toBe(sesionA.id);
+  });
+
+  it('obtenerPanelRetencion conecta el fetch real con calcularPanelRetencion', async () => {
+    const db = await bdLista();
+    const mazo = await crearMazo(db, { nombre: 'Colgadero', categoria: 'colgadero' }, AHORA);
+    const tarjeta = await crearTarjeta(db, { mazoId: mazo.id, categoria: 'colgadero', contenidoFrente: '1', contenidoReverso: 'Tea' }, AHORA);
+    const sesion = await crearSesion(db, { modo: 'flash' }, AHORA);
+    await calificarTarjeta(db, { tarjetaId: tarjeta.id, sesionId: sesion.id, calificacion: 'bien' }, AHORA);
+
+    const panel = await obtenerPanelRetencion(db, 'todo', AHORA);
+
+    expect(panel.porCategoria).toHaveLength(4);
+    const colgadero = panel.porCategoria.find((m) => m.categoria === 'colgadero');
+    expect(colgadero?.porcentajeRetencion).toBe(1);
   });
 });
