@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Dirección A — Grimorio Nocturno</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap">
+  <style>
+    html, body { margin: 0; background: #0d0d10; display: flex; justify-content: center; padding: 32px 16px; }
+
+    :root {
+      --bg: oklch(0.16 0.025 300);
+      --card: oklch(0.21 0.03 300);
+      --card-hi: oklch(0.25 0.035 300);
+      --hairline: oklch(0.32 0.03 300);
+      --gold: oklch(0.78 0.13 85);
+      --gold-dim: oklch(0.55 0.08 85);
+      --ember: oklch(0.58 0.16 25);
+      --ink: oklch(0.95 0.01 85);
+      --ink-muted: oklch(0.68 0.02 300);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: oklch(0.10 0.01 300); font-family: 'EB Garamond', Georgia, serif; }
+    a { color: var(--gold); } a:hover { color: oklch(0.85 0.13 85); }
+    .display { font-family: 'Cinzel', Georgia, serif; letter-spacing: 0.02em; }
+  
+  </style>
+</head>
+<body>
+<div style="width:375px;height:812px;background:var(--bg);position:relative;overflow:hidden;background-image:radial-gradient(ellipse 500px 300px at 50% -10%, oklch(0.24 0.04 300), transparent);">
+
+  <!-- textura sutil de estrellas -->
+  <div style="position:absolute;inset:0;opacity:0.5;background-image:radial-gradient(1px 1px at 20px 30px, var(--ink-muted), transparent),radial-gradient(1px 1px at 90px 120px, var(--ink-muted), transparent),radial-gradient(1px 1px at 160px 60px, var(--ink-muted), transparent),radial-gradient(1px 1px at 280px 200px, var(--ink-muted), transparent),radial-gradient(1px 1px at 320px 90px, var(--ink-muted), transparent),radial-gradient(1px 1px at 50px 250px, var(--ink-muted), transparent);"></div>
+
+  <div style="position:relative;padding:64px 24px 32px;display:flex;flex-direction:column;gap:22px;">
+
+    <!-- Racha -->
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="position:relative;width:44px;height:52px;">
+          <div style="position:absolute;left:8px;top:6px;width:28px;height:36px;background:linear-gradient(180deg, var(--gold) 0%, var(--ember) 100%);border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;transform:rotate(-4deg);filter:drop-shadow(0 0 12px oklch(0.6 0.14 60 / 0.65));"></div>
+          <div style="position:absolute;left:16px;top:20px;width:14px;height:20px;background:oklch(0.90 0.10 85);border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;transform:rotate(-3deg);"></div>
+        </div>
+        <div>
+          <div class="display" style="font-size:30px;font-weight:700;color:var(--ink);line-height:1;">7</div>
+          <div style="font-size:12px;color:var(--ink-muted);letter-spacing:0.06em;text-transform:uppercase;margin-top:4px;">días de racha</div>
+        </div>
+      </div>
+      <div style="font-size:14px;color:var(--gold);font-style:italic;border-bottom:1px solid var(--gold-dim);padding-bottom:2px;">Ver racha →</div>
+    </div>
+
+    <!-- Meta diaria -->
+    <div style="background:var(--card);border:1px solid var(--hairline);border-radius:4px;padding:18px 20px;position:relative;">
+      <div style="position:absolute;top:0;left:20px;right:20px;height:1px;background:linear-gradient(90deg, transparent, var(--gold-dim), transparent);"></div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;">
+        <span style="font-size:15px;color:var(--ink);">Meta de hoy</span>
+        <span class="display" style="font-size:15px;color:var(--gold);">12 / 20</span>
+      </div>
+      <div style="height:6px;background:oklch(0.12 0.01 300);border-radius:3px;margin-top:12px;overflow:hidden;">
+        <div style="width:60%;height:100%;background:linear-gradient(90deg, var(--gold-dim), var(--gold));"></div>
+      </div>
+    </div>
+
+    <!-- Pendientes -->
+    <div style="margin-top:6px;">
+      <div class="display" style="font-size:13px;color:var(--ink-muted);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:12px;">Pendientes por categoría</div>
+
+      <div style="display:flex;flex-direction:column;gap:1px;background:var(--hairline);border:1px solid var(--hairline);border-radius:4px;overflow:hidden;">
+
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--card);padding:14px 18px;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold-dim)" stroke-width="1.5" stroke-linecap="round"><path d="M12 3v11a3 3 0 1 0 3-3"/></svg>
+            <span style="color:var(--ink);font-size:16px;">Colgadero</span>
+          </div>
+          <span class="display" style="color:var(--gold);font-size:15px;">18</span>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--card);padding:14px 18px;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold-dim)" stroke-width="1.5"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="12" r="2.3" fill="var(--gold-dim)" stroke="none"/></svg>
+            <span style="color:var(--ink);font-size:16px;">Naipes</span>
+          </div>
+          <span class="display" style="color:var(--gold);font-size:15px;">6</span>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--card);padding:14px 18px;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold-dim)" stroke-width="1.5"><rect x="3" y="8" width="10" height="8" rx="4"/><rect x="11" y="8" width="10" height="8" rx="4"/></svg>
+            <span style="color:var(--ink);font-size:16px;">Listas</span>
+          </div>
+          <span class="display" style="color:var(--gold);font-size:15px;">2</span>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--card);padding:14px 18px;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold-dim)" stroke-width="1.5"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            <span style="color:var(--ink);font-size:16px;">Números</span>
+          </div>
+          <span class="display" style="color:var(--gold);font-size:15px;">1</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <button style="margin-top:14px;background:linear-gradient(180deg, oklch(0.24 0.03 300), oklch(0.20 0.03 300));border:1px solid var(--gold-dim);border-radius:4px;padding:17px;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;">
+      <span class="display" style="color:var(--gold);font-size:16px;letter-spacing:0.06em;">Practicar ahora</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </button>
+
+    <div style="text-align:center;margin-top:6px;">
+      <span style="font-size:13px;color:var(--ink-muted);font-style:italic;border-bottom:1px solid var(--hairline);">Ver estadísticas →</span>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
