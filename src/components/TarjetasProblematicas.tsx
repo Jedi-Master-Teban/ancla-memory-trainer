@@ -15,16 +15,20 @@ const ETIQUETA_CATEGORIA: Record<Categoria, string> = {
 };
 
 /**
- * A dónde enlaza "editar" por categoría. `colgadero` apunta a su índice aun
- * sin tener edición propia hoy (hueco real, confirmado — no se inventa un
- * editor de colgadero en esta fase); `naipe`/`numero` ya la tienen inline en
- * su índice; `lista_item` necesita la lista específica, no el índice
- * genérico de listas.
+ * A dónde enlaza "editar" por categoría. `colgadero` ahora tiene editor
+ * propio — Fase 7 llenó el hueco que antes documentaba este comentario
+ * (`/crear/colgadero?id=...`). `naipe`/`numero` se quedan en su índice a
+ * propósito: ya tienen edición inline probada ahí (naipe además nunca gana
+ * un enlace de creación en ningún lado — ADR-025 — así que redirigir su
+ * edición aquí no ganaría nada). `lista_item` necesita la lista específica,
+ * no el índice genérico de listas.
  */
-export function rutaEditar(tarjeta: FilaTarjeta): '/colgadero' | '/naipes' | '/numeros' | `/listas/${string}` {
+export function rutaEditar(
+  tarjeta: FilaTarjeta
+): `/crear/colgadero?id=${string}` | '/naipes' | '/numeros' | `/listas/${string}` {
   switch (tarjeta.categoria) {
     case 'colgadero':
-      return '/colgadero';
+      return `/crear/colgadero?id=${tarjeta.id}`;
     case 'naipe':
       return '/naipes';
     case 'numero':

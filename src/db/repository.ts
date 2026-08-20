@@ -837,3 +837,103 @@ export async function obtenerPanelRetencion(db: ConexionBD, ventana: Ventana, ah
   const [tarjetas, revisiones] = await Promise.all([listarTodasLasTarjetas(db), listarTodasLasRevisiones(db)]);
   return calcularPanelRetencion(tarjetas, revisiones, ventana, ahora);
 }
+
+// --- Registro genérico de categorías (§8.6, agent_docs/modulos/06-ejercicios-custom.md) ---
+
+/**
+ * `tarjeta.archivada` es un entero sin columna de fecha compañera
+ * (MODELO-DATOS.md) — sin parámetro `ahora`, a propósito.
+ */
+export async function archivarTarjeta(db: ConexionBD, tarjetaId: string): Promise<void> {
+  await db.runAsync('UPDATE tarjeta SET archivada = 1 WHERE id = ?', [tarjetaId]);
+}
+
+type GuardarCategoria = (
+  db: ConexionBD,
+  valores: Record<string, string>,
+  idExistente: string | undefined,
+  ahora: Date
+) => Promise<void>;
+
+/**
+ * Dispatch de guardado por categoría para `FormularioGenerico.tsx` — el
+ * componente solo llama `GUARDAR_CATEGORIA[categoria](...)`, nunca sabe qué
+ * función real corre debajo. Vive en `repository.ts`, no en
+ * `src/domain/categorias/registro.ts`: la dirección de dependencia de este
+ * proyecto es siempre db → domain (import type), nunca al revés — poner el
+ * dispatch aquí la respeta y cumple la convención 1 de `CLAUDE.md` ("todo
+ * acceso a datos pasa por repository.ts").
+ */
+export const GUARDAR_CATEGORIA: Record<Categoria, GuardarCategoria> = {
+  colgadero: async (db, valores, idExistente, ahora) => {
+    const numero = Number(valores.numero);
+    if (idExistente) {
+      await actualizarContenidoTarjeta(db, idExistente, {
+        contenidoFrente: String(numero),
+        contenidoReverso: valores.palabra,
+        metadataCategoria: { numero },
+      });
+      return;
+    }
+    const mazo = await obtenerMazoPorCategoria(db, 'colgadero');
+    if (!mazo) throw new Error('No existe el mazo colgadero — falta correr la migración 002');
+    await crearTarjeta(
+      db,
+      {
+        mazoId: mazo.id,
+        categoria: 'colgadero',
+        contenidoFrente: String(numero),
+        contenidoReverso: valores.palabra,
+        metadataCategoria: { numero },
+      },
+      ahora
+    );
+  },
+
+  // Sin creación — mazo cerrado de 52 cartas (ADR-025).
+  naipe: async (db, valores, idExistente) => {
+    if (!idExistente) {
+      throw new Error('naipe no admite creación — edita una de las 52 cartas existentes desde /naipes');
+    }
+    await actualizarContenidoTarjeta(db, idExistente, { contenidoReverso: valores.palabra });
+  },
+
+  numero: async (db, valores, idExistente, ahora) => {
+    if (idExistente) {
+      const tarjeta = await obtenerTarjeta(db, idExistente);
+      if (!tarjeta) throw new Error(`No existe la tarjeta ${idExistente}`);
+      const { numero_id } = JSON.parse(tarjeta.metadata_categoria) as MetadataNumero;
+      await editarNumeroImportante(db, numero_id, { etiqueta: valores.etiqueta, digitos: valores.digitos });
+      return;
+    }
+    await crearNumeroImportante(db, { etiqueta: valores.etiqueta, digitos: valores.digitos }, ahora);
+  },
+
+  // Sin edición — este mecanismo solo agrega un objeto al final de una lista existente.
+  lista_item: async (db, valores, idExistente, ahora) => {
+    if (idExistente) {
+      throw new Error('lista_item no admite edición por este mecanismo — usa /listas/[id]');
+    }
+    const listaId = valores.listaId;
+    if (!listaId) throw new Error('Falta listaId para crear un objeto de lista');
+    const existentes = await listarObjetosDeLista(db, listaId);
+    await guardarObjetosDeLista(
+      db,
+      listaId,
+      [...existentes.map((o) => ({ id: o.id, texto: o.texto })), { texto: valores.texto }],
+      ahora
+    );
+  },
+};
+
+type ArchivarCategoria = (db: ConexionBD, tarjetaId: string) => Promise<void>;
+
+/**
+ * Solo colgadero: naipe/lista_item quedan fuera del mecanismo genérico a
+ * propósito (ADR-025); numero no se cablea aquí para no tener dos formas
+ * distintas de "eliminar un número" en dos pantallas distintas (ya tiene
+ * `eliminarNumeroImportante`, usado desde `numeros/index.tsx`).
+ */
+export const ARCHIVAR_CATEGORIA: Partial<Record<Categoria, ArchivarCategoria>> = {
+  colgadero: archivarTarjeta,
+};

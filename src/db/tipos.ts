@@ -1,3 +1,5 @@
+import type { Palo, Valor } from '../domain/fonetica/naipes';
+
 export type Categoria = 'colgadero' | 'naipe' | 'lista_item' | 'numero';
 // futuro, no implementar: 'palabra_clave' | 'loci' | 'pao' (ADR-003, MODELO-DATOS.md §1.3)
 
@@ -103,6 +105,18 @@ export interface MetadataListaItem {
 /** Forma de `tarjeta.metadata_categoria` cuando `categoria === 'numero'`. */
 export interface MetadataNumero {
   numero_id: string;
+}
+
+/** Forma de `tarjeta.metadata_categoria` cuando `categoria === 'colgadero'`. */
+export interface MetadataColgadero {
+  numero: number;
+}
+
+/** Forma de `tarjeta.metadata_categoria` cuando `categoria === 'naipe'`. */
+export interface MetadataNaipe {
+  palo: Palo;
+  valor: Valor;
+  aprobada_por_operador: boolean;
 }
 
 export interface FilaDiaPractica {

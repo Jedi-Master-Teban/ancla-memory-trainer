@@ -7,12 +7,15 @@ import * as m002 from './migrations/002_seed_colgadero';
 import * as m003 from './migrations/003_seed_naipes';
 import * as m004 from './migrations/004_listas_numeros';
 import { ejecutarMigraciones } from './migrations';
-import type { ConexionBD, MetadataListaItem, MetadataNumero } from './tipos';
+import type { ConexionBD, MetadataColgadero, MetadataListaItem, MetadataNaipe, MetadataNumero } from './tipos';
 import {
+  ARCHIVAR_CATEGORIA,
+  GUARDAR_CATEGORIA,
   actualizarConfigRacha,
   actualizarContenidoTarjeta,
   actualizarLista,
   aplicarCongelador,
+  archivarTarjeta,
   armarSesionDeMazo,
   armarSesionMixta,
   calcularRachaActual,
@@ -1087,5 +1090,149 @@ describe('panel de retención — fetch amplio (§8.8)', () => {
     expect(panel.porCategoria).toHaveLength(4);
     const colgadero = panel.porCategoria.find((m) => m.categoria === 'colgadero');
     expect(colgadero?.porcentajeRetencion).toBe(1);
+  });
+});
+
+describe('archivarTarjeta', () => {
+  it('marca archivada = 1 sin borrar la fila', async () => {
+    const db = await bdLista();
+    const mazo = await obtenerMazoPorCategoria(db, 'colgadero');
+    const tarjeta = await crearTarjeta(
+      db,
+      { mazoId: mazo!.id, categoria: 'colgadero', contenidoFrente: '101', contenidoReverso: 'Tos' },
+      AHORA
+    );
+
+    await archivarTarjeta(db, tarjeta.id);
+
+    const recuperada = await obtenerTarjeta(db, tarjeta.id);
+    expect(recuperada?.archivada).toBe(1);
+  });
+});
+
+describe('GUARDAR_CATEGORIA — dispatch de guardado del registro genérico (§8.6)', () => {
+  describe('colgadero', () => {
+    it('sin idExistente: crea una tarjeta nueva en el mazo colgadero', async () => {
+      const db = await bdLista();
+
+      await GUARDAR_CATEGORIA.colgadero(db, { numero: '101', palabra: 'Tos' }, undefined, AHORA);
+
+      const mazo = await obtenerMazoPorCategoria(db, 'colgadero');
+      const tarjetas = await listarTarjetasPorMazo(db, mazo!.id);
+      const nueva = tarjetas.find((t) => t.contenido_frente === '101');
+      expect(nueva?.contenido_reverso).toBe('Tos');
+      expect(JSON.parse(nueva!.metadata_categoria) as MetadataColgadero).toEqual({ numero: 101 });
+    });
+
+    it('con idExistente: edita la tarjeta en vez de crear una nueva, conservando el id', async () => {
+      const db = await bdLista();
+      const mazo = await obtenerMazoPorCategoria(db, 'colgadero');
+      const tarjetas = await listarTarjetasPorMazo(db, mazo!.id);
+      const original = tarjetas.find((t) => t.contenido_frente === '1')!; // "Tea", migración 002
+
+      await GUARDAR_CATEGORIA.colgadero(db, { numero: '1', palabra: 'Té' }, original.id, AHORA);
+
+      const editada = await obtenerTarjeta(db, original.id);
+      expect(editada?.id).toBe(original.id);
+      expect(editada?.contenido_reverso).toBe('Té');
+      const totalTrasEditar = await listarTarjetasPorMazo(db, mazo!.id);
+      expect(totalTrasEditar).toHaveLength(100); // no se creó una tarjeta de más
+    });
+  });
+
+  describe('naipe', () => {
+    it('sin idExistente: lanza — el mazo de 52 cartas es cerrado (ADR-025)', async () => {
+      const db = await bdLista();
+      await expect(GUARDAR_CATEGORIA.naipe(db, { palabra: 'Ancla' }, undefined, AHORA)).rejects.toThrow();
+    });
+
+    it('con idExistente: edita solo la palabra, conserva palo/valor/id', async () => {
+      const db = await bdLista();
+      const mazo = await obtenerMazoPorCategoria(db, 'naipe');
+      const [carta] = await listarTarjetasPorMazo(db, mazo!.id);
+      const metadataAntes = JSON.parse(carta.metadata_categoria) as MetadataNaipe;
+
+      await GUARDAR_CATEGORIA.naipe(db, { palabra: 'Zapato' }, carta.id, AHORA);
+
+      const editada = await obtenerTarjeta(db, carta.id);
+      expect(editada?.id).toBe(carta.id);
+      expect(editada?.contenido_reverso).toBe('Zapato');
+      expect(editada?.contenido_frente).toBe(carta.contenido_frente); // "10♠" etc., intacto
+      expect(JSON.parse(editada!.metadata_categoria) as MetadataNaipe).toEqual(metadataAntes);
+    });
+  });
+
+  describe('numero', () => {
+    it('sin idExistente: crea un numero_importante y su tarjeta', async () => {
+      const db = await bdLista();
+
+      await GUARDAR_CATEGORIA.numero(db, { etiqueta: 'Clave caja fuerte', digitos: '045' }, undefined, AHORA);
+
+      const numeros = await listarNumerosImportantes(db);
+      const creado = numeros.find((n) => n.etiqueta === 'Clave caja fuerte');
+      expect(creado?.digitos).toBe('045'); // cero a la izquierda intacto — nunca Number()
+    });
+
+    it('con idExistente: edita el numero_importante existente, no crea uno nuevo', async () => {
+      const db = await bdLista();
+      const { fila, tarjeta } = await crearNumeroImportante(db, { etiqueta: 'Original', digitos: '007' }, AHORA);
+
+      await GUARDAR_CATEGORIA.numero(db, { etiqueta: 'Editado', digitos: '008' }, tarjeta.id, AHORA);
+
+      const editado = await obtenerNumeroImportante(db, fila.id);
+      expect(editado?.etiqueta).toBe('Editado');
+      expect(editado?.digitos).toBe('008');
+      expect(await listarNumerosImportantes(db)).toHaveLength(1);
+    });
+  });
+
+  describe('lista_item', () => {
+    it('sin listaId en valores: lanza', async () => {
+      const db = await bdLista();
+      await expect(GUARDAR_CATEGORIA.lista_item(db, { texto: 'martillo' }, undefined, AHORA)).rejects.toThrow();
+    });
+
+    it('con listaId: agrega un objeto al final de una lista existente', async () => {
+      const db = await bdLista();
+      const lista = await crearLista(db, { nombre: 'Cadena', segundosEstudio: 30 }, AHORA);
+      await guardarObjetosDeLista(db, lista.id, [{ texto: 'martillo' }, { texto: 'elefante' }], AHORA);
+
+      await GUARDAR_CATEGORIA.lista_item(db, { texto: 'semáforo', listaId: lista.id }, undefined, AHORA);
+
+      const objetos = await listarObjetosDeLista(db, lista.id);
+      expect(objetos.map((o) => o.texto)).toEqual(['martillo', 'elefante', 'semáforo']);
+      const eslabones = await listarEslabonesDeLista(db, lista.id);
+      expect(eslabones).toHaveLength(2); // 3 objetos → 2 eslabones
+    });
+
+    it('con idExistente: lanza — este mecanismo solo crea lista_item, nunca edita', async () => {
+      const db = await bdLista();
+      const lista = await crearLista(db, { nombre: 'Cadena', segundosEstudio: 30 }, AHORA);
+      await expect(
+        GUARDAR_CATEGORIA.lista_item(db, { texto: 'x', listaId: lista.id }, 'algun-id', AHORA)
+      ).rejects.toThrow();
+    });
+  });
+});
+
+describe('ARCHIVAR_CATEGORIA — solo colgadero (§8.6, ADR-025)', () => {
+  it('colgadero está cableado a archivarTarjeta', async () => {
+    const db = await bdLista();
+    const mazo = await obtenerMazoPorCategoria(db, 'colgadero');
+    const tarjeta = await crearTarjeta(
+      db,
+      { mazoId: mazo!.id, categoria: 'colgadero', contenidoFrente: '101', contenidoReverso: 'Tos' },
+      AHORA
+    );
+
+    await ARCHIVAR_CATEGORIA.colgadero!(db, tarjeta.id);
+
+    expect((await obtenerTarjeta(db, tarjeta.id))?.archivada).toBe(1);
+  });
+
+  it('naipe, numero y lista_item no tienen entrada — no se ofrece archivar por este mecanismo', () => {
+    expect(ARCHIVAR_CATEGORIA.naipe).toBeUndefined();
+    expect(ARCHIVAR_CATEGORIA.numero).toBeUndefined();
+    expect(ARCHIVAR_CATEGORIA.lista_item).toBeUndefined();
   });
 });

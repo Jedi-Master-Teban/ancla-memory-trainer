@@ -633,3 +633,34 @@ supersede/corrige con una entrada nueva. `src/domain/sesion/mezcla.ts`
 (comentarios) ya actualizado con la explicación correcta; el mensaje del
 commit `b2a2dfe` no se toca (registro histórico de lo que se creía cierto en
 ese momento, no un error del proceso).
+
+## ADR-025 · 2026-08-16 · Aceptada
+
+**Decisión:** el mecanismo genérico de creación/edición (`REGISTRO`,
+`GUARDAR_CATEGORIA`, `ARCHIVAR_CATEGORIA`, `FormularioGenerico.tsx`,
+`app/crear/[categoria].tsx` — Fase 7, agent_docs/modulos/06-ejercicios-custom.md)
+no ofrece ninguna vía de creación ni de archivado para `naipe` — solo edición
+de las 52 cartas ya sembradas. `GUARDAR_CATEGORIA.naipe` lanza un error
+explícito si se llama sin `idExistente`; `ARCHIVAR_CATEGORIA` no tiene
+entrada para `naipe`; ningún botón "agregar naipe" existe en ninguna
+pantalla.
+
+**Razón:** el mazo `naipe` es un conjunto cerrado de 52 cartas del mazo
+francés estándar (ADR-016), generado por `LAS_52_CARTAS`
+(`src/domain/naipes/baraja.ts`) a partir de los tipos fijos `Palo`/`Valor`
+(`src/domain/fonetica/naipes.ts:8-9`, 4 palos × 13 valores = 52, sin
+variación posible). Una tarjeta 53 no correspondería a ninguna carta física
+real; el barajado y la comparación de "Baraja Completa"
+(`generarOrdenBaraja`/`compararReproduccion`, mismo archivo) asumen
+exactamente 52. Archivar una carta rompería la misma asunción — "Baraja
+Completa" dejaría de ser realmente completa. Ver también
+`agent_docs/seeds/naipes-52.md`.
+
+**Consecuencia:** el `done when` de la Fase 7 ("crear un ítem nuevo en cada
+una de las 4 categorías") se satisface para naipe demostrando edición
+(conserva `id` y estado FSRS, vía `/crear/naipe?id=...`) en vez de creación
+literal — documentado aquí en vez de forzar una interpretación literal que
+contradice el modelo de dominio ya cerrado desde ADR-016.
+`TarjetasProblematicas.tsx`'s `rutaEditar` sigue enviando naipe a `/naipes`
+(su editor inline ya probado), no al mecanismo nuevo — cambiarlo no ganaba
+nada y sí arriesgaba un flujo que ya funciona.

@@ -138,7 +138,7 @@ la abstracción de `motor.ts` está mal y hay que arreglarla, no duplicarla.
 | `src/domain/racha/calculo.ts` + test | los 7 casos borde, con reloj inyectado |
 | `src/domain/sesion/mezcla.ts` + test | prioridad FSRS, reparto entre categorías |
 | `src/stores/racha.ts` | estado de racha |
-| `app/(tabs)/index.tsx` | dashboard |
+| `app/index.tsx` | dashboard |
 | `app/racha.tsx` | detalle, congeladores, heatmap |
 | `src/components/IndicadorRacha.tsx`, `Heatmap90.tsx` | UI |
 
@@ -180,7 +180,6 @@ sentido de la verificación.
 | `src/domain/categorias/registro.ts` + test | registro declarativo de campos por categoría |
 | `src/components/FormularioGenerico.tsx` | formulario dirigido por el registro |
 | `app/crear/[categoria].tsx` | ruta dinámica |
-| `app/(tabs)/gestionar.tsx` | listado y edición por categoría |
 
 **`done when` (§11):** se agrega un ítem nuevo sin tocar código y aparece en la
 próxima sesión de repaso.
@@ -269,7 +268,7 @@ investigación (2026-08-13), no por preferencia:**
 | `src/tema/{colores,tipografia}.ts` | modo oscuro por defecto (§10) |
 | `app/_layout.tsx` | aplicar tema |
 | `src/components/IndicadorRacha.tsx` | animación simple de la llama (sin Skia ni Reanimated complejo) |
-| `app/(tabs)/ajustes.tsx` | meta diaria, hora de recordatorio, congeladores |
+| `app/ajustes.tsx` | meta diaria, hora de recordatorio, congeladores |
 
 **`done when` (§11):** la notificación local de racha en riesgo se dispara
 correctamente en un test manual — **o**, si el spike lo desmiente, el fallback

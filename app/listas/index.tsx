@@ -1,5 +1,5 @@
-import { Link, router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { Link, router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { obtenerBD } from '../../src/db/client';
 import { crearLista, listarListas, listarObjetosDeLista } from '../../src/db/repository';
@@ -15,32 +15,41 @@ export default function ListasIndex() {
   const [conteos, setConteos] = useState<Record<string, number>>({});
   const [nombreNueva, setNombreNueva] = useState('');
 
-  const cargar = useCallback(async () => {
-    try {
-      const conexion = await obtenerBD();
-      const filas = await listarListas(conexion);
-      const entradas = await Promise.all(
-        filas.map(async (l) => [l.id, (await listarObjetosDeLista(conexion, l.id)).length] as const)
-      );
-      setDb(conexion);
-      setListas(filas);
-      setConteos(Object.fromEntries(entradas));
-      setCargando(false);
-    } catch (e) {
-      setError(String(e));
-      setCargando(false);
-    }
+  const cargar = useCallback(() => {
+    let cancelado = false;
+    (async () => {
+      try {
+        const conexion = await obtenerBD();
+        const filas = await listarListas(conexion);
+        const entradas = await Promise.all(
+          filas.map(async (l) => [l.id, (await listarObjetosDeLista(conexion, l.id)).length] as const)
+        );
+        if (cancelado) return;
+        setDb(conexion);
+        setListas(filas);
+        setConteos(Object.fromEntries(entradas));
+        setCargando(false);
+      } catch (e) {
+        if (!cancelado) {
+          setError(String(e));
+          setCargando(false);
+        }
+      }
+    })();
+    return () => {
+      cancelado = true;
+    };
   }, []);
 
-  useEffect(() => {
-    cargar();
-  }, [cargar]);
+  // El Stack no desmonta esta pantalla al entrar a una lista y volver —
+  // useFocusEffect para que el conteo de objetos y nombre reflejen cambios
+  // hechos en /listas/[id].
+  useFocusEffect(cargar);
 
   async function crear() {
     if (!db || nombreNueva.trim().length === 0) return;
     const lista = await crearLista(db, { nombre: nombreNueva.trim(), segundosEstudio: SEGUNDOS_ESTUDIO_DEFECTO }, new Date());
     setNombreNueva('');
-    await cargar();
     router.push(`/listas/${lista.id}`);
   }
 

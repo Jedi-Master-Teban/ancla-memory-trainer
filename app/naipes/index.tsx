@@ -1,5 +1,5 @@
-import { Link } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { Link, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { EditorNaipe } from '../../src/components/EditorNaipe';
 import { obtenerBD } from '../../src/db/client';
@@ -26,39 +26,47 @@ export default function NaipesIndex() {
   const [filas, setFilas] = useState<FilaConCarta[]>([]);
   const [editando, setEditando] = useState<string | null>(null);
 
-  const cargar = useCallback(async () => {
-    try {
-      const conexion = await obtenerBD();
-      const mazo = await obtenerMazoPorCategoria(conexion, 'naipe');
-      if (!mazo) {
+  const cargar = useCallback(() => {
+    let cancelado = false;
+    (async () => {
+      try {
+        const conexion = await obtenerBD();
+        const mazo = await obtenerMazoPorCategoria(conexion, 'naipe');
+        if (!mazo) {
+          if (cancelado) return;
+          setDb(conexion);
+          setFilas([]);
+          setCargando(false);
+          return;
+        }
+        const tarjetas = await listarTarjetasPorMazo(conexion, mazo.id);
+        const conCarta = tarjetas.map((tarjeta) => ({
+          tarjeta,
+          carta: JSON.parse(tarjeta.metadata_categoria) as Carta,
+        }));
+        if (cancelado) return;
         setDb(conexion);
-        setFilas([]);
+        setFilas(conCarta);
         setCargando(false);
-        return;
+      } catch (e) {
+        if (!cancelado) {
+          setError(String(e));
+          setCargando(false);
+        }
       }
-      const tarjetas = await listarTarjetasPorMazo(conexion, mazo.id);
-      const conCarta = tarjetas.map((tarjeta) => ({
-        tarjeta,
-        carta: JSON.parse(tarjeta.metadata_categoria) as Carta,
-      }));
-      setDb(conexion);
-      setFilas(conCarta);
-      setCargando(false);
-    } catch (e) {
-      setError(String(e));
-      setCargando(false);
-    }
+    })();
+    return () => {
+      cancelado = true;
+    };
   }, []);
 
-  useEffect(() => {
-    cargar();
-  }, [cargar]);
+  useFocusEffect(cargar);
 
   async function guardarPalabra(tarjetaId: string, palabra: string) {
     if (!db) return;
     await actualizarContenidoTarjeta(db, tarjetaId, { contenidoReverso: palabra });
     setEditando(null);
-    await cargar();
+    cargar();
   }
 
   if (cargando) {

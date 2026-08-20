@@ -132,6 +132,26 @@ para que ninguna categoría monopolice las vencidas (ADR-023, corrección de
 causa en Corrección-a-ADR-023 — el mecanismo real era Learning atascado, no
 lapses).
 
+Fase 7 (Ejercicios Personalizados) **completa y cerrada** (2026-08-20):
+`REGISTRO`/`GUARDAR_CATEGORIA`/`ARCHIVAR_CATEGORIA` (§8.6) — formulario
+genérico dirigido por tabla, cero cambios en `FormularioGenerico.tsx` al
+agregar una categoría de prueba (criterio §3 probado y revertido). Naipe sin
+creación ni archivado, solo edición — mazo cerrado de 52 cartas (ADR-025).
+Verificado en Expo Go por el operador: crear en colgadero/número/lista_item,
+editar un naipe, cerrar y reabrir con las 4 categorías apareciendo en sesión,
+y archivar un colgadero con persistencia confirmada tras cerrar Expo Go del
+todo (no solo recargar). En el camino: `useFocusEffect` corregido en
+`listas/[id].tsx`, `listas/index.tsx`, `naipes/index.tsx` y
+`numeros/index.tsx` (el Stack no desmonta pantallas al volver — mismo bug ya
+conocido de Fase 5, reaparecido por no haberse aplicado ahí en su momento);
+cadena mnemotécnica visible al editar un número (antes solo al crearlo);
+listado completo de palabras colgadero en su pantalla de índice (hueco real
+que impedía llegar a una palabra sin historial de revisión problemático).
+Hallazgo aparte, sin tocar código: 3 palabras colgadero (números 28/37/40)
+pueden seguir desactualizadas en dispositivos que sembraron antes de la
+corrección del 2026-08-12 (commit `7f95d46`) — las migraciones no
+resiembran; se corrigen a mano, tarjeta por tarjeta, con el editor nuevo.
+
 ---
 
 ## NUNCA HACER (constraints duras — §3 del brief)

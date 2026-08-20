@@ -1,5 +1,5 @@
-import { Link, router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { Link, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { EditorLista, type ObjetoEditable } from '../../src/components/EditorLista';
 import { obtenerBD } from '../../src/db/client';
@@ -21,31 +21,41 @@ export default function ListaDetalle() {
   const [objetos, setObjetos] = useState<FilaListaObjeto[]>([]);
   const [segundosTexto, setSegundosTexto] = useState('30');
 
-  const cargar = useCallback(async () => {
-    try {
-      const conexion = await obtenerBD();
-      const filaLista = await obtenerLista(conexion, id);
-      if (!filaLista) throw new Error(`No existe la lista ${id}`);
-      const filaObjetos = await listarObjetosDeLista(conexion, id);
-      setDb(conexion);
-      setLista(filaLista);
-      setObjetos(filaObjetos);
-      setSegundosTexto(String(filaLista.segundos_estudio));
-      setCargando(false);
-    } catch (e) {
-      setError(String(e));
-      setCargando(false);
-    }
+  const cargar = useCallback(() => {
+    let cancelado = false;
+    (async () => {
+      try {
+        const conexion = await obtenerBD();
+        const filaLista = await obtenerLista(conexion, id);
+        if (!filaLista) throw new Error(`No existe la lista ${id}`);
+        const filaObjetos = await listarObjetosDeLista(conexion, id);
+        if (cancelado) return;
+        setDb(conexion);
+        setLista(filaLista);
+        setObjetos(filaObjetos);
+        setSegundosTexto(String(filaLista.segundos_estudio));
+        setCargando(false);
+      } catch (e) {
+        if (!cancelado) {
+          setError(String(e));
+          setCargando(false);
+        }
+      }
+    })();
+    return () => {
+      cancelado = true;
+    };
   }, [id]);
 
-  useEffect(() => {
-    cargar();
-  }, [cargar]);
+  // El Stack no desmonta esta pantalla al navegar a /crear/lista_item y
+  // volver — useFocusEffect (no useEffect) para que un objeto agregado ahí
+  // aparezca al regresar, mismo patrón ya establecido en index.tsx/racha.tsx.
+  useFocusEffect(cargar);
 
   async function guardarObjetos(nuevos: ObjetoEditable[]) {
     if (!db) return;
     await guardarObjetosDeLista(db, id, nuevos, new Date());
-    await cargar();
+    cargar();
   }
 
   async function guardarSegundos() {
@@ -53,7 +63,7 @@ export default function ListaDetalle() {
     const segundos = Number(segundosTexto);
     if (!Number.isFinite(segundos) || segundos <= 0) return;
     await actualizarLista(db, id, { segundosEstudio: Math.round(segundos) });
-    await cargar();
+    cargar();
   }
 
   function confirmarEliminar() {
@@ -121,6 +131,10 @@ export default function ListaDetalle() {
         onGuardar={guardarObjetos}
       />
 
+      <Link href={`/crear/lista_item?listaId=${lista.id}`} style={estilos.botonAgregarObjeto}>
+        <Text style={estilos.textoBotonAgregarObjeto}>+ Añadir objeto individual</Text>
+      </Link>
+
       <Pressable onPress={confirmarEliminar} style={estilos.botonEliminar}>
         <Text style={estilos.textoBotonEliminar}>Eliminar lista</Text>
       </Pressable>
@@ -154,6 +168,15 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
   },
   textoBotonEstudiarDeshabilitado: { color: '#6c7086', fontWeight: '600' },
+  botonAgregarObjeto: {
+    borderWidth: 1,
+    borderColor: '#45475a',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  textoBotonAgregarObjeto: { color: '#89b4fa', fontWeight: '600', fontSize: 14 },
   botonEliminar: { padding: 12, alignItems: 'center', marginTop: 8 },
   textoBotonEliminar: { color: '#f38ba8' },
 });

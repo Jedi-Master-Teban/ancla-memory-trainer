@@ -25,9 +25,9 @@ function tarjeta(parcial: Partial<FilaTarjeta> & { id: string }): FilaTarjeta {
 }
 
 describe('rutaEditar', () => {
-  it('colgadero: apunta al índice de la categoría (sin editor propio hoy, hueco real conocido)', () => {
+  it('colgadero: apunta al editor genérico con su id (Fase 7 llena el hueco que antes apuntaba al índice)', () => {
     const t = tarjeta({ id: 't1', categoria: 'colgadero' });
-    expect(rutaEditar(t)).toBe('/colgadero');
+    expect(rutaEditar(t)).toBe('/crear/colgadero?id=t1');
   });
 
   it('naipe: apunta al índice, que ya tiene edición inline', () => {

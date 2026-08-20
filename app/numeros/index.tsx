@@ -1,35 +1,67 @@
-import { Link } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { Link, useFocusEffect } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { obtenerBD } from '../../src/db/client';
-import { editarNumeroImportante, eliminarNumeroImportante, listarNumerosImportantes } from '../../src/db/repository';
+import {
+  editarNumeroImportante,
+  eliminarNumeroImportante,
+  listarNumerosImportantes,
+  listarTarjetasPorMazo,
+  obtenerMazoPorCategoria,
+} from '../../src/db/repository';
 import type { ConexionBD, FilaNumeroImportante } from '../../src/db/tipos';
+import { descomponer, type Trozo } from '../../src/domain/numeros/descomposicion';
 
 export default function NumerosIndex() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [db, setDb] = useState<ConexionBD | null>(null);
   const [numeros, setNumeros] = useState<FilaNumeroImportante[]>([]);
+  const [mapaColgadero, setMapaColgadero] = useState<Map<number, string>>(new Map());
   const [editando, setEditando] = useState<string | null>(null);
   const [etiquetaEdit, setEtiquetaEdit] = useState('');
   const [digitosEdit, setDigitosEdit] = useState('');
 
-  const cargar = useCallback(async () => {
-    try {
-      const conexion = await obtenerBD();
-      const filas = await listarNumerosImportantes(conexion);
-      setDb(conexion);
-      setNumeros(filas);
-      setCargando(false);
-    } catch (e) {
-      setError(String(e));
-      setCargando(false);
-    }
+  const cargar = useCallback(() => {
+    let cancelado = false;
+    (async () => {
+      try {
+        const conexion = await obtenerBD();
+        const [filas, mazoColgadero] = await Promise.all([
+          listarNumerosImportantes(conexion),
+          obtenerMazoPorCategoria(conexion, 'colgadero'),
+        ]);
+        const tarjetasColgadero = mazoColgadero ? await listarTarjetasPorMazo(conexion, mazoColgadero.id) : [];
+        if (cancelado) return;
+        setDb(conexion);
+        setNumeros(filas);
+        setMapaColgadero(new Map(tarjetasColgadero.map((t) => [Number(t.contenido_frente), t.contenido_reverso])));
+        setCargando(false);
+      } catch (e) {
+        if (!cancelado) {
+          setError(String(e));
+          setCargando(false);
+        }
+      }
+    })();
+    return () => {
+      cancelado = true;
+    };
   }, []);
 
-  useEffect(() => {
-    cargar();
-  }, [cargar]);
+  // El Stack no desmonta esta pantalla al ir a /numeros/nuevo y volver —
+  // useFocusEffect para que el número recién creado aparezca sin recargar
+  // la app a mano.
+  useFocusEffect(cargar);
+
+  const trozosEdit: Trozo[] = useMemo(() => {
+    if (digitosEdit.length === 0) return [];
+    try {
+      return descomponer(digitosEdit, (valor) => mapaColgadero.get(valor));
+    } catch {
+      return [];
+    }
+  }, [digitosEdit, mapaColgadero]);
 
   function empezarEdicion(numero: FilaNumeroImportante) {
     setEditando(numero.id);
@@ -41,7 +73,7 @@ export default function NumerosIndex() {
     if (!db) return;
     await editarNumeroImportante(db, id, { etiqueta: etiquetaEdit.trim(), digitos: digitosEdit.trim() });
     setEditando(null);
-    await cargar();
+    cargar();
   }
 
   function confirmarEliminar(numero: FilaNumeroImportante) {
@@ -53,7 +85,7 @@ export default function NumerosIndex() {
         onPress: async () => {
           if (!db) return;
           await eliminarNumeroImportante(db, numero.id);
-          await cargar();
+          cargar();
         },
       },
     ]);
@@ -109,6 +141,16 @@ export default function NumerosIndex() {
                 keyboardType="number-pad"
                 style={estilos.input}
               />
+              {trozosEdit.length > 0 ? (
+                <View style={estilos.bloquePreview}>
+                  <Text style={estilos.tituloPreview}>Descomposición</Text>
+                  {trozosEdit.map((trozo, i) => (
+                    <Text key={i} style={estilos.filaTrozo}>
+                      {trozo.digitos} → {trozo.palabra ?? 'sin colgadero'}
+                    </Text>
+                  ))}
+                </View>
+              ) : null}
               <Pressable onPress={() => guardarEdicion(numero.id)} style={estilos.botonGuardar}>
                 <Text style={estilos.textoBoton}>Guardar</Text>
               </Pressable>
@@ -161,4 +203,7 @@ const estilos = StyleSheet.create({
     fontSize: 15,
   },
   botonGuardar: { backgroundColor: '#89b4fa', borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
+  bloquePreview: { backgroundColor: '#1e1e2e', borderRadius: 8, padding: 12, gap: 4 },
+  tituloPreview: { color: '#ffffff', fontWeight: '600', marginBottom: 2 },
+  filaTrozo: { color: '#a6e3a1', fontSize: 14 },
 });
