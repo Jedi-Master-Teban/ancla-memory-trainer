@@ -115,6 +115,15 @@ humano: el día termina a la medianoche del dispositivo, no en UTC. Consecuencia
 aceptada y documentada: viajar entre husos puede alargar o acortar un día. No se
 "arregla" con UTC, que rompería el caso normal para arreglar el caso raro.
 
+### 2.8 `preferencias` (Fase 8, ADR-026 y ADR-027)
+Fila única — `id` INTEGER PK CHECK(id=1) · `tema` TEXT (`'arcade'` | `'papel'`)
+· `tipografia` TEXT (`'sistema'` | `'tematica'`).
+`tema` lo siembra la migración 006 con `'arcade'`; `tipografia` la agrega la
+migración 007 como `ADD COLUMN ... DEFAULT 'tematica'` (aditiva, conserva el
+tema ya elegido en el dispositivo). Dos ejes independientes: el tema decide la
+paleta y qué familia tipográfica, la preferencia decide si esa familia se usa o
+se cae a la letra del sistema.
+
 ## 3. Política de migraciones
 
 - Archivos numerados en `src/db/migrations/NNN_nombre.ts`, aplicados en orden y

@@ -2,11 +2,12 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { BotonesCalificacion } from '../src/components/BotonesCalificacion';
+import { CartaVisual } from '../src/components/CartaVisual';
 import { Flashcard } from '../src/components/Flashcard';
 import { PausaVisualizacion } from '../src/components/PausaVisualizacion';
 import { obtenerBD } from '../src/db/client';
 import { armarSesionMixta, calificarTarjeta, cerrarSesion, crearSesion } from '../src/db/repository';
-import type { Categoria, ConexionBD } from '../src/db/tipos';
+import type { Categoria, ConexionBD, MetadataNaipe } from '../src/db/tipos';
 import type { Calificacion } from '../src/domain/fsrs/scheduler';
 import { useSesionStore } from '../src/stores/sesion';
 
@@ -122,7 +123,18 @@ export default function Practicar() {
         {indice + 1} / {tarjetas.length}
       </Text>
       <Text style={estilos.insignia}>{ETIQUETA_CATEGORIA[actual.categoria]}</Text>
-      <Flashcard frente={actual.contenido_frente} reverso={actual.contenido_reverso} revelada={revelada} />
+      {actual.categoria === 'naipe' ? (
+        <View style={estilos.centroCarta}>
+          <CartaVisual
+            key={actual.id}
+            carta={JSON.parse(actual.metadata_categoria) as MetadataNaipe}
+            palabra={actual.contenido_reverso}
+            revelada={revelada}
+          />
+        </View>
+      ) : (
+        <Flashcard frente={actual.contenido_frente} reverso={actual.contenido_reverso} revelada={revelada} />
+      )}
       {!revelada ? (
         <PausaVisualizacion clave={actual.id}>
           <Pressable onPress={revelar} style={estilos.botonRevelar}>
@@ -138,6 +150,7 @@ export default function Practicar() {
 
 const estilos = StyleSheet.create({
   contenedor: { flex: 1, backgroundColor: '#1e1e2e', justifyContent: 'center', gap: 12 },
+  centroCarta: { alignItems: 'center' },
   centro: { flex: 1, backgroundColor: '#1e1e2e', alignItems: 'center', justifyContent: 'center', gap: 12 },
   progreso: { color: '#a6adc8', textAlign: 'center' },
   insignia: { color: '#f9e2af', textAlign: 'center', fontSize: 13, fontWeight: '600', letterSpacing: 1 },

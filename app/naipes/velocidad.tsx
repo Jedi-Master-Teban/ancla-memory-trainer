@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Flashcard } from '../../src/components/Flashcard';
+import { CartaVisual } from '../../src/components/CartaVisual';
 import { obtenerBD } from '../../src/db/client';
 import {
   armarSesionDeMazo,
@@ -10,8 +10,9 @@ import {
   crearSesion,
   obtenerMazoPorCategoria,
 } from '../../src/db/repository';
-import type { ConexionBD } from '../../src/db/tipos';
+import type { ConexionBD, MetadataNaipe } from '../../src/db/tipos';
 import { useSesionStore } from '../../src/stores/sesion';
+import { useTema } from '../../src/stores/tema';
 
 /** Serie cronometrada, sin pausa. Autoevalúa en 2 niveles (§8.2, no cambia sin ADR). */
 export default function NaipesVelocidad() {
@@ -23,6 +24,7 @@ export default function NaipesVelocidad() {
 
   const { tarjetas, sesionId, indice, revelada, aciertos, fallos, iniciar, revelar, avanzar, reiniciar } =
     useSesionStore();
+  const { colores: t } = useTema();
 
   useEffect(() => {
     let cancelado = false;
@@ -77,26 +79,26 @@ export default function NaipesVelocidad() {
 
   if (cargando) {
     return (
-      <View style={estilos.centro}>
-        <ActivityIndicator color="#ffffff" />
+      <View style={[estilos.centro, { backgroundColor: t.bg }]}>
+        <ActivityIndicator color={t.ink} />
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={estilos.centro}>
-        <Text style={estilos.error}>Error: {error}</Text>
+      <View style={[estilos.centro, { backgroundColor: t.bg }]}>
+        <Text style={[estilos.error, { color: t.otraVez }]}>Error: {error}</Text>
       </View>
     );
   }
 
   if (tarjetas.length === 0) {
     return (
-      <View style={estilos.centro}>
-        <Text style={estilos.texto}>No hay cartas pendientes.</Text>
+      <View style={[estilos.centro, { backgroundColor: t.bg }]}>
+        <Text style={[estilos.texto, { color: t.inkMuted }]}>No hay cartas pendientes.</Text>
         <Pressable onPress={() => router.back()}>
-          <Text style={estilos.enlace}>Volver</Text>
+          <Text style={[estilos.enlace, { color: t.accent1 }]}>Volver</Text>
         </Pressable>
       </View>
     );
@@ -106,42 +108,45 @@ export default function NaipesVelocidad() {
     const totalSegundos = Math.round((ahoraMs - inicioMs) / 1000);
     const promedioSegundos = tarjetas.length > 0 ? totalSegundos / tarjetas.length : 0;
     return (
-      <View style={estilos.centro}>
-        <Text style={estilos.titulo}>Sesión completa</Text>
-        <Text style={estilos.texto}>
+      <View style={[estilos.centro, { backgroundColor: t.bg }]}>
+        <Text style={[estilos.titulo, { color: t.ink }]}>Sesión completa</Text>
+        <Text style={[estilos.texto, { color: t.inkMuted }]}>
           {aciertos} aciertos · {fallos} fallos
         </Text>
-        <Text style={estilos.texto}>
+        <Text style={[estilos.texto, { color: t.inkMuted }]}>
           {totalSegundos}s totales · {promedioSegundos.toFixed(1)}s por carta
         </Text>
         <Pressable onPress={() => router.back()}>
-          <Text style={estilos.enlace}>Volver</Text>
+          <Text style={[estilos.enlace, { color: t.accent1 }]}>Volver</Text>
         </Pressable>
       </View>
     );
   }
 
   const actual = tarjetas[indice];
+  const { palo, valor } = JSON.parse(actual.metadata_categoria) as MetadataNaipe;
   const transcurridoSegundos = Math.round((ahoraMs - inicioMs) / 1000);
 
   return (
-    <View style={estilos.contenedor}>
-      <Text style={estilos.cronometro}>{transcurridoSegundos}s</Text>
-      <Text style={estilos.progreso}>
+    <View style={[estilos.contenedor, { backgroundColor: t.bg }]}>
+      <Text style={[estilos.cronometro, { color: t.accent4 }]}>{transcurridoSegundos}s</Text>
+      <Text style={[estilos.progreso, { color: t.inkMuted }]}>
         {indice + 1} / {tarjetas.length}
       </Text>
-      <Flashcard frente={actual.contenido_frente} reverso={actual.contenido_reverso} revelada={revelada} />
+      <View style={estilos.centroCarta}>
+        <CartaVisual key={actual.id} carta={{ palo, valor }} palabra={actual.contenido_reverso} revelada={revelada} />
+      </View>
       {!revelada ? (
-        <Pressable onPress={revelar} style={estilos.botonRevelar}>
-          <Text style={estilos.textoRevelar}>Ver respuesta</Text>
+        <Pressable onPress={revelar} style={[estilos.botonRevelar, { backgroundColor: t.accent1 }]}>
+          <Text style={[estilos.textoRevelar, { color: t.inkOnAccent }]}>Ver respuesta</Text>
         </Pressable>
       ) : (
         <View style={estilos.filaAutoeval}>
-          <Pressable onPress={() => onAutoevaluar(false)} style={[estilos.botonAutoeval, estilos.fallo]}>
-            <Text style={estilos.textoRevelar}>Fallé</Text>
+          <Pressable onPress={() => onAutoevaluar(false)} style={[estilos.botonAutoeval, { backgroundColor: t.otraVez }]}>
+            <Text style={[estilos.textoRevelar, { color: t.inkOnAccent }]}>Fallé</Text>
           </Pressable>
-          <Pressable onPress={() => onAutoevaluar(true)} style={[estilos.botonAutoeval, estilos.acierto]}>
-            <Text style={estilos.textoRevelar}>Acerté</Text>
+          <Pressable onPress={() => onAutoevaluar(true)} style={[estilos.botonAutoeval, { backgroundColor: t.bien }]}>
+            <Text style={[estilos.textoRevelar, { color: t.inkOnAccent }]}>Acerté</Text>
           </Pressable>
         </View>
       )}
@@ -150,24 +155,22 @@ export default function NaipesVelocidad() {
 }
 
 const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#1e1e2e', justifyContent: 'center', gap: 16 },
-  centro: { flex: 1, backgroundColor: '#1e1e2e', alignItems: 'center', justifyContent: 'center', gap: 12 },
-  cronometro: { color: '#f9e2af', textAlign: 'center', fontSize: 20, fontWeight: '600' },
-  progreso: { color: '#a6adc8', textAlign: 'center' },
-  titulo: { color: '#ffffff', fontSize: 20, fontWeight: '600' },
-  texto: { color: '#a6adc8' },
-  error: { color: '#f38ba8', padding: 24, textAlign: 'center' },
-  enlace: { color: '#89b4fa', marginTop: 12 },
+  contenedor: { flex: 1, justifyContent: 'center', gap: 16 },
+  centro: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  centroCarta: { alignItems: 'center' },
+  cronometro: { textAlign: 'center', fontSize: 20, fontWeight: '600' },
+  progreso: { textAlign: 'center' },
+  titulo: { fontSize: 20, fontWeight: '600' },
+  texto: {},
+  error: { padding: 24, textAlign: 'center' },
+  enlace: { marginTop: 12 },
   botonRevelar: {
     alignSelf: 'center',
-    backgroundColor: '#89b4fa',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
   filaAutoeval: { flexDirection: 'row', gap: 8, paddingHorizontal: 16 },
   botonAutoeval: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
-  fallo: { backgroundColor: '#f38ba8' },
-  acierto: { backgroundColor: '#a6e3a1' },
-  textoRevelar: { color: '#1e1e2e', fontWeight: '600' },
+  textoRevelar: { fontWeight: '600' },
 });

@@ -1,6 +1,7 @@
 import {
   cartaDesdePalabra,
   esFigura,
+  explicarNaipe,
   inicialDePalo,
   sonidosDeValor,
   validarPalabraNaipe,
@@ -193,4 +194,33 @@ describe('cartaDesdePalabra — contrato 5: inversa de validarPalabraNaipe', () 
       expect(cartaDesdePalabra('Pozo', new Map())).toEqual(carta);
     }
   );
+});
+
+describe('explicarNaipe — cadena fonética del reverso (Fase 8, ADR-026)', () => {
+  it('para una carta numérica válida, retorna el desglose fonético del resto tras el marcador de palo', () => {
+    // "Dato" (contrato 1 de validarPalabraNaipe arriba): d(marcador) + a(ignorada) + t(1=As) + o(ignorada)
+    const carta: Carta = { palo: 'diamantes', valor: 'A' };
+    expect(explicarNaipe(carta, 'Dato')).toBe('d + t(1) → 1');
+  });
+
+  it('para otra carta numérica válida (marcador vocal), retorna el desglose del resto', () => {
+    // "Efe" (contrato 1 arriba): e(marcador, vocal) + f(7) + e(ignorada)
+    const carta: Carta = { palo: 'espadas', valor: '7' };
+    expect(explicarNaipe(carta, 'Efe')).toBe('e + f(7) → 7');
+  });
+
+  it('para una figura (J/Q/K), retorna null — no hay nada que decodificar (ADR-017)', () => {
+    const carta: Carta = { palo: 'diamantes', valor: 'K' };
+    expect(explicarNaipe(carta, 'Domingo')).toBeNull();
+  });
+
+  it('si no queda nada tras el marcador, retorna null', () => {
+    const carta: Carta = { palo: 'espadas', valor: 'A' };
+    expect(explicarNaipe(carta, 'E')).toBeNull();
+  });
+
+  it('defensivo: si la palabra no empieza con el marcador esperado, retorna null', () => {
+    const carta: Carta = { palo: 'diamantes', valor: 'A' };
+    expect(explicarNaipe(carta, 'Tato')).toBeNull();
+  });
 });

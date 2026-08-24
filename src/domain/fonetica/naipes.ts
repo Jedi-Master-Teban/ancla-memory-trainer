@@ -3,7 +3,7 @@
  * estándar de 52 cartas, J/Q/K (ADR-016 — no baraja española). Reglas y su
  * razonamiento completo en agent_docs/seeds/naipes-52.md.
  */
-import { decodificar, normalizar } from './decodificador';
+import { decodificar, explicar, normalizar } from './decodificador';
 
 export type Palo = 'espadas' | 'diamantes' | 'palos' | 'corazones';
 export type Valor = 'A' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | 'J' | 'Q' | 'K';
@@ -173,6 +173,28 @@ export function validarPalabraNaipe(palabra: string, carta: Carta): ResultadoVal
   }
 
   return { valida: true, advertencias };
+}
+
+/**
+ * Cadena fonética legible para el reverso de una carta numérica (ej.
+ * "d + t(1) → 1" para "Dato" en Diamantes-As), Fase 8 — mismo propósito que
+ * `explicar()` ya cumple para Colgadero. Reusa `explicar()` sobre el resto
+ * tras el marcador de palo (mismo `slice` que `validarPalabraNaipe` usa en
+ * la línea de arriba) — nunca decodifica la palabra completa, el marcador
+ * no es parte de la codificación numérica. `null` para figuras: no hay nada
+ * que decodificar (ADR-017), igual que `sonidosDeValor`.
+ */
+export function explicarNaipe(carta: Carta, palabra: string): string | null {
+  if (esFigura(carta.valor)) return null;
+
+  const normalizada = normalizar(palabra);
+  const marcador = inicialDePalo(carta.palo);
+  if (!normalizada.startsWith(marcador)) return null;
+
+  const resto = normalizada.slice(marcador.length);
+  if (resto.length === 0) return null;
+
+  return `${marcador} + ${explicar(resto)}`;
 }
 
 /**

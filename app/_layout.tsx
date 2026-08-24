@@ -1,5 +1,17 @@
+import { useCallback, useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as SplashScreen from 'expo-splash-screen';
+import { useFonts } from 'expo-font';
+import { Fredoka_600SemiBold } from '@expo-google-fonts/fredoka/600SemiBold';
+import { Nunito_400Regular } from '@expo-google-fonts/nunito/400Regular';
+import { Lora_600SemiBold } from '@expo-google-fonts/lora/600SemiBold';
+import { Karla_400Regular } from '@expo-google-fonts/karla/400Regular';
+import { obtenerBD } from '../src/db/client';
+import { obtenerPreferencias } from '../src/db/repository';
+import { useTema, useTemaStore } from '../src/stores/tema';
+
+SplashScreen.preventAutoHideAsync();
 
 /**
  * Stack (no Slot) — da gesto nativo de deslizar para volver y botón de
@@ -25,17 +37,47 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
  * eso el botón seguía diciendo "memory-trainer" pese a reiniciar la app.
  */
 export default function RootLayout() {
+  const [fontsListas, errorFuentes] = useFonts({
+    Fredoka_600SemiBold,
+    Nunito_400Regular,
+    Lora_600SemiBold,
+    Karla_400Regular,
+  });
+  const [temaListo, setTemaListo] = useState(false);
+  const { colores: t } = useTema();
+
+  const cargarTema = useCallback(async () => {
+    const db = await obtenerBD();
+    const prefs = await obtenerPreferencias(db);
+    useTemaStore.getState().establecer(prefs);
+    setTemaListo(true);
+  }, []);
+
+  useEffect(() => {
+    cargarTema();
+  }, [cargarTema]);
+
+  useEffect(() => {
+    if ((fontsListas || errorFuentes) && temaListo) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsListas, errorFuentes, temaListo]);
+
+  if (!(fontsListas || errorFuentes) || !temaListo) {
+    return null;
+  }
+
   return (
     <SafeAreaProvider>
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: '#1e1e2e' },
-          headerTintColor: '#ffffff',
+          headerStyle: { backgroundColor: t.bg },
+          headerTintColor: t.ink,
           headerShadowVisible: false,
-          contentStyle: { backgroundColor: '#1e1e2e' },
+          contentStyle: { backgroundColor: t.bg },
         }}
       >
-        <Stack.Screen name="index" options={{ title: 'memory-trainer' }} />
+        <Stack.Screen name="index" options={{ title: 'Ancla' }} />
         <Stack.Screen name="colgadero/index" options={{ title: 'Colgadero', headerBackTitle: 'Inicio' }} />
         <Stack.Screen name="colgadero/flash" options={{ title: 'Fonética Flash' }} />
         <Stack.Screen name="colgadero/reverso" options={{ title: 'Reverso' }} />
@@ -57,6 +99,7 @@ export default function RootLayout() {
         <Stack.Screen name="estadisticas" options={{ title: 'Estadísticas', headerBackTitle: 'Inicio' }} />
         <Stack.Screen name="historial-sesiones" options={{ title: 'Historial de sesiones' }} />
         <Stack.Screen name="crear/[categoria]" options={{ title: 'Crear' }} />
+        <Stack.Screen name="ajustes" options={{ title: 'Ajustes', headerBackTitle: 'Inicio' }} />
       </Stack>
     </SafeAreaProvider>
   );

@@ -65,14 +65,18 @@ Evidencia exigida:
 5. Estado explícito del bloqueo P-1: resuelto, o declarado como pendiente con las
    12 cartas de figuras marcadas sin aprobar.
 
-## 7. Diseño visual real de la carta — pendiente de Fase 8
+## 7. Diseño visual real de la carta — resuelto en Fase 8
 
-Fuera de alcance de esta fase (que fue solo funcional: `contenido_frente` como
-texto plano, p. ej. "A♠"). El operador pidió, y se investigó durante la Fase 5,
-que el modo de repaso muestre una carta con diseño real (esquinas rango+palo,
-colores rojo/negro) y una animación de voltear para revelar la palabra
-colgadero. Viable con la `Animated` API nativa de `react-native`, sin
-dependencias nuevas — detalle completo en `PLAN-FASES.md`, sección de Fase 8.
+Construido en `src/components/CartaVisual.tsx`: esquinas rango+palo (glifo
+Unicode de `simboloDePalo`, no SVG — ver ADR-026), rojo/negro por palo, cara
+frontal invariante de tema. Volteo con `Animated.Value` + `interpolate()` +
+`transform:[{rotateY}]` + `backfaceVisibility:'hidden'`, cero dependencias
+nuevas, tal como se investigó en la Fase 5. Cableado en las 4 pantallas
+(`flash`, `reverso` con `disenoAlFrente={false}` por su orden invertido,
+`velocidad`, `baraja-completa` con el modo `compacto` sin `Animated` — hasta
+52 cartas simultáneas, sin concepto de reverso ahí). El reverso muestra
+además la cadena fonética (`explicarNaipe()`, TDD en `naipes.test.ts`),
+mismo nivel de detalle que Colgadero ya tenía con `explicar()`.
 
 **React Native, no Three.js** (pregunta directa del operador, ya investigada):
 el puente `expo-gl`/Three.js tiene problemas de compatibilidad reales en iOS —

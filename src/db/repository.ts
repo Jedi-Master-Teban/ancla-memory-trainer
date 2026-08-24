@@ -15,6 +15,7 @@ import type {
   FilaListaObjeto,
   FilaMazo,
   FilaNumeroImportante,
+  FilaPreferencias,
   FilaRachaConfig,
   FilaRevision,
   FilaSesionEstudio,
@@ -22,6 +23,8 @@ import type {
   MetadataListaItem,
   MetadataNumero,
 } from './tipos';
+import type { TemaId } from '../tema/colores';
+import type { TipografiaId } from '../tema/tipografia';
 
 function generarId(): string {
   return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
@@ -775,6 +778,45 @@ export async function contarPendientesPorCategoria(
 }
 
 /**
+ * Inventario: cuántos ELEMENTOS tiene el operador en cada categoría, en su
+ * unidad natural — no cuántas tarjetas están pendientes (ADR-027). Es lo que
+ * muestran las insignias del dashboard.
+ *
+ * Deliberadamente distinto de `contarPendientesPorCategoria`, que sigue
+ * existiendo y sigue alimentando el botón "Practicar ahora": una cosa es "qué
+ * tengo guardado" y otra "qué me toca hoy". Confundirlas fue justo el reporte
+ * del operador (un número recién calificado mostraba 0, y una lista mostraba
+ * sus eslabones en vez de contarse como 1).
+ *
+ * Unidad por categoría:
+ *   - colgadero / naipe → tarjetas activas (100 / 52)
+ *   - lista_item        → filas de `lista` (una lista es UN elemento, aunque
+ *                         genere N-1 tarjetas de eslabón)
+ *   - numero            → filas de `numero_importante`
+ *
+ * Siempre devuelve las 4 filas, incluidas las de conteo 0 — a diferencia del
+ * GROUP BY de `contarPendientesPorCategoria`, que omite las categorías vacías.
+ */
+export async function contarElementosPorCategoria(
+  db: ConexionBD
+): Promise<{ categoria: Categoria; elementos: number }[]> {
+  return db.getAllAsync<{ categoria: Categoria; elementos: number }>(
+    `SELECT 'colgadero' AS categoria, COUNT(*) AS elementos
+       FROM tarjeta JOIN mazo ON tarjeta.mazo_id = mazo.id
+       WHERE mazo.categoria = 'colgadero' AND tarjeta.archivada = 0
+     UNION ALL
+     SELECT 'naipe', COUNT(*)
+       FROM tarjeta JOIN mazo ON tarjeta.mazo_id = mazo.id
+       WHERE mazo.categoria = 'naipe' AND tarjeta.archivada = 0
+     UNION ALL
+     SELECT 'lista_item', COUNT(*) FROM lista
+     UNION ALL
+     SELECT 'numero', COUNT(*) FROM numero_importante`,
+    []
+  );
+}
+
+/**
  * Sesión mixta priorizada entre todas las categorías (§8.9) — mismo patrón
  * que `armarSesionDeMazo` envolviendo `armarSesion`, aquí envolviendo
  * `mezclarSesion`.
@@ -792,18 +834,22 @@ export async function listarTodasLasTarjetas(db: ConexionBD): Promise<FilaTarjet
   return listas.flat();
 }
 
-/**
- * Borra todo `dia_practica` y devuelve `congeladores_disponibles` al valor
- * sembrado por la migración 005 (2). NO es parte de ningún módulo del brief
- * — conveniencia pedida por el operador para limpiar datos de prueba
- * mientras se verifica esta fase en el dispositivo. Candidata a quitarse (o
- * a confirmarse como función real) antes de cerrar la Fase 5.
- */
-export async function reiniciarHistorialPractica(db: ConexionBD): Promise<void> {
-  await db.withTransactionAsync(async () => {
-    await db.runAsync('DELETE FROM dia_practica', []);
-    await db.runAsync('UPDATE racha_config SET congeladores_disponibles = 2 WHERE id = 1', []);
-  });
+// --- Preferencias (Fase 8, ADR-026) ---
+
+export async function obtenerPreferencias(db: ConexionBD): Promise<FilaPreferencias> {
+  const fila = await db.getFirstAsync<FilaPreferencias>('SELECT * FROM preferencias WHERE id = 1', []);
+  if (!fila) {
+    throw new Error('No existe preferencias — falta correr la migración 006');
+  }
+  return fila;
+}
+
+export async function actualizarTema(db: ConexionBD, tema: TemaId): Promise<void> {
+  await db.runAsync('UPDATE preferencias SET tema = ? WHERE id = 1', [tema]);
+}
+
+export async function actualizarTipografia(db: ConexionBD, tipografia: TipografiaId): Promise<void> {
+  await db.runAsync('UPDATE preferencias SET tipografia = ? WHERE id = 1', [tipografia]);
 }
 
 // --- Panel de retención (§8.8, agent_docs/modulos/08-panel-retencion.md) ---

@@ -107,51 +107,29 @@ vía Expo Go. Nunca avanzar con la fase anterior en estado dudoso.
 
 ## Estado actual
 
-Fases 0-4 completas y verificadas en Expo Go (iPhone real, SDK 54). Colgadero,
-Naipes, Listas Encadenadas y Números Importantes funcionales: decodificador
-fonético, 52+100 palabras sembradas, eslabones por identidad de objeto
-(ADR-020), descomposición numérica con casos Oro/Rara (ADR-019), navegación
-nativa por Stack (ADR-018, no Slot; `headerBackTitle` va en la pantalla de
-destino, no en la de origen). Fase 5 (Racha y Dashboard) **completa y
-cerrada** (2026-08-13→14): racha con congelador manual, sesión mixta
-priorizada, dashboard como pantalla de inicio. Confirmación de 2 días
-recibida (07-racha.md §7) — con una nota honesta: el operador no tocó la app
-el primer día, así que confirma que la racha en cero persiste bien entre
-reinicios, pero no probó todavía que una racha con progreso real sobreviva un
-día completo; queda como candidato a una prueba más exigente si surge duda
-más adelante. Diseño visual de Fase 8 (pulido) ya investigado y documentado
-por adelantado — ver `PLAN-FASES.md` §Fase 8. Fase 6 (Panel de Retención)
-**completa y cerrada** (2026-08-15): panel por categoría/ventana, tarjetas
-problemáticas, historial de sesiones en pantalla propia (feedback real de
-dispositivo — no inline). `done when` verificado con SQL manual contra la
-BD real exportada del dispositivo (`agent_docs/consultas-verificacion.sql`,
-botón "Exportar BD" vía `expo-sharing`, ADR-024): los 4 porcentajes de
-retención, los 4 conteos de estado por categoría y las 52 tarjetas
-problemáticas coinciden exactamente. En el camino: `mezclarSesion` corregida
-para que ninguna categoría monopolice las vencidas (ADR-023, corrección de
-causa en Corrección-a-ADR-023 — el mecanismo real era Learning atascado, no
-lapses).
+**Proyecto detenido el 2026-08-22 por decisión del operador (ADR-028).** No es
+un bloqueo técnico: la única forma de instalar la app sin caducidad semanal es
+una membresía de Apple de US$99/año, y el operador prefirió parar y explorar
+alternativas después.
 
-Fase 7 (Ejercicios Personalizados) **completa y cerrada** (2026-08-20):
-`REGISTRO`/`GUARDAR_CATEGORIA`/`ARCHIVAR_CATEGORIA` (§8.6) — formulario
-genérico dirigido por tabla, cero cambios en `FormularioGenerico.tsx` al
-agregar una categoría de prueba (criterio §3 probado y revertido). Naipe sin
-creación ni archivado, solo edición — mazo cerrado de 52 cartas (ADR-025).
-Verificado en Expo Go por el operador: crear en colgadero/número/lista_item,
-editar un naipe, cerrar y reabrir con las 4 categorías apareciendo en sesión,
-y archivar un colgadero con persistencia confirmada tras cerrar Expo Go del
-todo (no solo recargar). En el camino: `useFocusEffect` corregido en
-`listas/[id].tsx`, `listas/index.tsx`, `naipes/index.tsx` y
-`numeros/index.tsx` (el Stack no desmonta pantallas al volver — mismo bug ya
-conocido de Fase 5, reaparecido por no haberse aplicado ahí en su momento);
-cadena mnemotécnica visible al editar un número (antes solo al crearlo);
-listado completo de palabras colgadero en su pantalla de índice (hueco real
-que impedía llegar a una palabra sin historial de revisión problemático).
-Hallazgo aparte, sin tocar código: 3 palabras colgadero (números 28/37/40)
-pueden seguir desactualizadas en dispositivos que sembraron antes de la
-corrección del 2026-08-12 (commit `7f95d46`) — las migraciones no
-resiembran; se corrigen a mano, tarjeta por tarjeta, con el editor nuevo.
+**Fases 0-7: completas y verificadas en Expo Go sobre iPhone real (SDK 54).**
+Colgadero, Naipes, Listas Encadenadas, Números Importantes, Racha y Dashboard,
+Panel de Retención, y Ejercicios Personalizados. Cada una cerrada con tests +
+commit + verificación manual en dispositivo.
 
+**Fase 8 (Pulido): PARCIAL, no completa.** Su `done when` — que la notificación
+de racha en riesgo dispare en un test manual — **no se cumplió**:
+`src/notificaciones/racha.ts` no existe y el spike P-4 nunca se corrió en el
+dispositivo. Sí se construyó (pero **no se verificó en el iPhone**): tema dual
+Arcade/Papel con selector, selector de tipografía, migraciones 006 y 007,
+íconos SVG, naipes lado a lado, heatmap a tamaño real, llama SVG animada, e
+identidad "Ancla" con ícono propio. Quedan 24 archivos con color hardcodeado
+sin pasar a tokens de tema, y un bug abierto: los botones "Bien"/"Fácil" no
+aparecen en Fonética Flash y Reverso.
+
+**Para retomar:** leer `SESSION_NOTES.md` primero — tiene el estado exacto, el
+bug abierto con su diagnóstico más rápido, y las opciones de distribución ya
+investigadas. `README.md` es la presentación del proyecto para humanos.
 ---
 
 ## NUNCA HACER (constraints duras — §3 del brief)

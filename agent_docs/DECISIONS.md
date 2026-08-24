@@ -664,3 +664,237 @@ contradice el modelo de dominio ya cerrado desde ADR-016.
 `TarjetasProblematicas.tsx`'s `rutaEditar` sigue enviando naipe a `/naipes`
 (su editor inline ya probado), no al mecanismo nuevo — cambiarlo no ganaba
 nada y sí arriesgaba un flujo que ya funciona.
+
+## Corrección a ADR-011 · 2026-08-20
+
+**No se reabre la decisión** (la disciplina de "verificar contra `node_modules/`
+real, no de memoria" sigue siendo correcta) — se corrige un dato concreto que
+quedó mal en la fila de `expo-notifications`.
+
+**Lo que decía ADR-011 (línea 111):** `expo-notifications | 57.0.10 (verificada,
+no instalada aún — entra en Fase 8) | npm view`.
+
+**Por qué está mal:** esa fila se escribió el 2026-08-11, durante el scaffold
+original en SDK 57, **antes** del downgrade real a SDK 54 (ADR-012, mismo día).
+`npm view expo-notifications version` devuelve el último tag publicado en el
+registro de npm — no lo que este proyecto, fijado a SDK 54, realmente instala.
+Nunca se revisitó esa fila tras el downgrade, así que quedó describiendo una
+versión que este proyecto no puede usar.
+
+**Dato real** (Fase 8, Stage 0 — instalado y confirmado hoy, no de npm view):
+```bash
+npx expo install expo-notifications
+grep '"version"' node_modules/expo-notifications/package.json
+```
+→ `"version": "0.32.17"` — coincide con `bundledNativeModules.json` de la rama
+`sdk-54` de Expo (`"expo-notifications": "~0.32.17"`), la fuente correcta para
+saber qué versión trae una SDK fijada, en vez de la última publicada.
+
+**Consecuencia:** ninguna — Fase 8 nunca dependió del número viejo, solo lo
+heredó sin usar. Queda como recordatorio de que "verificar contra
+`node_modules/`" significa contra el árbol real después de cualquier cambio de
+SDK, no solo una vez al principio del proyecto.
+
+## ADR-026 · 2026-08-20 · Aceptada
+
+**Decisión:** Fase 8 implementa el switcher visual completo de dos direcciones
+("Arcade Neón" / "Papel y Tinta"), con selector en vivo en `app/ajustes.tsx` y
+persistencia en SQLite — no el "modo oscuro por defecto" mínimo que pide
+`PROJECT_BRIEF.md §10` a secas. Esto agrega 7 dependencias nuevas fuera de la
+tabla de stack de `CLAUDE.md`: `expo-notifications`, `expo-font`,
+`expo-splash-screen`, `@expo-google-fonts/{fredoka,nunito,lora,karla}`.
+
+**Razón:** decisión explícita del operador (Plan Mode, 2026-08-20), tomada
+después de ver el costo real — no una interpretación de alcance del agente.
+Mismo tipo de justificación que ADR-024 (`expo-sharing`, dependencia aditiva
+fuera de la tabla original): ahí la razón era un `done when` inalcanzable sin
+la dependencia nueva; aquí la razón es que el operador prefirió explícitamente
+exceder el mínimo del brief tras ver el costo, no que fuera inevitable.
+
+**Costo real, verificado contra el código y los paquetes instalados, no
+asumido:**
+
+- **`oklch()` no se puede usar en valores de estilo de React Native 0.81.5** —
+  confirmado en dos capas del paquete ya instalado: el parser JS clásico
+  (`node_modules/@react-native/normalize-colors/index.js`, función
+  `getMatchers()` — sin matcher de `oklch`/`oklab`/`lab`/`lch`, cualquier valor
+  sin match se descarta silenciosamente) y el parser C++ nuevo de Fabric
+  (`node_modules/react-native/ReactCommon/react/renderer/css/CSSColorFunction.h`
+  — TODO literal ya en el código fuente: `// TODO T213000437: support lab(),
+  lch(), oklab(), oklch(), color(), color-mix()`). Cada valor de las 2 paletas
+  de los mockups (`agent_docs/prototipos/pantallas/*.html`) se convirtió a hex
+  a mano, renderizando cada color en un navegador real y leyendo el resultado
+  — la tabla convertida vive en `src/tema/colores.ts`.
+- **7 dependencias nuevas instaladas y verificadas hoy** (no de `npm view`,
+  contra `node_modules/` real tras `npx expo install`):
+
+  | Paquete | Versión resuelta para SDK 54 |
+  |---|---|
+  | `expo-notifications` | 0.32.17 |
+  | `expo-font` | 14.0.12 |
+  | `expo-splash-screen` | 31.0.13 |
+  | `@expo-google-fonts/fredoka` | 0.4.1 |
+  | `@expo-google-fonts/nunito` | 0.4.2 |
+  | `@expo-google-fonts/lora` | 0.4.2 |
+  | `@expo-google-fonts/karla` | 0.4.2 |
+
+  `npx expo install expo-font` registró automáticamente el config plugin
+  `expo-font` en `app.json` (comportamiento estándar de Expo, no una edición
+  manual) — sin esto, las fuentes cargadas no se aplican en un build nativo.
+- **No es solo color — cada tema trae una receta de estilo distinta**: Arcade
+  usa relleno+sombra+radios grandes (botones tipo píldora, sombra dura);
+  Papel usa borde fino+plano+radios chicos, sin sombra (verificado en
+  `agent_docs/prototipos/pantallas/naipes.html`, función `calcularTokens` —
+  bifurca en `esArcade` para radio, relleno-vs-borde y sombra, no solo color).
+  El puerto a RN necesita funciones de "receta" por tema
+  (`recetaBotonCalificacion` en `src/tema/colores.ts`), no un mapa plano de
+  colores.
+- **Sin `expo-linear-gradient`:** los fondos con gradiente de los mockups se
+  simplifican a color sólido — el radial de Arcade no es representable por ese
+  paquete (solo lineal de 2 puntos) y la textura de Papel es un 0.012 de
+  alfa, imperceptible en la práctica.
+- **~33 archivos existentes** tenían color hardcodeado (`grep -rlE
+  "#[0-9a-fA-F]{6}\b"` en `app/` y `src/components/`) y necesitan pasar a
+  tokens de tema para que el selector funcione de verdad en toda la app.
+
+**Consecuencia:** la fase se implementa en stages con checkpoints de
+verificación en dispositivo y commits parciales autorizados (`nueva-fase`
+Paso 10), no como un solo commit — el tamaño real lo justifica. Detalle
+completo del diseño y la secuencia de stages en el plan de la sesión
+(`/Users/estebanarriaga/.claude/plans/groovy-seeking-whistle.md` al momento
+de escribir esto).
+
+## ADR-027 · 2026-08-22 · Aceptada
+
+**Contexto:** el operador probó la primera pasada de la Fase 8 en su iPhone y
+rechazó el resultado visual: "no luce como los mockups que creamos... es
+estrictamente necesario que sigan esa tendencia de diseño". La causa de fondo
+fue tratar `agent_docs/prototipos/` como referencia de *color* y no como
+especificación de *forma*. Este ADR agrupa las decisiones de la corrección.
+
+**(a) Se instala `react-native-svg` (15.12.1).** Los íconos de los mockups son
+SVG dibujados (gancho, carta, eslabones, candado, deslizadores) y aproximarlos
+con letras Unicode nunca iba a coincidir. El argumento original para evitarlo
+(`PLAN-FASES.md`: "cero dependencias nuevas") ya no aplica — ADR-026 agregó 7.
+Verificado que **viene incluido en Expo Go SDK 54** (`inExpoGo: true` en la doc
+oficial; versión confirmada en el propio
+`node_modules/expo/bundledNativeModules.json`), así que no requiere development
+build ni rompe la restricción del brief §3. Vive en `src/components/iconos.tsx`.
+
+**(b) Las insignias del dashboard pasan a ser INVENTARIO, no pendientes.**
+`contarElementosPorCategoria` cuenta en la unidad natural de cada categoría
+(tarjetas para colgadero/naipe; filas de `lista` para lista_item; filas de
+`numero_importante` para numero). `contarPendientesPorCategoria` **se conserva
+sin cambios** y sigue decidiendo a dónde lleva "Practicar ahora", junto con su
+prueba cruzada contra `armarSesion` — son dos preguntas distintas ("qué tengo"
+vs. "qué me toca hoy") y confundirlas fue justo el reporte del operador.
+
+Diagnóstico que motivó el cambio, verificado leyendo el código: el conteo de
+Números en 0 **no era un bug** — una tarjeta nueva nace `State.New` con
+`fecha_proxima_revision = ahora`, así que sí contaba; mostrar 0 significaba que
+ya había sido calificada y FSRS la programó al futuro. El de Listas mostraba
+eslabones (N objetos → N−1 tarjetas, `eslabones.ts`) en vez de contar la lista
+como un elemento.
+
+**(c) La app se llama "Ancla".** De "anclar" información a una imagen vívida,
+que es lo que hacen las cuatro técnicas. Sustituye "memory-trainer" en
+`app.json` (`name`) y en la cabecera. **El archivo de base de datos conserva el
+nombre `memory-trainer.db`** (`src/db/client.ts`): renombrarlo dejaría huérfana
+toda la BD real del operador. El `slug` también se queda — es identificador de
+proyecto, no visible. Ícono y splash generados en `assets/` (1024×1024, opaco y
+sin esquinas redondeadas el ícono, transparente el splash, per la doc de Expo).
+
+**(d) El volteo 3D de los naipes se reemplaza por la disposición lado a lado**
+del mockup (`naipes.html:112-134`): carta a la izquierda, palabra a la derecha.
+El operador la prefirió explícitamente, y además elimina por construcción los
+defectos reales que tenía el volteo — diagnosticados, no supuestos:
+`backfaceVisibility` conviviendo con `overflow:'hidden'` (las dos caras
+visibles a la vez), `interpolate()` recreado en cada render (grafo animado
+reconstruido a media animación), y sobre todo un `Animated.Value` en `useRef`
+que sobrevivía al cambio de tarjeta porque faltaba `key` — la carta siguiente
+reproducía el giro **hacia atrás**. También se corrigió la violación de las
+Reglas de Hooks (`useRef` tras un `return` condicional) extrayendo `CaraFisica`
+como componente propio sin hooks y con `React.memo`, y el `flex: 1` que anulaba
+el `width/height` del modo compacto y colapsaba la grilla de 52 cartas.
+
+**(e) Instalación como app independiente: pospuesta, con lo investigado
+registrado** para que la decisión futura no se re-investigue. Verificado contra
+la doc de Apple y de Expo: con **Apple ID gratis** el perfil caduca a los **7
+días** (3 dispositivos, 10 App IDs) y hay que reinstalar desde el Mac con cable;
+con **Apple Developer de pago (US$99/año)** el perfil dura 12 meses y se
+distribuye por aire (TestFlight o interna). **No existe** opción gratuita y
+permanente. Un build de Release **sí** empaqueta el JS (verificado en
+`node_modules/react-native/scripts/react-native-xcode.sh`), así que correría sin
+servidor Metro. `npx expo prebuild` generaría `ios/`+`android/`, ya ignorados
+por `.gitignore`, así que la estructura versionada no cambiaría. Esto
+contradice `PROJECT_BRIEF.md:124`, que eligió Expo precisamente para no
+necesitar cuenta de desarrollador — por eso la decisión queda al operador.
+
+**Consecuencia:** se agrega la migración 007 (`ALTER TABLE preferencias ADD
+COLUMN tipografia`) para el selector de tipografía que pidió el operador,
+independiente del tema. Queda pendiente de verificación en dispositivo un
+defecto reportado y **no reproducido por análisis estático**: los botones "Bien"
+y "Fácil" no aparecen en Fonética Flash y Reverso. El análisis mecánico concluyó
+que los 4 caben y deberían pintarse; la observación del dispositivo dice lo
+contrario, así que manda el dispositivo. Como medida de robustez (no como
+corrección confirmada) se dejó de combinar `fontWeight` con familias que ya
+llevan el peso en el nombre — un fallo conocido de resolución de fuentes en iOS
+que puede dejar texto sin pintar.
+
+## ADR-028 · 2026-08-22 · Aceptada
+
+**Decisión:** la Fase 8 se cierra **con alcance reducido y sin cumplir su
+`done when`**, por decisión explícita del operador. El proyecto se detiene aquí.
+
+**Lo que NO se cumplió, dicho sin rodeos:** el criterio de la Fase 8
+(`PROJECT_BRIEF.md:260`) es *"Notificación local de racha en riesgo se dispara
+correctamente en un test manual"*. `src/notificaciones/racha.ts` **nunca se
+construyó**. El spike P-4 se preparó (se instaló `expo-notifications@0.32.17` y
+se leyeron sus firmas reales) pero **nunca se ejecutó en el dispositivo**, así
+que sigue sin saberse si las notificaciones locales funcionan en Expo Go SDK 54.
+P-4 queda **abierto**.
+
+**Razón del cierre — no es técnica, es de distribución.** El operador quería usar
+la app a diario sin depender de `npx expo start`. Se investigó y se verificó
+contra fuentes oficiales de Apple y Expo que solo existen dos caminos:
+
+| Camino | Costo | Caducidad | Cómo se instala |
+|---|---|---|---|
+| Apple ID gratis + Xcode | US$0 | **7 días**, luego la app no abre | Mac + cable, reinstalar cada semana |
+| Apple Developer Program | US$99/año | 12 meses | Por aire (TestFlight o distribución interna con EAS) |
+
+**No existe** una opción gratuita y permanente: todo camino sin caducidad pasa
+por una identidad de firma que solo emite el programa de pago
+([compare-memberships](https://developer.apple.com/support/compare-memberships/),
+[internal-distribution](https://docs.expo.dev/build/internal-distribution/)).
+El operador consideró el costo desproporcionado para una app personal y prefirió
+detenerse y explorar alternativas por su cuenta más adelante.
+
+Dato adicional ya verificado, para que no haya que re-investigarlo: un build de
+**Release sí empaqueta el JS** dentro del `.app`
+(`node_modules/react-native/scripts/react-native-xcode.sh:168,179,190`), así que
+una vez instalada la app corre **sin servidor Metro** por cualquiera de los dos
+caminos. Y `npx expo prebuild` generaría `ios/`+`android/`, ya ignorados por
+`.gitignore`, así que la estructura versionada no cambiaría.
+
+**Por qué esto no se declara "Fase 8 completa":** `nueva-fase` Paso 9 prohíbe
+cerrar una fase porque "todo lo importante funciona". El Paso 10 sí permite un
+commit parcial con autorización explícita del operador, que es lo que ocurre
+aquí. La distinción importa para quien retome: **lo visual está construido, lo
+de notificaciones no existe.**
+
+**Consecuencia — estado real al detenerse:**
+- Construido y verificado automáticamente (tipos + 369 tests): íconos SVG,
+  conteo por inventario, naipes lado a lado, heatmap a tamaño real, llama SVG,
+  selector de tema y de tipografía, identidad "Ancla" con ícono y splash.
+- Construido pero **sin probar en dispositivo**: todo lo anterior.
+- **Sin construir**: notificaciones (`src/notificaciones/racha.ts`), y el
+  barrido de tema en 24 archivos que aún tienen color hardcodeado (Colgadero,
+  Listas, Números, Estadísticas y varios componentes).
+- **Bug abierto**: los botones "Bien" y "Fácil" no aparecen en Fonética Flash y
+  Reverso. El análisis estático dice que deberían pintarse; el dispositivo dice
+  que no. Se aplicó una medida de robustez (no combinar `fontWeight` con una
+  familia que ya lleva el peso en el nombre — fallo conocido de iOS) **sin
+  confirmar** que sea la causa. Diagnóstico más rápido para quien retome:
+  cambiar Tipografía a "La del sistema" en Ajustes; si con eso aparecen, la
+  causa es la resolución de fuentes.

@@ -1,4 +1,6 @@
 import type { Palo, Valor } from '../domain/fonetica/naipes';
+import type { TemaId } from '../tema/colores';
+import type { TipografiaId } from '../tema/tipografia';
 
 export type Categoria = 'colgadero' | 'naipe' | 'lista_item' | 'numero';
 // futuro, no implementar: 'palabra_clave' | 'loci' | 'pao' (ADR-003, MODELO-DATOS.md §1.3)
@@ -131,4 +133,10 @@ export interface FilaRachaConfig {
   meta_diaria: number;
   congeladores_disponibles: number;
   hora_recordatorio: string;
+}
+
+export interface FilaPreferencias {
+  id: number;
+  tema: TemaId;
+  tipografia: TipografiaId;
 }

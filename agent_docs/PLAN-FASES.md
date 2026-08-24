@@ -188,6 +188,21 @@ próxima sesión de repaso.
 
 ## Fase 8 — Pulido
 
+> **ESTADO (2026-08-22): PARCIAL — detenida por decisión del operador (ADR-028).**
+> El `done when` de esta fase **no se cumplió**. Lo construido y lo que falta:
+>
+> | | |
+> |---|---|
+> | ✅ Construido | Tema dual Arcade/Papel con selector, selector de tipografía, migraciones 006 y 007, íconos SVG de los mockups, naipes lado a lado, heatmap a tamaño real con tooltip, llama SVG animada, `explicarNaipe()`, conteo por inventario, identidad "Ancla" (nombre, ícono, splash) |
+> | ⚠️ Sin verificar | **Todo lo anterior**: nada se probó en el iPhone |
+> | ❌ Sin construir | **Notificaciones** (`src/notificaciones/racha.ts` no existe) — que es el `done when` de la fase. Y el barrido de tema en 24 archivos que aún tienen color hardcodeado |
+> | 🐞 Bug abierto | Los botones "Bien"/"Fácil" no aparecen en Fonética Flash y Reverso |
+>
+> P-4 (¿funcionan las notificaciones locales en Expo Go SDK 54?) queda **abierto**:
+> el paquete se instaló y se leyeron sus firmas, pero la prueba en dispositivo
+> nunca se corrió.
+
+
 **Objetivo:** notificaciones, modo oscuro, animaciones.
 
 **Primero, un spike (pendiente P-4):** verificar con la Skill

@@ -6,14 +6,18 @@ import * as m001 from './migrations/001_inicial';
 import * as m002 from './migrations/002_seed_colgadero';
 import * as m003 from './migrations/003_seed_naipes';
 import * as m004 from './migrations/004_listas_numeros';
+import * as m005 from './migrations/005_racha';
+import * as m006 from './migrations/006_preferencias';
 import { ejecutarMigraciones } from './migrations';
-import type { ConexionBD, MetadataColgadero, MetadataListaItem, MetadataNaipe, MetadataNumero } from './tipos';
+import type { Categoria, ConexionBD, MetadataColgadero, MetadataListaItem, MetadataNaipe, MetadataNumero } from './tipos';
 import {
   ARCHIVAR_CATEGORIA,
   GUARDAR_CATEGORIA,
   actualizarConfigRacha,
   actualizarContenidoTarjeta,
   actualizarLista,
+  actualizarTema,
+  actualizarTipografia,
   aplicarCongelador,
   archivarTarjeta,
   armarSesionDeMazo,
@@ -21,6 +25,7 @@ import {
   calcularRachaActual,
   calificarTarjeta,
   cerrarSesion,
+  contarElementosPorCategoria,
   contarPendientesPorCategoria,
   crearLista,
   crearMazo,
@@ -49,9 +54,9 @@ import {
   obtenerMazoPorCategoria,
   obtenerNumeroImportante,
   obtenerPanelRetencion,
+  obtenerPreferencias,
   obtenerTarjeta,
   obtenerTarjetaDeNumero,
-  reiniciarHistorialPractica,
 } from './repository';
 
 const AHORA = new Date('2026-01-01T00:00:00.000Z');
@@ -76,6 +81,26 @@ async function bdEnVersion4(): Promise<ConexionBD> {
   const db = crearConexionDePrueba();
   await db.execAsync('CREATE TABLE IF NOT EXISTS migracion (version INTEGER PRIMARY KEY, aplicada_en TEXT NOT NULL);');
   for (const m of [m001, m002, m003, m004]) {
+    await m.aplicar(db, AHORA);
+    await db.runAsync('INSERT INTO migracion (version, aplicada_en) VALUES (?, ?)', [m.version, AHORA.toISOString()]);
+  }
+  return db;
+}
+
+async function bdEnVersion6(): Promise<ConexionBD> {
+  const db = crearConexionDePrueba();
+  await db.execAsync('CREATE TABLE IF NOT EXISTS migracion (version INTEGER PRIMARY KEY, aplicada_en TEXT NOT NULL);');
+  for (const m of [m001, m002, m003, m004, m005, m006]) {
+    await m.aplicar(db, AHORA);
+    await db.runAsync('INSERT INTO migracion (version, aplicada_en) VALUES (?, ?)', [m.version, AHORA.toISOString()]);
+  }
+  return db;
+}
+
+async function bdEnVersion5(): Promise<ConexionBD> {
+  const db = crearConexionDePrueba();
+  await db.execAsync('CREATE TABLE IF NOT EXISTS migracion (version INTEGER PRIMARY KEY, aplicada_en TEXT NOT NULL);');
+  for (const m of [m001, m002, m003, m004, m005]) {
     await m.aplicar(db, AHORA);
     await db.runAsync('INSERT INTO migracion (version, aplicada_en) VALUES (?, ?)', [m.version, AHORA.toISOString()]);
   }
@@ -276,7 +301,15 @@ describe('migración — Skill db-migracion, paso 4: sobre BD con datos', () => 
     expect(await obtenerTarjeta(db, tarjeta.id)).toEqual(tarjeta);
 
     const versiones = await db.getAllAsync<{ version: number }>('SELECT version FROM migracion', []);
-    expect(versiones).toEqual([{ version: 1 }, { version: 2 }, { version: 3 }, { version: 4 }, { version: 5 }]);
+    expect(versiones).toEqual([
+      { version: 1 },
+      { version: 2 },
+      { version: 3 },
+      { version: 4 },
+      { version: 5 },
+      { version: 6 },
+      { version: 7 },
+    ]);
   });
 });
 
@@ -407,7 +440,7 @@ describe('migración 004 — listas y números (aditiva, sin siembra) — Skill 
     await ejecutarMigraciones(db, AHORA);
 
     const versiones = await db.getAllAsync<{ version: number }>('SELECT version FROM migracion', []);
-    expect(versiones.map((v) => v.version)).toEqual([1, 2, 3, 4, 5]);
+    expect(versiones.map((v) => v.version)).toEqual([1, 2, 3, 4, 5, 6, 7]);
   });
 
   it('arranque desde cero: todas las migraciones corren en orden sin error', async () => {
@@ -415,7 +448,7 @@ describe('migración 004 — listas y números (aditiva, sin siembra) — Skill 
     await expect(ejecutarMigraciones(db, AHORA)).resolves.not.toThrow();
 
     const versiones = await db.getAllAsync<{ version: number }>('SELECT version FROM migracion', []);
-    expect(versiones.map((v) => v.version)).toEqual([1, 2, 3, 4, 5]);
+    expect(versiones.map((v) => v.version)).toEqual([1, 2, 3, 4, 5, 6, 7]);
   });
 });
 
@@ -463,12 +496,97 @@ describe('migración 005 — racha (aditiva, siembra racha_config) — Skill db-
     expect(config).toHaveLength(1);
   });
 
-  it('arranque desde cero: las 5 migraciones corren en orden sin error', async () => {
+  it('arranque desde cero: las migraciones corren en orden sin error', async () => {
     const db = crearConexionDePrueba();
     await expect(ejecutarMigraciones(db, AHORA)).resolves.not.toThrow();
 
     const versiones = await db.getAllAsync<{ version: number }>('SELECT version FROM migracion', []);
-    expect(versiones.map((v) => v.version)).toEqual([1, 2, 3, 4, 5]);
+    expect(versiones.map((v) => v.version)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+  });
+});
+
+describe('migración 006 — preferencias (aditiva, siembra tema) — Skill db-migracion pasos 4-5', () => {
+  it('sobre una BD en versión 5 con datos reales: los datos previos sobreviven y preferencias queda sembrada', async () => {
+    const db = await bdEnVersion5();
+
+    const mazo = await crearMazo(db, { nombre: 'Colgadero', categoria: 'colgadero' }, AHORA);
+    const tarjeta = await crearTarjeta(
+      db,
+      { mazoId: mazo.id, categoria: 'colgadero', contenidoFrente: '1', contenidoReverso: 'Tea' },
+      AHORA
+    );
+    const sesion = await crearSesion(db, { modo: 'flash' }, AHORA);
+    const calificada = await calificarTarjeta(
+      db,
+      { tarjetaId: tarjeta.id, sesionId: sesion.id, calificacion: 'bien' },
+      AHORA
+    );
+    const configPrevio = await obtenerConfigRacha(db);
+
+    // Migra a la versión 6: el runner ve 1-5 ya aplicadas y solo corre 006.
+    await ejecutarMigraciones(db, AHORA);
+
+    expect(await obtenerTarjeta(db, tarjeta.id)).toEqual(calificada);
+    expect(await listarRevisionesDeTarjeta(db, tarjeta.id)).toHaveLength(1);
+    expect(await obtenerConfigRacha(db)).toEqual(configPrevio);
+
+    expect(await obtenerPreferencias(db)).toEqual({ id: 1, tema: 'arcade', tipografia: 'tematica' });
+  });
+
+  it('idempotente: aplicar dos veces seguidas no duplica la fila de preferencias ni falla', async () => {
+    const db = await bdEnVersion5();
+    await ejecutarMigraciones(db, AHORA);
+    await ejecutarMigraciones(db, AHORA);
+
+    const prefs = await db.getAllAsync('SELECT * FROM preferencias', []);
+    expect(prefs).toHaveLength(1);
+  });
+
+  it('arranque desde cero: las 6 migraciones corren en orden sin error', async () => {
+    const db = crearConexionDePrueba();
+    await expect(ejecutarMigraciones(db, AHORA)).resolves.not.toThrow();
+
+    const versiones = await db.getAllAsync<{ version: number }>('SELECT version FROM migracion', []);
+    expect(versiones.map((v) => v.version)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+  });
+});
+
+describe('migración 007 — tipografía (ADD COLUMN con default) — Skill db-migracion pasos 4-5', () => {
+  it('sobre una BD en versión 6 con un tema ya elegido: conserva el tema y estrena tipografia', async () => {
+    const db = await bdEnVersion6();
+    await actualizarTema(db, 'papel');
+
+    await ejecutarMigraciones(db, AHORA);
+
+    // El dato previo del operador sobrevive; la columna nueva toma su default.
+    expect(await obtenerPreferencias(db)).toEqual({ id: 1, tema: 'papel', tipografia: 'tematica' });
+  });
+
+  it('idempotente: aplicar dos veces no duplica la fila ni falla', async () => {
+    const db = await bdEnVersion6();
+    await ejecutarMigraciones(db, AHORA);
+    await ejecutarMigraciones(db, AHORA);
+    expect(await db.getAllAsync('SELECT * FROM preferencias', [])).toHaveLength(1);
+  });
+});
+
+describe('preferencias — obtenerPreferencias / actualizarTema / actualizarTipografia', () => {
+  it('obtiene la fila sembrada por la migración 006', async () => {
+    const db = await bdLista();
+    expect(await obtenerPreferencias(db)).toEqual({ id: 1, tema: 'arcade', tipografia: 'tematica' });
+  });
+
+  it('actualizarTema cambia el tema y persiste', async () => {
+    const db = await bdLista();
+    await actualizarTema(db, 'papel');
+    expect(await obtenerPreferencias(db)).toEqual({ id: 1, tema: 'papel', tipografia: 'tematica' });
+  });
+
+  it('actualizarTipografia cambia solo la tipografía, sin tocar el tema', async () => {
+    const db = await bdLista();
+    await actualizarTema(db, 'papel');
+    await actualizarTipografia(db, 'sistema');
+    expect(await obtenerPreferencias(db)).toEqual({ id: 1, tema: 'papel', tipografia: 'sistema' });
   });
 });
 
@@ -904,22 +1022,6 @@ describe('aplicarCongelador', () => {
   });
 });
 
-describe('reiniciarHistorialPractica (conveniencia de pruebas, no del brief)', () => {
-  it('borra todos los días de práctica y devuelve los congeladores a 2', async () => {
-    const db = await bdLista();
-    await db.runAsync(
-      'INSERT INTO dia_practica (fecha_local, tarjetas_revisadas, meta_cumplida, congelador_usado) VALUES (?, ?, ?, ?)',
-      ['2026-01-05', 20, 1, 0]
-    );
-    await actualizarConfigRacha(db, { congeladoresDisponibles: 0 });
-
-    await reiniciarHistorialPractica(db);
-
-    expect(await listarDiasPractica(db)).toEqual([]);
-    expect((await obtenerConfigRacha(db)).congeladores_disponibles).toBe(2);
-  });
-});
-
 describe('contarPendientesPorCategoria', () => {
   it('el conteo SQL coincide con armarSesion (sin tope) para cada categoría — no debe desalinearse de motor.ts', async () => {
     const db = await bdLista();
@@ -945,6 +1047,70 @@ describe('contarPendientesPorCategoria', () => {
     // lista_item y numero se sembraron vacíos (migración 004) — nada pendiente ahí.
     expect(conteos.find((c) => c.categoria === 'lista_item')).toBeUndefined();
     expect(conteos.find((c) => c.categoria === 'numero')).toBeUndefined();
+  });
+});
+
+describe('contarElementosPorCategoria (inventario, ADR-027)', () => {
+  async function conteo(db: ConexionBD, categoria: Categoria): Promise<number> {
+    const filas = await contarElementosPorCategoria(db);
+    return filas.find((f) => f.categoria === categoria)?.elementos ?? 0;
+  }
+
+  it('colgadero y naipe cuentan tarjetas sembradas: 100 y 52', async () => {
+    const db = await bdLista();
+    expect(await conteo(db, 'colgadero')).toBe(100);
+    expect(await conteo(db, 'naipe')).toBe(52);
+  });
+
+  it('archivar un colgadero baja su conteo', async () => {
+    const db = await bdLista();
+    const mazo = await obtenerMazoPorCategoria(db, 'colgadero');
+    const tarjetas = await listarTarjetasPorMazo(db, mazo!.id);
+    await archivarTarjeta(db, tarjetas[0].id);
+    expect(await conteo(db, 'colgadero')).toBe(99);
+  });
+
+  it('una lista cuenta 1 sin importar cuántos objetos/eslabones tenga', async () => {
+    const db = await bdLista();
+    const lista = await crearLista(db, { nombre: 'Compras', segundosEstudio: 30 }, AHORA);
+    await guardarObjetosDeLista(
+      db,
+      lista.id,
+      [{ texto: 'Mesa' }, { texto: 'Silla' }, { texto: 'Lámpara' }, { texto: 'Reloj' }, { texto: 'Libro' }],
+      AHORA
+    );
+
+    // 5 objetos → 4 eslabones (tarjetas), pero el inventario cuenta LISTAS.
+    expect(await listarEslabonesDeLista(db, lista.id)).toHaveLength(4);
+    expect(await conteo(db, 'lista_item')).toBe(1);
+  });
+
+  it('dos listas cuentan 2', async () => {
+    const db = await bdLista();
+    await crearLista(db, { nombre: 'A', segundosEstudio: 30 }, AHORA);
+    await crearLista(db, { nombre: 'B', segundosEstudio: 30 }, AHORA);
+    expect(await conteo(db, 'lista_item')).toBe(2);
+  });
+
+  it('un número cuenta 1 aunque FSRS ya lo haya programado al futuro', async () => {
+    const db = await bdLista();
+    const { tarjeta } = await crearNumeroImportante(db, { etiqueta: 'Natalia', digitos: '3001234567' }, AHORA);
+
+    // Se califica para empujar fecha_proxima_revision al futuro: deja de ser
+    // "pendiente" pero SIGUE existiendo como elemento del inventario. Este es
+    // exactamente el caso que el operador reportó como "muestra 0".
+    const sesion = await crearSesion(db, { modo: 'flash' }, AHORA);
+    await calificarTarjeta(db, { tarjetaId: tarjeta.id, sesionId: sesion.id, calificacion: 'facil' }, AHORA);
+
+    const pendientes = await contarPendientesPorCategoria(db, AHORA);
+    expect(pendientes.find((c) => c.categoria === 'numero')).toBeUndefined();
+    expect(await conteo(db, 'numero')).toBe(1);
+  });
+
+  it('categorías vacías reportan 0 explícito, no una fila ausente', async () => {
+    const db = await bdLista();
+    expect(await conteo(db, 'lista_item')).toBe(0);
+    expect(await conteo(db, 'numero')).toBe(0);
   });
 });
 

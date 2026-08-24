@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { BotonesCalificacion } from '../../src/components/BotonesCalificacion';
-import { Flashcard } from '../../src/components/Flashcard';
+import { CartaVisual } from '../../src/components/CartaVisual';
 import { PausaVisualizacion } from '../../src/components/PausaVisualizacion';
 import { obtenerBD } from '../../src/db/client';
 import {
@@ -12,11 +12,12 @@ import {
   crearSesion,
   obtenerMazoPorCategoria,
 } from '../../src/db/repository';
-import type { ConexionBD } from '../../src/db/tipos';
+import type { ConexionBD, MetadataNaipe } from '../../src/db/tipos';
 import type { Calificacion } from '../../src/domain/fsrs/scheduler';
 import { useSesionStore } from '../../src/stores/sesion';
+import { useTema } from '../../src/stores/tema';
 
-/** Palabra → carta. Misma tarjeta que Flash, direccion='inversa'. */
+/** Palabra → carta. Misma tarjeta que Flash, direccion='inversa'. Orden invertido a propósito: la palabra se muestra primero, la carta aparece al voltear (CartaVisual disenoAlFrente=false). */
 export default function NaipesReverso() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,6 +25,7 @@ export default function NaipesReverso() {
 
   const { tarjetas, sesionId, indice, revelada, aciertos, fallos, iniciar, revelar, avanzar, reiniciar } =
     useSesionStore();
+  const { colores: t } = useTema();
 
   useEffect(() => {
     let cancelado = false;
@@ -70,26 +72,26 @@ export default function NaipesReverso() {
 
   if (cargando) {
     return (
-      <View style={estilos.centro}>
-        <ActivityIndicator color="#ffffff" />
+      <View style={[estilos.centro, { backgroundColor: t.bg }]}>
+        <ActivityIndicator color={t.ink} />
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={estilos.centro}>
-        <Text style={estilos.error}>Error: {error}</Text>
+      <View style={[estilos.centro, { backgroundColor: t.bg }]}>
+        <Text style={[estilos.error, { color: t.otraVez }]}>Error: {error}</Text>
       </View>
     );
   }
 
   if (tarjetas.length === 0) {
     return (
-      <View style={estilos.centro}>
-        <Text style={estilos.texto}>No hay cartas pendientes.</Text>
+      <View style={[estilos.centro, { backgroundColor: t.bg }]}>
+        <Text style={[estilos.texto, { color: t.inkMuted }]}>No hay cartas pendientes.</Text>
         <Pressable onPress={() => router.back()}>
-          <Text style={estilos.enlace}>Volver</Text>
+          <Text style={[estilos.enlace, { color: t.accent1 }]}>Volver</Text>
         </Pressable>
       </View>
     );
@@ -97,30 +99,39 @@ export default function NaipesReverso() {
 
   if (indice >= tarjetas.length) {
     return (
-      <View style={estilos.centro}>
-        <Text style={estilos.titulo}>Sesión completa</Text>
-        <Text style={estilos.texto}>
+      <View style={[estilos.centro, { backgroundColor: t.bg }]}>
+        <Text style={[estilos.titulo, { color: t.ink }]}>Sesión completa</Text>
+        <Text style={[estilos.texto, { color: t.inkMuted }]}>
           {aciertos} aciertos · {fallos} fallos
         </Text>
         <Pressable onPress={() => router.back()}>
-          <Text style={estilos.enlace}>Volver</Text>
+          <Text style={[estilos.enlace, { color: t.accent1 }]}>Volver</Text>
         </Pressable>
       </View>
     );
   }
 
   const actual = tarjetas[indice];
+  const { palo, valor } = JSON.parse(actual.metadata_categoria) as MetadataNaipe;
 
   return (
-    <View style={estilos.contenedor}>
-      <Text style={estilos.progreso}>
+    <View style={[estilos.contenedor, { backgroundColor: t.bg }]}>
+      <Text style={[estilos.progreso, { color: t.inkMuted }]}>
         {indice + 1} / {tarjetas.length}
       </Text>
-      <Flashcard frente={actual.contenido_reverso} reverso={actual.contenido_frente} revelada={revelada} />
+      <View style={estilos.centroCarta}>
+        <CartaVisual
+          key={actual.id}
+          carta={{ palo, valor }}
+          palabra={actual.contenido_reverso}
+          revelada={revelada}
+          disenoAlFrente={false}
+        />
+      </View>
       {!revelada ? (
         <PausaVisualizacion clave={actual.id}>
-          <Pressable onPress={revelar} style={estilos.botonRevelar}>
-            <Text style={estilos.textoRevelar}>Ver respuesta</Text>
+          <Pressable onPress={revelar} style={[estilos.botonRevelar, { backgroundColor: t.accent1 }]}>
+            <Text style={[estilos.textoRevelar, { color: t.inkOnAccent }]}>Ver respuesta</Text>
           </Pressable>
         </PausaVisualizacion>
       ) : (
@@ -131,19 +142,19 @@ export default function NaipesReverso() {
 }
 
 const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#1e1e2e', justifyContent: 'center', gap: 24 },
-  centro: { flex: 1, backgroundColor: '#1e1e2e', alignItems: 'center', justifyContent: 'center', gap: 12 },
-  progreso: { color: '#a6adc8', textAlign: 'center' },
-  titulo: { color: '#ffffff', fontSize: 20, fontWeight: '600' },
-  texto: { color: '#a6adc8' },
-  error: { color: '#f38ba8', padding: 24, textAlign: 'center' },
-  enlace: { color: '#89b4fa', marginTop: 12 },
+  contenedor: { flex: 1, justifyContent: 'center', gap: 24 },
+  centro: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  centroCarta: { alignItems: 'center' },
+  progreso: { textAlign: 'center' },
+  titulo: { fontSize: 20, fontWeight: '600' },
+  texto: {},
+  error: { padding: 24, textAlign: 'center' },
+  enlace: { marginTop: 12 },
   botonRevelar: {
     alignSelf: 'center',
-    backgroundColor: '#89b4fa',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
-  textoRevelar: { color: '#1e1e2e', fontWeight: '600' },
+  textoRevelar: { fontWeight: '600' },
 });
