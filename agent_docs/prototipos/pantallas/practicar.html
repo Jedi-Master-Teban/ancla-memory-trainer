@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Pantalla — Práctica</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;800&family=Lora:ital,wght@0,500;0,600;0,700;1,500&family=Karla:wght@400;500;700&display=swap">
+  <style>
+    html, body { margin: 0; background: #0d0d10; }
+    * { box-sizing: border-box; }
+    body { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 32px 16px; font-family: sans-serif; }
+    #toggle { background: #313244; color: #cdd6f4; border: none; border-radius: 8px; padding: 10px 18px; font-size: 14px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <button id="toggle" onclick="cambiarTema()">Cambiar a Papel y Tinta</button>
+  <div id="root"></div>
+
+<script>
+const PALETAS = {
+  arcade: {
+    bg: 'oklch(0.19 0.05 280)',
+    bgGradient: 'radial-gradient(circle 380px at 85% 0%, oklch(0.30 0.09 350 / 0.55), transparent), radial-gradient(circle 340px at 0% 15%, oklch(0.28 0.09 210 / 0.5), transparent)',
+    card: 'oklch(0.25 0.06 280)',
+    ink: 'oklch(0.98 0.005 280)',
+    inkMuted: 'oklch(0.72 0.03 280)',
+    fontDisplay: "'Fredoka', sans-serif",
+    fontBody: "'Nunito', sans-serif",
+    otraVez: 'oklch(0.68 0.19 25)',
+    dificil: 'oklch(0.75 0.15 60)',
+    bien: 'oklch(0.82 0.19 140)',
+    facil: 'oklch(0.78 0.15 210)',
+    inkOnAccent: 'oklch(0.15 0.03 280)',
+  },
+  papel: {
+    bg: 'oklch(0.21 0.02 60)',
+    bgGradient: 'repeating-linear-gradient(0deg, oklch(1 0 0 / 0.012) 0px, transparent 1px, transparent 2px)',
+    card: 'oklch(0.26 0.025 60)',
+    ink: 'oklch(0.93 0.015 70)',
+    inkMuted: 'oklch(0.70 0.02 60)',
+    fontDisplay: "'Lora', Georgia, serif",
+    fontBody: "'Karla', sans-serif",
+    otraVez: 'oklch(0.55 0.13 30)',
+    dificil: 'oklch(0.60 0.10 70)',
+    bien: 'oklch(0.62 0.07 135)',
+    facil: 'oklch(0.55 0.06 230)',
+    inkOnAccent: 'oklch(0.21 0.02 60)',
+  },
+};
+
+function calcularTokens(theme) {
+  const p = PALETAS[theme];
+  const esArcade = theme === 'arcade';
+
+  const opcionesBase = [
+    { etiqueta: 'Otra vez', color: p.otraVez },
+    { etiqueta: 'Difícil', color: p.dificil },
+    { etiqueta: 'Bien', color: p.bien },
+    { etiqueta: 'Fácil', color: p.facil },
+  ];
+
+  return {
+    ...p,
+    badgeCategoriaStyle: esArcade
+      ? `background:${p.card};border-radius:999px;padding:6px 14px;`
+      : `border:1px solid oklch(0.34 0.025 60);border-radius:2px;padding:5px 12px;`,
+    badgeCategoriaTextColor: esArcade ? 'oklch(0.78 0.15 210)' : 'oklch(0.64 0.13 40)',
+    cardStyle: esArcade
+      ? `width:100%;background:${p.card};border-radius:28px;padding:44px 24px;display:flex;flex-direction:column;align-items:center;box-shadow:0 16px 40px oklch(0.12 0.05 280 / 0.5), inset 0 1px 0 oklch(1 0 0 / 0.08);`
+      : `width:100%;background:${p.card};border:1px solid oklch(0.34 0.025 60);border-radius:3px;padding:44px 24px;display:flex;flex-direction:column;align-items:center;`,
+    dividerStyle: esArcade
+      ? `width:32px;height:3px;background:oklch(1 0 0 / 0.15);border-radius:2px;margin:14px 0;`
+      : `width:24px;height:1px;background:oklch(0.34 0.025 60);margin:16px 0;`,
+    opciones: opcionesBase.map((op) => ({
+      etiqueta: op.etiqueta,
+      textColor: esArcade ? p.inkOnAccent : op.color,
+      style: esArcade
+        ? `flex:1;background:${op.color};border-radius:16px;padding:14px 4px;text-align:center;box-shadow:0 5px 0 oklch(0.4 0.1 0 / 0.25);`
+        : `flex:1;background:none;border:1.5px solid ${op.color};border-radius:2px;padding:12px 4px;text-align:center;`,
+    })),
+    progressTrackStyle: esArcade
+      ? `height:8px;background:oklch(0.15 0.03 280);border-radius:999px;overflow:hidden;`
+      : `height:2px;background:oklch(0.34 0.025 60);overflow:hidden;`,
+    progressFillStyle: esArcade ? `background:oklch(0.78 0.15 210);border-radius:999px;` : `background:oklch(0.64 0.13 40);`,
+  };
+}
+
+function renderHTML(t) {
+  const opcionesHTML = t.opciones.map((op) => `
+    <div style="${op.style}">
+      <span style="font-family:${t.fontDisplay};font-size:13.5px;font-weight:700;color:${op.textColor};">${op.etiqueta}</span>
+    </div>`).join('');
+
+  return `
+  <div style="width:375px;height:812px;position:relative;overflow:hidden;background:${t.bg};background-image:${t.bgGradient};font-family:${t.fontBody};display:flex;flex-direction:column;border-radius:12px;">
+
+    <div style="padding:60px 24px 0;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:13px;color:${t.inkMuted};">8 / 20</span>
+      <div style="${t.badgeCategoriaStyle}">
+        <span style="font-family:${t.fontDisplay};font-size:11px;font-weight:700;letter-spacing:0.08em;color:${t.badgeCategoriaTextColor};">COLGADERO</span>
+      </div>
+    </div>
+
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:28px;">
+      <div style="${t.cardStyle}">
+        <span style="font-family:${t.fontDisplay};font-size:15px;color:${t.inkMuted};">45</span>
+        <div style="${t.dividerStyle}"></div>
+        <span style="font-family:${t.fontDisplay};font-size:44px;font-weight:700;color:${t.ink};">Rifle</span>
+        <span style="font-size:13px;color:${t.inkMuted};margin-top:4px;">r + f = 45</span>
+      </div>
+      <div style="display:flex;gap:10px;width:100%;">${opcionesHTML}</div>
+    </div>
+
+    <div style="padding:0 24px 34px;">
+      <div style="${t.progressTrackStyle}">
+        <div style="width:40%;height:100%;${t.progressFillStyle}"></div>
+      </div>
+    </div>
+
+  </div>`;
+}
+
+let temaActual = 'arcade';
+function pintar() {
+  document.getElementById('root').innerHTML = renderHTML(calcularTokens(temaActual));
+  document.getElementById('toggle').textContent = temaActual === 'arcade' ? 'Cambiar a Papel y Tinta' : 'Cambiar a Arcade Neón';
+}
+function cambiarTema() {
+  temaActual = temaActual === 'arcade' ? 'papel' : 'arcade';
+  pintar();
+}
+pintar();
+</script>
+</body>
+</html>

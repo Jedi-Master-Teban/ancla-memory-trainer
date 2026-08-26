@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Ancla",
+    "slug": "memory-trainer",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "memorytrainer",
+    "userInterfaceStyle": "automatic",
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "expo-asset",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "backgroundColor": "#101029"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "baseUrl": "/ancla-memory-trainer"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "icon": "./assets/icon.png",
+    "ios": {
+      "bundleIdentifier": "com.estebanarriaga.ancla"
+    }
+  }
+}

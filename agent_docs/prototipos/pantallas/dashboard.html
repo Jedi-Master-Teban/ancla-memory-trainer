@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Pantalla — Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;800&family=Lora:ital,wght@0,500;0,600;0,700;1,500&family=Karla:wght@400;500;700&display=swap">
+  <style>
+    html, body { margin: 0; background: #0d0d10; }
+    * { box-sizing: border-box; }
+    a { color: inherit; }
+    body { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 32px 16px; font-family: sans-serif; }
+    #toggle { background: #313244; color: #cdd6f4; border: none; border-radius: 8px; padding: 10px 18px; font-size: 14px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <button id="toggle" onclick="cambiarTema()">Cambiar a Papel y Tinta</button>
+  <div id="root"></div>
+
+<script>
+const PALETAS = {
+  arcade: {
+    bg: 'oklch(0.19 0.05 280)',
+    bgGradient: 'radial-gradient(circle 380px at 85% 0%, oklch(0.30 0.09 350 / 0.55), transparent), radial-gradient(circle 340px at 0% 15%, oklch(0.28 0.09 210 / 0.5), transparent)',
+    card: 'oklch(0.25 0.06 280)',
+    accent1: 'oklch(0.78 0.15 210)',
+    accent2: 'oklch(0.70 0.21 350)',
+    accent3: 'oklch(0.82 0.19 140)',
+    accent4: 'oklch(0.82 0.15 85)',
+    ink: 'oklch(0.98 0.005 280)',
+    inkMuted: 'oklch(0.72 0.03 280)',
+    inkOnAccent: 'oklch(0.15 0.03 280)',
+    fontDisplay: "'Fredoka', sans-serif",
+    fontBody: "'Nunito', sans-serif",
+    flameOuter: 'linear-gradient(180deg, oklch(0.85 0.17 85), oklch(0.68 0.20 40))',
+    flameInner: 'oklch(0.92 0.14 95)',
+    flameGlow: 'filter:drop-shadow(0 0 10px oklch(0.75 0.19 50 / 0.8));',
+    rachaNumberColor: '#fff',
+  },
+  papel: {
+    bg: 'oklch(0.21 0.02 60)',
+    bgGradient: 'repeating-linear-gradient(0deg, oklch(1 0 0 / 0.012) 0px, transparent 1px, transparent 2px)',
+    card: 'oklch(0.26 0.025 60)',
+    accent1: 'oklch(0.64 0.13 40)',
+    accent2: 'oklch(0.48 0.09 40)',
+    accent3: 'oklch(0.62 0.07 135)',
+    accent4: 'oklch(0.62 0.07 135)',
+    ink: 'oklch(0.93 0.015 70)',
+    inkMuted: 'oklch(0.70 0.02 60)',
+    inkOnAccent: 'oklch(0.21 0.02 60)',
+    fontDisplay: "'Lora', Georgia, serif",
+    fontBody: "'Karla', sans-serif",
+    flameOuter: 'oklch(0.64 0.13 40)',
+    flameInner: 'oklch(0.48 0.09 40)',
+    flameGlow: '',
+    rachaNumberColor: 'oklch(0.93 0.015 70)',
+  },
+};
+
+const CATEGORIAS_BASE = [
+  { nombre: 'Colgadero', cuenta: 18, esColgadero: true, esNaipe: false, esLista: false, esNumero: false, accentKey: 'accent1' },
+  { nombre: 'Naipes', cuenta: 6, esColgadero: false, esNaipe: true, esLista: false, esNumero: false, accentKey: 'accent2' },
+  { nombre: 'Listas', cuenta: 2, esColgadero: false, esNaipe: false, esLista: true, esNumero: false, accentKey: 'accent3' },
+  { nombre: 'Números', cuenta: 1, esColgadero: false, esNaipe: false, esLista: false, esNumero: true, accentKey: 'accent4' },
+];
+
+const ICONOS = {
+  colgadero: (c) => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><path d="M12 3v11a3 3 0 1 0 3-3"/></svg>`,
+  naipe: (c) => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><rect x="5" y="3" width="14" height="18" rx="3"/><circle cx="12" cy="12" r="2.4" fill="${c}" stroke="none"/></svg>`,
+  lista: (c) => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><rect x="3" y="8" width="10" height="8" rx="4"/><rect x="11" y="8" width="10" height="8" rx="4"/></svg>`,
+  numero: (c) => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="3"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>`,
+};
+
+function calcularTokens(theme) {
+  const p = PALETAS[theme];
+  const esArcade = theme === 'arcade';
+
+  return {
+    ...p,
+    iconButtonStyle: esArcade
+      ? `width:36px;height:36px;border-radius:12px;background:${p.card};display:flex;align-items:center;justify-content:center;`
+      : `width:34px;height:34px;border-radius:2px;background:${p.card};border:1px solid oklch(0.34 0.025 60);display:flex;align-items:center;justify-content:center;`,
+    rachaCardStyle: esArcade
+      ? `background:linear-gradient(135deg, oklch(0.30 0.09 60), oklch(0.24 0.10 30));border-radius:24px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 8px 24px oklch(0.15 0.05 30 / 0.5), inset 0 1px 0 oklch(1 0 0 / 0.15);`
+      : `display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid oklch(0.34 0.025 60);padding-bottom:16px;`,
+    rachaLinkStyle: esArcade
+      ? `background:oklch(1 0 0 / 0.18);border-radius:999px;padding:8px 16px;font-family:${p.fontDisplay};font-size:13px;color:#fff;font-weight:600;`
+      : `font-size:13.5px;color:${p.accent1};font-style:italic;font-family:${p.fontBody};`,
+    cardStyle: esArcade ? `background:${p.card};border-radius:20px;padding:18px 20px;` : `padding:2px 0;`,
+    progressTrackStyle: esArcade
+      ? `height:14px;background:oklch(0.15 0.03 280);border-radius:999px;margin-top:12px;overflow:hidden;box-shadow:inset 0 2px 4px oklch(0 0 0 / 0.3);`
+      : `height:3px;background:oklch(0.34 0.025 60);border-radius:2px;margin-top:10px;overflow:hidden;`,
+    progressFillStyle: esArcade
+      ? `background:linear-gradient(90deg, ${p.accent1}, ${p.accent3});border-radius:999px;box-shadow:0 0 10px oklch(0.78 0.15 210 / 0.7);`
+      : `background:${p.accent1};`,
+    ctaStyle: esArcade
+      ? `margin-top:10px;background:linear-gradient(135deg, ${p.accent1}, oklch(0.65 0.18 250));border:none;border-radius:20px;padding:19px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 10px 0 oklch(0.45 0.13 240), 0 12px 20px oklch(0.15 0.05 280 / 0.5);`
+      : `margin-top:8px;background:${p.accent1};border:none;border-radius:2px;padding:17px;display:flex;align-items:center;justify-content:center;cursor:pointer;`,
+    ctaTextColor: esArcade ? 'oklch(0.15 0.03 280)' : 'oklch(0.21 0.02 60)',
+    categorias: CATEGORIAS_BASE.map((c) => ({
+      ...c,
+      rowStyle: esArcade
+        ? `display:flex;align-items:center;justify-content:space-between;background:${p.card};border-radius:18px;padding:14px 18px;margin-bottom:10px;`
+        : `display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid oklch(0.34 0.025 60);`,
+      iconWrapStyle: esArcade
+        ? `width:34px;height:34px;border-radius:12px;background:oklch(0.32 0.09 ${c.accentKey === 'accent1' ? 210 : c.accentKey === 'accent2' ? 350 : c.accentKey === 'accent3' ? 140 : 85});display:flex;align-items:center;justify-content:center;`
+        : `width:19px;height:19px;display:flex;align-items:center;justify-content:center;`,
+      iconColor: esArcade ? p[c.accentKey] : p.accent3,
+      badgeStyle: esArcade
+        ? `background:${p[c.accentKey]};border-radius:999px;min-width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0 8px;`
+        : `background:none;`,
+      badgeTextColor: esArcade ? p.inkOnAccent : p.inkMuted,
+      icono: c.esColgadero ? 'colgadero' : c.esNaipe ? 'naipe' : c.esLista ? 'lista' : 'numero',
+    })),
+  };
+}
+
+function renderHTML(t) {
+  const filas = t.categorias.map((cat) => `
+    <div style="${cat.rowStyle}">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="${cat.iconWrapStyle}">${ICONOS[cat.icono](cat.iconColor)}</div>
+        <span style="font-family:${t.fontDisplay};color:${t.ink};font-size:15px;font-weight:600;">${cat.nombre}</span>
+      </div>
+      <div style="${cat.badgeStyle}">
+        <span style="font-family:${t.fontDisplay};font-size:14px;font-weight:700;color:${cat.badgeTextColor};">${cat.cuenta}</span>
+      </div>
+    </div>`).join('');
+
+  return `
+  <div style="width:375px;height:812px;position:relative;overflow:hidden;background:${t.bg};background-image:${t.bgGradient};font-family:${t.fontBody};border-radius:12px;">
+    <div style="position:relative;padding:60px 20px 28px;display:flex;flex-direction:column;gap:18px;">
+
+      <div style="display:flex;justify-content:flex-end;">
+        <div style="${t.iconButtonStyle}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${t.ink}" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><circle cx="15" cy="7" r="2" fill="${t.ink}" stroke="none"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="9" cy="12" r="2" fill="${t.ink}" stroke="none"/><line x1="4" y1="17" x2="20" y2="17"/><circle cx="17" cy="17" r="2" fill="${t.ink}" stroke="none"/></svg>
+        </div>
+      </div>
+
+      <div style="${t.rachaCardStyle}">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="position:relative;width:40px;height:44px;">
+            <div style="position:absolute;left:6px;top:2px;width:28px;height:34px;background:${t.flameOuter};border-radius:50% 50% 50% 50% / 65% 65% 35% 35%;${t.flameGlow}"></div>
+            <div style="position:absolute;left:13px;top:16px;width:14px;height:18px;background:${t.flameInner};border-radius:50% 50% 50% 50% / 65% 65% 35% 35%;"></div>
+          </div>
+          <div style="font-family:${t.fontDisplay};font-size:32px;font-weight:700;color:${t.rachaNumberColor};line-height:1;">7</div>
+        </div>
+        <div style="${t.rachaLinkStyle}">Ver racha →</div>
+      </div>
+
+      <div style="${t.cardStyle}">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-family:${t.fontDisplay};font-size:15px;color:${t.ink};font-weight:600;">Meta de hoy</span>
+          <span style="font-family:${t.fontDisplay};font-size:16px;color:${t.accent1};font-weight:700;">12 <span style="color:${t.inkMuted};font-size:13px;font-weight:400;">/ 20</span></span>
+        </div>
+        <div style="${t.progressTrackStyle}">
+          <div style="width:60%;height:100%;${t.progressFillStyle}"></div>
+        </div>
+      </div>
+
+      <div style="margin-top:4px;">
+        <div style="font-family:${t.fontDisplay};font-size:14px;color:${t.ink};font-weight:600;margin-bottom:12px;">Pendientes por categoría</div>
+        ${filas}
+      </div>
+
+      <button style="${t.ctaStyle}">
+        <span style="font-family:${t.fontDisplay};font-size:16px;font-weight:700;color:${t.ctaTextColor};">Practicar ahora</span>
+      </button>
+
+      <div style="text-align:center;margin-top:4px;">
+        <span style="font-family:${t.fontBody};font-size:13px;color:${t.inkMuted};">Ver estadísticas →</span>
+      </div>
+
+    </div>
+  </div>`;
+}
+
+let temaActual = 'arcade';
+function pintar() {
+  document.getElementById('root').innerHTML = renderHTML(calcularTokens(temaActual));
+  document.getElementById('toggle').textContent = temaActual === 'arcade' ? 'Cambiar a Papel y Tinta' : 'Cambiar a Arcade Neón';
+}
+function cambiarTema() {
+  temaActual = temaActual === 'arcade' ? 'papel' : 'arcade';
+  pintar();
+}
+pintar();
+</script>
+</body>
+</html>

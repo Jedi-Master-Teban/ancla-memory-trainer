@@ -1,0 +1,900 @@
+# DECISIONS — registro acumulativo
+
+Bitácora de decisiones de arquitectura **irreversibles o caras de revertir** (§5.2
+del brief). Este archivo **nunca se borra ni se reescribe**: solo se le añaden
+entradas al final. Si una decisión se revierte, se añade una entrada nueva que la
+supersede — no se edita la vieja.
+
+Formato: `ADR-NNN · fecha · estado · decisión · razón · consecuencia`.
+
+---
+
+## ADR-001 · 2026-08-10 · Aceptada
+**Decisión:** una tarjeta FSRS **por par consecutivo** en el Sistema de la Cadena,
+sin tarjeta adicional de "lista completa".
+**Razón:** decisión del operador sobre la pregunta que §8.4 dejaba abierta para
+Plan Mode. Máxima granularidad: FSRS puede atacar el eslabón débil.
+**Consecuencia:** una lista de N objetos genera N−1 tarjetas. La reproducción
+completa de la lista existe como **modo de estudio** (§8.4) pero no como tarjeta; al
+reproducirla, cada transición acertada/fallada califica su eslabón.
+**Pendiente derivado:** ver ADR-002.
+
+## ADR-002 · 2026-08-10 · **Propuesta — requiere visto bueno del operador**
+**Decisión propuesta:** el eslabón A→B es **una sola** tarjeta; el modo inverso
+(B→A) es una *dirección de presentación* de esa misma tarjeta, no una segunda
+tarjeta. Si en una sesión se prueban ambas direcciones, la tarjeta se califica con
+la **peor** de las dos notas.
+**Razón:** ADR-001 dice "una tarjeta por par consecutivo" (singular). Duplicar por
+dirección daría 2(N−1) tarjetas y no fue lo que se pidió. Tomar la peor nota evita
+inflar la estabilidad con la dirección fácil.
+**Consecuencia:** `revision.direccion` registra qué dirección se probó, para poder
+separarlo después si el operador cambia de opinión.
+**Alternativa descartada:** dos tarjetas por eslabón (duplica la carga diaria).
+
+## ADR-003 · 2026-08-10 · Aceptada
+**Decisión:** `palabra_clave` sale del enum activo y pasa al grupo de
+extensibilidad futura, junto a `loci` y `pao`.
+**Razón:** decisión del operador. §7.5 lo describe como método pero §8 no le da
+módulo y §11 no le da fase; un valor de enum sin implementación es deuda.
+**Consecuencia:** enum activo = `colgadero | naipe | lista_item | numero`. Enmienda
+formal a §9 del brief.
+
+## ADR-004 · 2026-08-10 · Aceptada
+**Decisión:** las 52 imágenes de naipes se derivan de **reglas dictadas por el
+operador**, no de contenido inventado por el agente. El agente implementa el
+validador y **propone** candidatas marcadas como sugerencias; solo se persiste lo
+que el operador aprueba.
+**Razón:** §4.1 prohíbe inventar requisitos y contenido de dominio.
+**Consecuencia:** ver `seeds/naipes-52.md`. **Bloqueo abierto:** faltan las
+consonantes reservadas de Sota / Reina / Rey (12 de 52 cartas). Se necesita al
+inicio de la Fase 3.
+
+## ADR-005 · 2026-08-10 · Aceptada
+**Decisión:** `git init` dentro de `memory-trainer/`, con su propio `.gitignore`.
+**Razón:** decisión del operador. La raíz git actual es `~/Código`, que contiene
+~50 proyectos sin trackear y sin `.gitignore`; un `git add -A` descuidado
+contaminaría el commit de fase con proyectos ajenos.
+**Consecuencia:** los commits por fase (§11) viven en un historial aislado. No se
+toca el repo padre.
+
+## ADR-006 · 2026-08-10 · Aceptada
+**Decisión:** `fsrs_retrievability` y el `estado` de 4 valores del brief **no se
+almacenan**; se derivan.
+**Razón:** la retrievability depende del tiempo transcurrido y queda obsoleta al
+instante; un segundo diagrama de estados mantenido a mano se desincroniza del
+`State` de `ts-fsrs`.
+**Consecuencia:** refinamiento de §9, permitido por el propio brief ("borrador
+orientativo, no copiar literalmente"). Detalle en `MODELO-DATOS.md` §1.
+
+## ADR-007 · 2026-08-10 · Aceptada
+**Decisión:** `src/domain/` es lógica pura: **prohibido importar React o `expo-*`**
+dentro de esa carpeta.
+**Razón:** §4.4 exige TDD sobre FSRS y fonética. Lógica pura se prueba con Jest sin
+mocks de módulos nativos; lógica mezclada con UI obliga a montar todo el entorno.
+**Consecuencia:** el acceso a datos y a la plataforma entra por parámetros. Es
+verificable mecánicamente con un grep en la checklist de `/verificar`.
+
+## ADR-008 · 2026-08-10 · Aceptada
+**Decisión:** Zustand como gestor de estado (§6 permitía Zustand o Context API).
+**Razón:** sesiones de estudio con estado que cambia en cada tarjeta; Context
+provoca re-render de todo el árbol. Zustand es una dependencia pequeña y sin
+providers anidados.
+**Consecuencia:** `src/stores/`. Redux sigue prohibido (§3).
+
+## ADR-009 · 2026-08-10 · Aceptada
+**Decisión:** `categoria` sin restricción `CHECK` en SQLite; se valida en el borde
+del repositorio con un tipo unión de TypeScript.
+**Razón:** SQLite no permite alterar un `CHECK`; añadir `loci` exigiría reconstruir
+la tabla, que es justo la migración destructiva que §3 prohíbe.
+**Consecuencia:** la seguridad de tipos es de compilación, no de motor.
+
+## ADR-010 · 2026-08-10 · Aceptada
+**Decisión:** la racha usa `fecha_local` (`YYYY-MM-DD` en el huso del dispositivo),
+no UTC.
+**Razón:** una racha es un concepto de calendario humano; el día termina a la
+medianoche del usuario.
+**Consecuencia:** cambiar de huso horario puede alargar o acortar un día. Aceptado y
+documentado; no se "arregla" con UTC.
+
+---
+
+## ADR-011 · 2026-08-11 · Aceptada
+**Decisión:** versiones exactas del stack, verificadas contra `node_modules/` real
+(Skill `verificar-api-libreria`) durante el scaffold de la Fase 0 — no de memoria.
+
+| Paquete | Versión instalada | Fuente |
+|---|---|---|
+| expo | 57.0.12 | `npm view` + confirmado en `node_modules` |
+| expo-router | 57.0.12 | ídem |
+| expo-sqlite | 57.0.1 (verificada, **no instalada aún** — entra en Fase 1) | `npm view` |
+| ts-fsrs | 5.4.1 (verificada, **no instalada aún** — entra en Fase 1) | `npm view` |
+| expo-notifications | 57.0.10 (verificada, **no instalada aún** — entra en Fase 8) | `npm view` |
+| zustand | 5.0.14 (verificada, **no instalada aún** — entra en Fase 2) | `npm view` |
+| jest-expo | 57.0.4 | instalada |
+| jest | 29.7.0 | resuelta transitivamente por `jest-expo`, no declarada aparte |
+| typescript | **6.0.3** (NO 7.0.2) | ver hallazgo abajo |
+| react | 19.2.8 | instalada — ver hallazgo abajo |
+| react-native | 0.86.2 | instalada |
+
+**Hallazgo — la trampa que este ADR existe para registrar:** `npm view typescript
+version` devuelve `7.0.2` (la última publicada en el registro), pero la plantilla
+oficial de Expo SDK 57 fija `typescript: ~6.0.3` en sus `devDependencies`. Instalar
+"la última" a ciegas habría introducido una versión no probada contra el toolchain
+de Expo/Metro de esta SDK. Se siguió la versión que trae el ecosistema Expo
+(confirmada también al instalarla vía `expo install typescript --dev`, que resolvió
+independientemente el mismo `~6.0.3`), no la última del registro npm.
+
+**Hallazgo secundario:** `expo-router@57.0.12` depende (no como peer opcional, sino
+de forma dura vía `@expo/ui`) de un árbol que involucra a `react-dom` como peer. Un
+primer intento de fijar `react` a `19.2.3` (visto en una plantilla de prueba en el
+scratchpad) chocó en `ERESOLVE` contra un `react-dom@19.2.8` ya resuelto
+transitivamente. Se corrigió fijando `react` a `19.2.8` — la versión que el propio
+árbol de dependencias ya había resuelto como correcta — en vez de forzar con
+`--legacy-peer-deps`, que el propio `npm` advierte como "potentially broken".
+
+**Hallazgo de estructura:** se verificó en el código fuente instalado
+(`node_modules/expo/node_modules/@expo/cli/build/src/start/server/metro/router.js:125-133`)
+que `expo-router` usa `src/app/` solo si esa carpeta existe; si no, cae a `app/` en
+la raíz. Como `src/` de este proyecto no tiene subcarpeta `app/`, la estructura ya
+documentada en `CLAUDE.md`, `PLAN-FASES.md` y los 9 specs de módulo (`app/` como
+directorio de primer nivel, sibling de `src/`) es válida sin cambios.
+
+**Consecuencia:** ninguna decisión de arquitectura previa se revierte. Este ADR es
+el registro de que las versiones se verificaron activamente, con sus trampas, en
+vez de asumirse.
+
+## ADR-012 · 2026-08-11 · Aceptada — supersede parcialmente a ADR-011
+**Decisión:** downgrade de Expo SDK 57 → **SDK 54 (`expo@54.0.36`)**. Este es el
+evento de "la realidad diverge del plan" que §12.7 del brief anticipa
+explícitamente ("ej. una librería no funciona en Expo Go") — se registra aquí en
+vez de parchear en silencio.
+
+**Razón, con evidencia verificada, no asumida:**
+El operador reportó que Expo Go decía necesitar "una versión más nueva" pese a estar
+ya actualizada. Se verificó contra fuentes oficiales de Expo, no de memoria (el
+conocimiento del agente no cubre nada posterior a mayo 2026, y SDK 57 es de después):
+
+- Changelog oficial de SDK 57 (30 jun 2026), cita textual: *"We'd like to release a
+  new version for SDK 57, but we're still waiting on approval"* — el build de Expo
+  Go para SDK 57 seguía en cola de revisión de Apple.
+- Ficha real del App Store (`apps.apple.com/us/app/expo-go/id982107779`), consultada
+  el 11 ago 2026: **versión publicada 54.0.2**, sin actualizar desde el 23 sep 2025.
+- Conclusión: el Expo Go que el operador tiene instalado (desde el App Store, la
+  única fuente permitida por §3 — "cero intención de publicación en App Store") solo
+  soporta hasta SDK 54. Instalar "la última" SDK (57) fue exactamente el tipo de
+  suposición que el protocolo anti-alucinación existe para evitar — en este caso no
+  sobre una API, sino sobre la disponibilidad real de una plataforma externa.
+
+**Dos hallazgos adicionales durante el downgrade:**
+1. `expo-status-bar` había quedado en el array `plugins` de `app.json` desde el
+   scaffold original (SDK 57), auto-añadido por `expo install` sin que el agente lo
+   pidiera. Se verificó que el paquete **no tiene `app.plugin.js`** (no es un config
+   plugin real, es solo un componente `<StatusBar>`) y se retiró de `plugins`. La
+   propia CLI lo señaló al fallar su verificación interna por un problema de Node.js
+   ajeno a este proyecto (`ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING`).
+2. `expo-router` trae, también en la línea de SDK 54, una dependencia dura (vía
+   `@expo/ui`/`@radix-ui`) que resuelve `react-dom@19.2.8` como peer opcional —
+   incompatible con el `react@19.1.0` real que pide React Native 0.81.5 en esta SDK.
+   Se resolvió con `"overrides": { "react-dom": "19.1.0" }` en `package.json` en vez
+   de forzar con `--legacy-peer-deps` (que `npm` advierte como "potentially
+   broken" para todo el árbol). El proyecto no usa `react-dom` en ningún punto —
+   no hay soporte web — así que fijar su versión solo satisface la consistencia
+   de peers de `npm`, no afecta funcionalidad real.
+
+**Versiones finales de Fase 0 (reemplazan a la tabla "no instalada aún" de
+ADR-011 para lo que Fase 0 sí instala):**
+
+| Paquete | Versión | Nota |
+|---|---|---|
+| expo | 54.0.36 | antes 57.0.12 |
+| expo-router | ~6.0.24 | antes ~57.0.12 — numeración propia, no sigue al SDK |
+| expo-constants | ~18.0.13 | |
+| expo-linking | ~8.0.12 | |
+| expo-status-bar | ~3.0.9 | fuera de `plugins`, ver hallazgo 1 |
+| react | 19.1.0 | antes 19.2.8 |
+| react-native | 0.81.5 | antes 0.86.2 |
+| react-native-safe-area-context | ~5.6.0 | |
+| react-native-screens | ~4.16.0 | |
+| typescript | ~5.9.2 | antes ~6.0.3 |
+| @types/react | ~19.1.10 | |
+| jest-expo | ~54.0.17 | antes ~57.0.4 |
+
+**Re-verificado tras el downgrade:** `npx tsc --noEmit` limpio, `npm test` verde,
+`npx expo export --platform ios` bundlea 964 módulos sin error. Estructura `app/` en
+la raíz sin cambios (confirmado empíricamente: el bundle encuentra las rutas sin
+error, no hace falta releer el código fuente de `expo-router` para esta versión).
+
+**Consecuencia:** ninguna decisión de arquitectura del proyecto cambia — esto es un
+ajuste de versión de plataforma externa, no de diseño propio. **Nuevo pendiente:**
+ver P-6 abajo, sobre cuándo revisitar SDK 57.
+
+## ADR-013 · 2026-08-12 · Aceptada
+**Decisión:** API real de `ts-fsrs@5.4.1` y `expo-sqlite@16.0.10` (SDK 54), leída de
+`node_modules/ts-fsrs/dist/index.d.ts` y `node_modules/expo-sqlite/build/*.d.ts`
+antes de escribir `scheduler.ts` — Skill `verificar-api-libreria`, paso 6 de
+`modulos/01-motor-fsrs.md`.
+
+**Hallazgos de `ts-fsrs` que el spec original no anticipaba:**
+- La fábrica es `fsrs(params?): FSRS`, función suelta, no `new FSRS()` directo
+  (aunque la clase también se exporta).
+- `Rating`: `Manual=0, Again=1, Hard=2, Good=3, Easy=4`. `Grade` = los 4 sin Manual.
+- `State`: `New=0, Learning=1, Review=2, Relearning=3`.
+- **`get_retrievability(card, now?, format?: false): number` existe en la
+  librería.** `estadoVisual()` no necesita reimplementar la curva de olvido a
+  mano — se llama a la librería, tal como exige el invariante I-7.
+- `Card.elapsed_days` está **deprecado, se elimina en la versión 6.0.0**. No se
+  persiste (ya no estaba en el esquema de `MODELO-DATOS.md`, confirmado correcto).
+- `CardInput` acepta `due`/`last_review` como `Date | number | string` — un ISO
+  string guardado en SQLite se puede pasar tal cual, sin parsear a mano.
+- `TypeConvert.state(value): State` normaliza `State | StateType` (número o
+  string) — se usa en `estadoVisual()` en vez de comparar a mano.
+- `f.repeat(card, now)` devuelve los 4 grados a la vez (`IPreview`); `f.next(card,
+  now, grade)` devuelve uno. El wrapper usa `next()` para calificar.
+
+**Hallazgos de `expo-sqlite` que confirman el plan sin cambios:**
+- `openDatabaseAsync`, `execAsync`, `runAsync`, `getAllAsync`, `getFirstAsync`,
+  `withTransactionAsync` — todos existen tal como se asumió en la Skill
+  `verificacion` (los greps de convención de la Fase 0 ya buscaban estos nombres).
+- **No hay mecanismo de versionado de esquema integrado** (`SQLiteOpenOptions` no
+  tiene nada de esto) — confirma que la tabla `migracion` propia de
+  `MODELO-DATOS.md` §3 es necesaria, no redundante.
+
+**Consecuencia:** ninguna decisión de arquitectura cambia; esto es la verificación
+que el spec pedía, ahora con evidencia. `scheduler.ts` usa `get_retrievability` y
+`TypeConvert.state` en vez de reimplementarlos.
+
+## ADR-015 · 2026-08-12 · Aceptada
+**Decisión:** `armarSesion()` baraja la **presentación** final de la sesión
+(Fisher-Yates, vía un parámetro `aleatorizar` inyectable — mismo patrón que el
+reloj `ahora` de I-6). La **selección** de qué tarjetas entran no cambia:
+vencidas por urgencia, luego nuevas en orden de número.
+
+**Razón:** el operador probó una sesión real de 20 tarjetas en modo Reverso y
+notó que, al ir siempre en orden ascendente, la posición dentro de la sesión
+delataba el número sin necesidad de recordar nada (si vas por la tarjeta 25 de
+una sesión que arrancó en la 21, el rango ya está resuelto). §7.2/modulos/02
+nunca contemplaron esto — se verificó explícitamente contra todo `agent_docs/`
+(único "aleatorio" existente era el de Baraja Completa de naipes, §8.3, un
+concepto distinto) antes de asumir que hacía falta diseñarlo de cero.
+
+**Por qué la selección no cambió:** elegir las tarjetas nuevas en orden
+ascendente sigue siendo lo correcto — garantiza cobertura sistemática del
+corpus de 100 sin huecos. El problema era solo que ese orden de SELECCIÓN se
+filtraba a la PRESENTACIÓN. Separar ambas cosas resuelve el problema sin tocar
+la lógica de priorización ya probada.
+
+**Consecuencia:** los tests de orden exacto en `motor.test.ts` y
+`repository.test.ts` pasan `aleatorizar: (arr) => arr` para aislar la selección
+del barajado (si no, serían flaky). Se verificó 5 ejecuciones seguidas sin
+fallos antes de aceptar el diseño. `modulos/02-colgadero.md` §3 actualizado.
+Este mismo `aleatorizar` inyectable lo reusará la Fase 3 (Baraja Completa ya
+pide barajado con semilla — incluso podría compartir la función `barajar()`).
+
+## ADR-016 · 2026-08-12 · Aceptada — corrige terminología de ADR-004
+**Decisión:** las figuras del mazo se llaman **J, Q, K** en toda la documentación
+activa, nunca "Sota, Reina, Rey". Además, el origen de las 52 palabras cambia:
+**el operador las dicta directamente** (como hizo con `colgadero-100.md`), no
+"agente propone candidatas → operador aprueba" como decía originalmente
+`seeds/naipes-52.md` §5 / ADR-004.
+
+**Razón — terminología:** al preguntar por P-1, el operador aclaró que el mazo de
+referencia es el **francés estándar de 52 cartas con J/Q/K** (♠♦♣♥), no la baraja
+española tradicional (Oros/Copas/Espadas/Bastos, sin Reina, con Sota/Caballo/Rey).
+"Sota, Reina, Rey" mezclaba vocabulario de los dos mazos — de hecho la baraja
+española tradicional ni siquiera tiene Reina. Los **palos** (Regla 1: Espadas =
+Spades, Diamantes = Diamonds, Palos = Clubs, Corazones = Hearts) ya eran
+correctos, porque ya eran la traducción del mazo francés — solo las figuras
+estaban mal nombradas. `type Valor` en `naipes-52.md` §6 ya decía `'J'|'Q'|'K'`
+desde Plan Mode; el error estaba solo en la prosa. **Nunca usar iconografía de
+la baraja española en la UI** (§8.3 no la pide, y ahora está prohibida explícitamente).
+
+**Razón — origen de las palabras:** el operador prefiere palabras personalmente
+evocativas (como su colgadero-100) sobre palabras genéricas que solo cumplen la
+regla fonética mecánicamente. Dado que Lorayne depende de que la imagen le
+signifique algo específico a quien la usa, una palabra "correcta pero genérica"
+propuesta por el agente vale menos que una elegida por el operador mismo.
+
+**Consecuencia:** `seeds/naipes-52.md`, `modulos/03-naipes.md` y la fila P-1 de
+este archivo actualizados. `EditorNaipe.tsx` (Fase 3) sigue siendo necesario —
+el operador querrá editar palabras después igual que edita el colgadero — pero
+ya no como mecanismo de "aprobar sugerencias del agente".
+
+## ADR-017 · 2026-08-12 · Aceptada — resuelve P-1 sin necesitar la regla original de Lorayne
+**Decisión:** las figuras (J, Q, K) siguen la **Regla 1** (empiezan con la letra
+del palo: E/D/P/C) pero **no tienen equivalente de Regla 2** — ninguna
+restricción de sonido consonante final. El operador elige libremente la palabra
+de cada una de las 12 cartas de figura, memorizada directamente, no decodificada.
+
+**Razón:** el operador cuestionó si hacía falta perseguir "la regla exacta de
+Lorayne" para J/Q/K en absoluto, con dos argumentos válidos: (1) el texto
+original es inglés traducido a español de España — ya se demostró con la
+confusión Sota/Reina/Rey (ADR-016) que esa cadena de traducción es lossy; (2) los
+naipes son un conjunto **cerrado** de 52 — no hay necesidad de una regla
+*generativa* como la Regla 2 (que existe porque reutiliza la tabla fonética de
+§7.2 para un rango de valores 0-9 que si tiene estructura sistemática). Para 3
+figuras × 4 palos, una "regla especial de una consonante" no sería más que 3
+entradas fijas en una tabla — exactamente equivalente a que el operador asigne
+la palabra de cada figura directamente, que es lo que ya iba a hacer de todos
+modos (ADR-016: el operador dicta las 52 palabras, no aprueba candidatas).
+
+**Por qué Regla 1 sí se mantiene:** consistencia visual con las 40 cartas
+numéricas, a coste cero — no requería ningún dato nuevo del operador, así que se
+adoptó como default y se le avisó para que corrija si prefiere lo contrario.
+
+**Consecuencia:** `validarPalabraNaipe` valida el marcador de palo para las 12
+figuras igual que para las 40 numéricas, pero no aplica ninguna regla de
+"último sonido" a las figuras. `cartaDesdePalabra` para figuras es una búsqueda
+directa contra las 12 palabras asignadas, no una decodificación fonética.
+**P-1 queda resuelto — nada bloquea ya el inicio de la Fase 3.**
+`seeds/naipes-52.md` actualizado.
+
+## ADR-018 · 2026-08-12 · Aceptada
+**Decisión:** `app/_layout.tsx` usa `<Stack>` de `expo-router`, no `<Slot>`.
+Cabecera nativa oscura (`headerStyle`/`headerTintColor`/`contentStyle` en
+`screenOptions`), con un `<Stack.Screen name="..." options={{ title }}>` por
+ruta para los títulos en español. `index` además fija
+`headerBackTitle: 'Inicio'` para que las pantallas siguientes no muestren
+"memory-trainer" como texto del botón de volver.
+
+**Razón:** `Slot` (elegido en la Fase 0 sin discutirlo explícitamente, por ser
+la opción más simple para una sola pantalla) no da gesto nativo de deslizar ni
+botón de back en ninguna pantalla. El operador reportó dos síntomas del mismo
+problema: `colgadero/index.tsx` no tenía forma de volver al menú principal, y
+las 7 pantallas de sesión activa (Flash/Reverso/Velocidad × 2 categorías,
+Baraja Completa) no tenían forma de salir a mitad de sesión — solo al
+terminar. Parchear pantalla por pantalla con un botón "Volver" manual (como
+se hizo primero en los dos `index.tsx`) resuelve el síntoma reportado pero no
+el problema de fondo, y obliga a acordarse de repetirlo en cada pantalla
+nueva de las fases que faltan.
+
+**Consecuencia — regla para fases futuras:** toda ruta nueva se declara en
+`app/_layout.tsx` como `<Stack.Screen name="ruta/archivo" options={{ title:
+'...' }} />` para que tenga título correcto. No hace falta (ni se debe)
+añadir un botón "Volver" manual a mano — el back nativo ya cubre eso. Se
+retiraron los títulos y botones "Volver" que habían quedado duplicados con
+la cabecera en `app/index.tsx`, `colgadero/index.tsx` y `naipes/index.tsx`.
+`SafeAreaView` de ADR-anterior (fix del choque con el notch en
+`naipes/index.tsx`) se retiró del layout raíz: la cabecera nativa ya respeta
+el área segura superior por sí sola, mantenerlo habría duplicado el espacio
+vacío arriba. `SafeAreaProvider` se conserva como contexto disponible para
+`useSafeAreaInsets()` si alguna pantalla futura lo necesita para el borde
+inferior.
+
+## ADR-019 · 2026-08-12 · Aceptada
+**Decisión:** dos resoluciones del operador al entrar a la Fase 4.
+
+**P-2 confirmado, sin cambios a ADR-002:** el eslabón A→B de una lista es una
+sola tarjeta FSRS. Si en una sesión se prueban las direcciones normal e
+inversa, se califica con la **peor** de las dos notas. ADR-002 queda
+confirmado tal cual se propuso — su estado pasa de "Propuesta" a aceptado por
+este ADR, sin reabrir el razonamiento ya escrito ahí.
+
+**P-3 resuelto:** el colgadero del dígito `0` suelto es **"Oro"** (o-r-o →
+decodifica a `0`, un solo sonido); el del trozo `00` es **"Rara"** (r-a-r-a →
+decodifica a `00`, dos sonidos). Ambas verificadas contra `decodificar()` real
+antes de proponerlas, aprobadas por el operador. No entran a `COLGADERO_100`
+(son casos especiales de la descomposición de números, no palabras 1-100 que
+se practiquen en el modo Colgadero) — viven en una estructura separada que
+consume `src/domain/numeros/descomposicion.ts`.
+
+**Consecuencia:** `decodificacion-fonetica.md` §5 actualizado — los dos casos
+que decía "ABIERTO — NO inventar solución" pasan a "Resuelto". P-2 y P-3 se
+retiran de la tabla de pendientes.
+
+## Pendientes de decisión
+
+| # | Tema | Dueño | Se necesita para |
+|---|---|---|---|
+| ~~P-1~~ | ~~Consonantes reservadas de J / Q / K~~ — **resuelto por ADR-017**, ya no bloquea nada | — | — |
+| ~~P-2~~ | ~~Visto bueno a ADR-002~~ — **confirmado por ADR-019**, ya no bloquea nada | — | — |
+| ~~P-3~~ | ~~Palabra colgadero para `0`/`00`~~ — **resuelto por ADR-019** (Oro/Rara), ya no bloquea nada | — | — |
+| P-4 | ¿`expo-notifications` dispara notificaciones locales en Expo Go con el SDK que se fije en Fase 0? | Agente (spike) | Fase 8 |
+| P-5 | Simulador de iOS sin runtime descargado (`xcrun simctl list runtimes` vacío). Xcode está instalado pero falta la plataforma iOS, una descarga de varios GB que normalmente pide contraseña de administrador. No bloquea ninguna fase (el objetivo real es Expo Go en el iPhone físico), pero impide usar el simulador como verificación intermedia. | Operador | Ninguna fase (solo conveniencia) |
+| P-6 | El proyecto quedó fijado en SDK 54 por ADR-012, no en "la última" a propósito. Antes de subir de SDK en cualquier fase futura, verificar primero contra `apps.apple.com/us/app/expo-go/id982107779` (o preguntar al operador qué ve en Expo Go) que la nueva versión ya está disponible en el App Store — nunca asumir que "más nueva" significa "usable". | Agente | Cualquier fase futura que toque versión de Expo SDK |
+
+## ADR-014 · 2026-08-12 · Aceptada
+**Decisión:** `src/db/tipos.ts` define una interfaz propia `ConexionBD`
+(`execAsync`/`runAsync`/`getAllAsync`/`getFirstAsync`/`withTransactionAsync`),
+sin importar nada de `expo-sqlite`. `client.ts` la satisface con la BD real del
+dispositivo; `repository.test.ts` la satisface con un adaptador sobre
+`node:sqlite` (`src/db/conexionDePrueba.ts`).
+
+**Razón, con evidencia:** `expo-sqlite` es un módulo nativo real (bindings JSI).
+Se comprobó empíricamente que **no corre bajo Jest**: `openDatabaseAsync` revienta
+con `TypeError: _ExpoSQLite.default.NativeDatabase is not a constructor` porque
+el módulo nativo no existe fuera de un runtime iOS/Android/Expo Go. `PLAN-FASES.md`
+asumía que `repository.test.ts` podría probar directo contra `expo-sqlite`; esa
+suposición era falsa.
+
+La alternativa de mockear la BD con un objeto JS en memoria se descartó: no
+probaría el DDL/DML real, y `db-migracion` Paso 4 exige probar migraciones sobre
+una BD **con datos**, no sobre una simulación. `node:sqlite` (built-in de Node
+desde v22, confirmado disponible: `node -v` → v22.22.3) ejecuta el mismo motor
+SQLite real, así que los tests siguen siendo honestos.
+
+**Consecuencia:** `src/db/tipos.ts` no importa `expo-sqlite` ni siquiera como
+tipo. Solo `client.ts` lo hace (verificado con grep: única línea `import ...
+from 'expo-sqlite'` del proyecto). Cualquier fase futura que añada tablas sigue
+este mismo patrón para sus propios tests de repositorio.
+
+**Hallazgo adicional, corregido antes de commitear:** el esquema de `tarjeta` en
+`MODELO-DATOS.md` y la migración `001_inicial.ts` no tenían columna para
+`learning_steps` de `ts-fsrs` (campo requerido de `Card`/`CardInput`, distinto de
+`elapsed_days` que sí está deprecado). Sin persistirlo, releer una tarjeta desde
+la BD reiniciaría su paso de aprendizaje a 0 en cada carga — pérdida silenciosa de
+estado, justo lo que el invariante I-2 prohíbe. Se añadió `fsrs_learning_steps`
+a la tabla, a `FilaTarjeta` y al mapeo `filaACardInput`/`calificarTarjeta` antes de
+que ningún archivo con el hueco se commiteara. `MODELO-DATOS.md` §2.2 actualizado.
+
+## ADR-020 · 2026-08-12 · Aceptada — corrige el esquema de `metadata_categoria` de `lista_item` en MODELO-DATOS.md §2.2 y modulos/04-listas-cadena.md §2
+
+**Decisión:** el `metadata_categoria` de una tarjeta `lista_item` es
+`{ lista_id, id_objeto_a, id_objeto_b }` — los ids de fila de `lista_objeto` —
+en vez del `{ lista_id, posicion_a }` documentado en Plan Mode. Ya no se guarda
+`posicion_a`: el orden de presentación se deriva en el momento uniendo
+`id_objeto_a` contra `lista_objeto.posicion` (mismo principio que ADR de
+`resumenDeTarjeta`: nada de contadores paralelos que se puedan desincronizar).
+
+**Razón:** `src/domain/cadena/eslabones.ts` (Fase 4) calcula qué eslabones
+archivar/crear al editar una lista comparando el **id de objeto**, no la
+posición — es la única forma de cumplir la regla ya aprobada en
+`04-listas-cadena.md` §3 ("insertar en medio rompe **un** eslabón y crea
+**dos**"). Se verificó con test (`eslabones.test.ts`): identificar por
+posición en vez de por id, ante una inserción en medio, rompe 2 eslabones y
+crea 3 — viola la regla aprobada. Si `metadata_categoria` solo guardara
+`posicion_a`, el repositorio no tendría cómo encontrar "la tarjeta del par
+(objetoA, objetoB)" para decidir si conservarla; necesitaría comparar por
+posición y caería en el mismo error.
+
+**Consecuencia:** `MODELO-DATOS.md` §2.2 y `agent_docs/modulos/04-listas-cadena.md`
+§2 actualizados a la nueva forma. `src/db/repository.ts` fetch-y-filtra en JS
+(mismo patrón que `armarSesion`/`resumenDeTarjeta`), no `json_extract` en SQL:
+el volumen por lista es pequeño y mantiene toda la lógica de forma de metadata
+en TypeScript tipado en vez de en cadenas SQL.
+
+**Además, sin ADR propio por seguir un patrón ya aceptado (Fase 1):** la
+migración `004_listas_numeros.ts` crea, además de las tablas, un mazo
+`categoria='lista_item'` ("Listas") y otro `categoria='numero'` ("Números"),
+ambos vacíos — mismo criterio de "un mazo por categoría" que ya regía
+`colgadero`/`naipe` desde `obtenerMazoPorCategoria`. Sin esto, cada función de
+CRUD tendría que comprobar y crear el mazo bajo demanda, una rama de más en
+cada escritura.
+
+## ADR-021 · 2026-08-13 · Aceptada
+
+**Decisión:** tres precisiones de diseño de Fase 5 sobre lo que
+`07-racha.md`/`09-dashboard.md` dejaban a nivel de esbozo, no de firma
+implementable.
+
+**`calcularRacha(dias, config, ahora: Date)`, no `hoy: string`:** el doc
+esbozaba `hoy` como fecha simple, pero `estado: 'en_riesgo'` exige comparar la
+hora actual contra `hora_recordatorio` — una fecha sin hora no alcanza.
+`ahora: Date` se inyecta (I-6) y `fechaLocal(ahora)` se deriva adentro.
+
+**`meta_cumplida` se lee de la fila guardada, nunca se recalcula contra el
+`meta_diaria` vigente:** si se recalculara, subir la meta mañana rompería
+retroactivamente un día que ya cumplió con la meta de ayer — perdería una
+racha ya ganada. Es una excepción angosta y deliberada a "derivar, no
+guardar" (ADR-006), igual que `fecha_local` ya es un hecho fijado en el
+tiempo, no recalculado en cada lectura.
+
+**`mezclarSesion` intercala rachas largas de una sola categoría solo DENTRO
+de vencidas y solo DENTRO de nuevas, nunca cruzando el límite entre ambas:**
+la alternativa (intercalar sobre la lista ya unida) puede adelantar una
+tarjeta nueva por delante de una vencida genuinamente más urgente con tal de
+romper una racha de categoría — invierte la prioridad que el propio doc pone
+como paso 1-2, antes que el paso 4 de intercalado.
+
+**Consecuencia:** `filaACardInput` (antes privada en `repository.ts`) se
+movió a `scheduler.ts`, renombrada `filaTarjetaACardInput` y exportada:
+`mezclarSesion` la necesita para `retrievability()` en el desempate de
+vencidas, y `repository.ts` ya importa `mezclarSesion` para
+`armarSesionMixta` — mantenerla en `repository.ts` habría creado un ciclo.
+Reubicación pura, sin cambio de comportamiento; `calificarTarjeta` y
+`resumenDeTarjeta` la importan desde su nueva ubicación.
+
+## ADR-022 · 2026-08-13 · Aceptada
+
+**Decisión:** el volteo de las cartas de naipes (Fase 8, pedido por el
+operador) se construye con la `Animated` API nativa de `react-native` —
+**no** con Three.js, aunque el operador preguntó explícitamente por esa
+opción.
+
+**Razón, con evidencia:** el puente de Three.js a React Native
+(`expo-gl`+`expo-three`/`react-three-fiber`) tiene, verificado por
+investigación externa el 2026-08-13: desajustes de versión de `expo-gl` entre
+lo que trae el SDK de Expo y lo que exige `react-three-fiber`, que rompen en
+dispositivos reales; el simulador de iOS no lo soporta bien tampoco; y, más
+grave, Apple deprecó OpenGL en iOS, con reportes de starters de Expo+Three.js
+que dejaron de cargar en iPhones modernos. El brief exige Expo Go sobre un
+iPhone real sin development build (§3) — un riesgo de "no carga en tu
+iPhone" no es aceptable para una animación de pulido. Además, un volteo de
+carta plana es una transformación 2D con perspectiva, no una escena 3D: un
+motor 3D completo (contexto GL, cámara, malla, texturas) es la herramienta
+equivocada para el problema y contradice PROJECT_BRIEF.md §9 ("optimizar
+simplicidad de código, no rendimiento del dispositivo").
+
+**Consecuencia:** cero dependencias nuevas para esto. Librerías maduras de
+React Native (`react-native-flip-card`, `react-native-card-flip`,
+`react-native-gesture-flip-card`) quedan como referencia de diseño, no como
+dependencia — mismo criterio que todo componente de UI de este proyecto hasta
+ahora (`Flashcard.tsx`, `EditorNaipe.tsx`, `PausaVisualizacion.tsx`: RN puro,
+sin librerías de UI externas). Detalle completo, con fuentes, en
+`PLAN-FASES.md` §Fase 8 y `modulos/03-naipes.md` §7.
+
+## ADR-023 · 2026-08-15 · Aceptada
+
+**Decisión:** `mezclarSesion` (`src/domain/sesion/mezcla.ts`) le pone tope
+por categoría también a las **vencidas**, no solo a las nuevas. Nueva función
+`limitarVencidasPorCategoria`: ninguna categoría puede aportar más de
+`ceil(topeSesion / categorías con vencidas)`; lo que un cupo no llena porque
+esa categoría no tenía tantas se rellena con las tarjetas diferidas, en el
+mismo orden de urgencia recibido.
+
+**Razón, hallazgo real en dispositivo:** el operador reportó que "Practicar
+ahora" solo mostraba naipes. Causa confirmada leyendo el código (no
+hipótesis): `09-dashboard.md` §2 solo exige repartir entre categorías para
+las **nuevas** ("para que una categoría con muchas tarjetas nuevas no
+monopolice la sesión") — nunca lo dice de las vencidas, y la implementación
+original tomaba las vencidas por urgencia global sin ningún tope por
+categoría antes de rellenar con nuevas. Un lote grande de naipes con
+`fsrs_lapses` altos (de las pruebas de Baraja Completa de esta misma sesión)
+vuelve a esas tarjetas vencidas una y otra vez con intervalos cortos
+(Learning/Relearning) — suficientes para llenar las 20 tarjetas del tope por
+sí solas, dejando `cupoNuevas = max(0, 20 − vencidas.length) = 0`: cero
+espacio para cualquier otra categoría, vencida o nueva.
+
+**Por qué reparto proporcional y no round-robin plano (como `seleccionarNuevas`):**
+el archivo ya tenía un test que fija como invariante el orden de urgencia
+cruzando categorías cuando no hay riesgo de monopolio (`mezcla.test.ts`,
+"ordena las vencidas por mayor retraso primero, cruzando categorías",
+preexistente a este ADR). Un round-robin ciego por categoría habría roto ese
+test — alternar categorías sin mirar la urgencia real habría antepuesto una
+tarjeta apenas vencida a una gravemente vencida de otra categoría, incluso
+sin ningún backlog grande de por medio. El reparto proporcional con
+diferido-y-relleno preserva la urgencia intacta salvo en el caso exacto que
+había que corregir: cuando SÍ hay riesgo real de monopolio.
+
+**Consecuencia:** ninguna. Comportamiento sin cambios cuando ninguna
+categoría se acerca a monopolizar el tope (los 3 tests preexistentes que
+ejercitan vencidas de más de una categoría siguen pasando con el mismo orden
+exacto, verificado analíticamente antes de tocar el código). 3 tests nuevos
+en `mezcla.test.ts` cubren el caso asimétrico (un backlog grande no vacía a
+las demás), el caso simétrico (dos categorías igual de sobrecargadas se
+reparten el tope a la mitad) y el caso sin riesgo (el orden de urgencia
+cruzando categorías no cambia).
+
+## ADR-024 · 2026-08-15 · Aceptada
+
+**Decisión:** se agrega `expo-sharing` como dependencia nueva (no listada en
+la tabla de stack de `CLAUDE.md`), usada solo desde `app/estadisticas.tsx`
+detrás de un botón "Exportar BD (verificación)". `src/db/client.ts` expone
+`rutaArchivoBD()`, que devuelve `db.databasePath` (propiedad real de
+`expo-sqlite`, verificada en `node_modules/expo-sqlite/build/SQLiteDatabase.d.ts`
+y en el nativo `SQLiteModule.swift`: es `URL.path` de iOS, sin esquema —
+por eso quien la usa antepone `file://` a mano, no aquí).
+
+**Razón:** el `done when` de la Fase 6 exige comparar la pantalla contra SQL
+manual sobre la BD real del dispositivo (`08-panel-retencion.md`), pero el
+plan original nunca resolvió el *cómo*: Expo Go no expone su sandbox a
+Finder/Files, y el brief prohíbe backend (§3) — no hay canal remoto para
+consultar la BD tampoco. Sin un mecanismo de exportación, ese `done when`
+era, en la práctica, irrealizable. `expo-file-system` no hizo falta:
+`databasePath` ya resuelve la ruta sin él. `expo-sharing` sí es
+indispensable — es el único mecanismo de este proyecto (sin backend, sin
+dev client) para sacar un archivo del sandbox de Expo Go hacia el
+dispositivo del operador (AirDrop, Guardar en Archivos, etc.). Verificado
+contra la doc oficial de Expo SDK 54: ambos paquetes están "Included in
+Expo Go" — cero riesgo de requerir development build.
+
+**Consecuencia:** `ConexionBD` (ADR-014) no se toca — `rutaArchivoBD()` vive
+fuera de esa interfaz a propósito, porque el adaptador de tests
+(`node:sqlite`) no tiene ningún archivo real que exportar. Utilidad de
+depuración, no parte de ningún módulo del brief — mismo criterio que
+`reiniciarHistorialPractica` (Fase 5): candidata a confirmarse como
+permanente o a quitarse una vez cerrada la Fase 6, no una decisión tomada
+aquí de una vez por todas.
+
+## Corrección a ADR-023 · 2026-08-15
+
+**No se reabre la decisión** (el reparto proporcional sigue siendo correcto
+y necesario) — se corrige únicamente la causa que ADR-023 atribuía al
+backlog real de naipes.
+
+**Lo que decía ADR-023:** "un lote grande de naipes con `fsrs_lapses` altos
+... reprograma esas tarjetas vencidas una y otra vez con intervalos cortos
+(Learning/Relearning)".
+
+**Lo que muestran los datos reales** (BD exportada del dispositivo del
+operador vía el botón de la Fase 6, consultada con `sqlite3` directamente,
+2026-08-15): las 52 tarjetas de naipe en el backlog tienen `fsrs_lapses = 0`
+— ninguna, sin excepción (`SELECT fsrs_lapses, fsrs_state, COUNT(*) FROM
+tarjeta WHERE categoria='naipe' AND archivada=0 GROUP BY fsrs_lapses,
+fsrs_state` → una sola fila: `0|1|52`). `fsrs_reps = 6` en todas, con
+`fecha_ultima_revision`/`fecha_proxima_revision` separadas por ~60 segundos
+exactos entre sí — el primer paso de aprendizaje de `ts-fsrs`, nunca
+graduado a Review. Un lapse (por definición de FSRS) es una reprobación
+**desde** Review; una tarjeta que nunca sale de Learning no puede acumular
+lapses aunque se repruebe seis veces seguidas.
+
+**Causa real, tal como la muestra el dato:** 52 tarjetas revisadas 5-6 veces
+cada una en un lapso de segundos (mismo patrón de timestamps agrupados),
+todas calificadas mal, todas ancladas al primer paso de aprendizaje
+(~1 minuto) — compatible con una pasada de prueba mecánica por la Baraja
+Completa, no con acumulación orgánica de lapses. La estructura del
+problema que ADR-023 corrige (vencidas sin tope por categoría) es la misma
+de todos modos: una categoría con reintervalos de ~1 minuto vuelve a estar
+vencida casi de inmediato, así que 52 tarjetas así bastan para copar
+igualmente el tope de 20.
+
+**Por qué queda como corrección aparte y no como edición de ADR-023:**
+convención de este archivo — nunca reescribir un ADR ya aceptado, se
+supersede/corrige con una entrada nueva. `src/domain/sesion/mezcla.ts`
+(comentarios) ya actualizado con la explicación correcta; el mensaje del
+commit `b2a2dfe` no se toca (registro histórico de lo que se creía cierto en
+ese momento, no un error del proceso).
+
+## ADR-025 · 2026-08-16 · Aceptada
+
+**Decisión:** el mecanismo genérico de creación/edición (`REGISTRO`,
+`GUARDAR_CATEGORIA`, `ARCHIVAR_CATEGORIA`, `FormularioGenerico.tsx`,
+`app/crear/[categoria].tsx` — Fase 7, agent_docs/modulos/06-ejercicios-custom.md)
+no ofrece ninguna vía de creación ni de archivado para `naipe` — solo edición
+de las 52 cartas ya sembradas. `GUARDAR_CATEGORIA.naipe` lanza un error
+explícito si se llama sin `idExistente`; `ARCHIVAR_CATEGORIA` no tiene
+entrada para `naipe`; ningún botón "agregar naipe" existe en ninguna
+pantalla.
+
+**Razón:** el mazo `naipe` es un conjunto cerrado de 52 cartas del mazo
+francés estándar (ADR-016), generado por `LAS_52_CARTAS`
+(`src/domain/naipes/baraja.ts`) a partir de los tipos fijos `Palo`/`Valor`
+(`src/domain/fonetica/naipes.ts:8-9`, 4 palos × 13 valores = 52, sin
+variación posible). Una tarjeta 53 no correspondería a ninguna carta física
+real; el barajado y la comparación de "Baraja Completa"
+(`generarOrdenBaraja`/`compararReproduccion`, mismo archivo) asumen
+exactamente 52. Archivar una carta rompería la misma asunción — "Baraja
+Completa" dejaría de ser realmente completa. Ver también
+`agent_docs/seeds/naipes-52.md`.
+
+**Consecuencia:** el `done when` de la Fase 7 ("crear un ítem nuevo en cada
+una de las 4 categorías") se satisface para naipe demostrando edición
+(conserva `id` y estado FSRS, vía `/crear/naipe?id=...`) en vez de creación
+literal — documentado aquí en vez de forzar una interpretación literal que
+contradice el modelo de dominio ya cerrado desde ADR-016.
+`TarjetasProblematicas.tsx`'s `rutaEditar` sigue enviando naipe a `/naipes`
+(su editor inline ya probado), no al mecanismo nuevo — cambiarlo no ganaba
+nada y sí arriesgaba un flujo que ya funciona.
+
+## Corrección a ADR-011 · 2026-08-20
+
+**No se reabre la decisión** (la disciplina de "verificar contra `node_modules/`
+real, no de memoria" sigue siendo correcta) — se corrige un dato concreto que
+quedó mal en la fila de `expo-notifications`.
+
+**Lo que decía ADR-011 (línea 111):** `expo-notifications | 57.0.10 (verificada,
+no instalada aún — entra en Fase 8) | npm view`.
+
+**Por qué está mal:** esa fila se escribió el 2026-08-11, durante el scaffold
+original en SDK 57, **antes** del downgrade real a SDK 54 (ADR-012, mismo día).
+`npm view expo-notifications version` devuelve el último tag publicado en el
+registro de npm — no lo que este proyecto, fijado a SDK 54, realmente instala.
+Nunca se revisitó esa fila tras el downgrade, así que quedó describiendo una
+versión que este proyecto no puede usar.
+
+**Dato real** (Fase 8, Stage 0 — instalado y confirmado hoy, no de npm view):
+```bash
+npx expo install expo-notifications
+grep '"version"' node_modules/expo-notifications/package.json
+```
+→ `"version": "0.32.17"` — coincide con `bundledNativeModules.json` de la rama
+`sdk-54` de Expo (`"expo-notifications": "~0.32.17"`), la fuente correcta para
+saber qué versión trae una SDK fijada, en vez de la última publicada.
+
+**Consecuencia:** ninguna — Fase 8 nunca dependió del número viejo, solo lo
+heredó sin usar. Queda como recordatorio de que "verificar contra
+`node_modules/`" significa contra el árbol real después de cualquier cambio de
+SDK, no solo una vez al principio del proyecto.
+
+## ADR-026 · 2026-08-20 · Aceptada
+
+**Decisión:** Fase 8 implementa el switcher visual completo de dos direcciones
+("Arcade Neón" / "Papel y Tinta"), con selector en vivo en `app/ajustes.tsx` y
+persistencia en SQLite — no el "modo oscuro por defecto" mínimo que pide
+`PROJECT_BRIEF.md §10` a secas. Esto agrega 7 dependencias nuevas fuera de la
+tabla de stack de `CLAUDE.md`: `expo-notifications`, `expo-font`,
+`expo-splash-screen`, `@expo-google-fonts/{fredoka,nunito,lora,karla}`.
+
+**Razón:** decisión explícita del operador (Plan Mode, 2026-08-20), tomada
+después de ver el costo real — no una interpretación de alcance del agente.
+Mismo tipo de justificación que ADR-024 (`expo-sharing`, dependencia aditiva
+fuera de la tabla original): ahí la razón era un `done when` inalcanzable sin
+la dependencia nueva; aquí la razón es que el operador prefirió explícitamente
+exceder el mínimo del brief tras ver el costo, no que fuera inevitable.
+
+**Costo real, verificado contra el código y los paquetes instalados, no
+asumido:**
+
+- **`oklch()` no se puede usar en valores de estilo de React Native 0.81.5** —
+  confirmado en dos capas del paquete ya instalado: el parser JS clásico
+  (`node_modules/@react-native/normalize-colors/index.js`, función
+  `getMatchers()` — sin matcher de `oklch`/`oklab`/`lab`/`lch`, cualquier valor
+  sin match se descarta silenciosamente) y el parser C++ nuevo de Fabric
+  (`node_modules/react-native/ReactCommon/react/renderer/css/CSSColorFunction.h`
+  — TODO literal ya en el código fuente: `// TODO T213000437: support lab(),
+  lch(), oklab(), oklch(), color(), color-mix()`). Cada valor de las 2 paletas
+  de los mockups (`agent_docs/prototipos/pantallas/*.html`) se convirtió a hex
+  a mano, renderizando cada color en un navegador real y leyendo el resultado
+  — la tabla convertida vive en `src/tema/colores.ts`.
+- **7 dependencias nuevas instaladas y verificadas hoy** (no de `npm view`,
+  contra `node_modules/` real tras `npx expo install`):
+
+  | Paquete | Versión resuelta para SDK 54 |
+  |---|---|
+  | `expo-notifications` | 0.32.17 |
+  | `expo-font` | 14.0.12 |
+  | `expo-splash-screen` | 31.0.13 |
+  | `@expo-google-fonts/fredoka` | 0.4.1 |
+  | `@expo-google-fonts/nunito` | 0.4.2 |
+  | `@expo-google-fonts/lora` | 0.4.2 |
+  | `@expo-google-fonts/karla` | 0.4.2 |
+
+  `npx expo install expo-font` registró automáticamente el config plugin
+  `expo-font` en `app.json` (comportamiento estándar de Expo, no una edición
+  manual) — sin esto, las fuentes cargadas no se aplican en un build nativo.
+- **No es solo color — cada tema trae una receta de estilo distinta**: Arcade
+  usa relleno+sombra+radios grandes (botones tipo píldora, sombra dura);
+  Papel usa borde fino+plano+radios chicos, sin sombra (verificado en
+  `agent_docs/prototipos/pantallas/naipes.html`, función `calcularTokens` —
+  bifurca en `esArcade` para radio, relleno-vs-borde y sombra, no solo color).
+  El puerto a RN necesita funciones de "receta" por tema
+  (`recetaBotonCalificacion` en `src/tema/colores.ts`), no un mapa plano de
+  colores.
+- **Sin `expo-linear-gradient`:** los fondos con gradiente de los mockups se
+  simplifican a color sólido — el radial de Arcade no es representable por ese
+  paquete (solo lineal de 2 puntos) y la textura de Papel es un 0.012 de
+  alfa, imperceptible en la práctica.
+- **~33 archivos existentes** tenían color hardcodeado (`grep -rlE
+  "#[0-9a-fA-F]{6}\b"` en `app/` y `src/components/`) y necesitan pasar a
+  tokens de tema para que el selector funcione de verdad en toda la app.
+
+**Consecuencia:** la fase se implementa en stages con checkpoints de
+verificación en dispositivo y commits parciales autorizados (`nueva-fase`
+Paso 10), no como un solo commit — el tamaño real lo justifica. Detalle
+completo del diseño y la secuencia de stages en el plan de la sesión
+(`/Users/estebanarriaga/.claude/plans/groovy-seeking-whistle.md` al momento
+de escribir esto).
+
+## ADR-027 · 2026-08-22 · Aceptada
+
+**Contexto:** el operador probó la primera pasada de la Fase 8 en su iPhone y
+rechazó el resultado visual: "no luce como los mockups que creamos... es
+estrictamente necesario que sigan esa tendencia de diseño". La causa de fondo
+fue tratar `agent_docs/prototipos/` como referencia de *color* y no como
+especificación de *forma*. Este ADR agrupa las decisiones de la corrección.
+
+**(a) Se instala `react-native-svg` (15.12.1).** Los íconos de los mockups son
+SVG dibujados (gancho, carta, eslabones, candado, deslizadores) y aproximarlos
+con letras Unicode nunca iba a coincidir. El argumento original para evitarlo
+(`PLAN-FASES.md`: "cero dependencias nuevas") ya no aplica — ADR-026 agregó 7.
+Verificado que **viene incluido en Expo Go SDK 54** (`inExpoGo: true` en la doc
+oficial; versión confirmada en el propio
+`node_modules/expo/bundledNativeModules.json`), así que no requiere development
+build ni rompe la restricción del brief §3. Vive en `src/components/iconos.tsx`.
+
+**(b) Las insignias del dashboard pasan a ser INVENTARIO, no pendientes.**
+`contarElementosPorCategoria` cuenta en la unidad natural de cada categoría
+(tarjetas para colgadero/naipe; filas de `lista` para lista_item; filas de
+`numero_importante` para numero). `contarPendientesPorCategoria` **se conserva
+sin cambios** y sigue decidiendo a dónde lleva "Practicar ahora", junto con su
+prueba cruzada contra `armarSesion` — son dos preguntas distintas ("qué tengo"
+vs. "qué me toca hoy") y confundirlas fue justo el reporte del operador.
+
+Diagnóstico que motivó el cambio, verificado leyendo el código: el conteo de
+Números en 0 **no era un bug** — una tarjeta nueva nace `State.New` con
+`fecha_proxima_revision = ahora`, así que sí contaba; mostrar 0 significaba que
+ya había sido calificada y FSRS la programó al futuro. El de Listas mostraba
+eslabones (N objetos → N−1 tarjetas, `eslabones.ts`) en vez de contar la lista
+como un elemento.
+
+**(c) La app se llama "Ancla".** De "anclar" información a una imagen vívida,
+que es lo que hacen las cuatro técnicas. Sustituye "memory-trainer" en
+`app.json` (`name`) y en la cabecera. **El archivo de base de datos conserva el
+nombre `memory-trainer.db`** (`src/db/client.ts`): renombrarlo dejaría huérfana
+toda la BD real del operador. El `slug` también se queda — es identificador de
+proyecto, no visible. Ícono y splash generados en `assets/` (1024×1024, opaco y
+sin esquinas redondeadas el ícono, transparente el splash, per la doc de Expo).
+
+**(d) El volteo 3D de los naipes se reemplaza por la disposición lado a lado**
+del mockup (`naipes.html:112-134`): carta a la izquierda, palabra a la derecha.
+El operador la prefirió explícitamente, y además elimina por construcción los
+defectos reales que tenía el volteo — diagnosticados, no supuestos:
+`backfaceVisibility` conviviendo con `overflow:'hidden'` (las dos caras
+visibles a la vez), `interpolate()` recreado en cada render (grafo animado
+reconstruido a media animación), y sobre todo un `Animated.Value` en `useRef`
+que sobrevivía al cambio de tarjeta porque faltaba `key` — la carta siguiente
+reproducía el giro **hacia atrás**. También se corrigió la violación de las
+Reglas de Hooks (`useRef` tras un `return` condicional) extrayendo `CaraFisica`
+como componente propio sin hooks y con `React.memo`, y el `flex: 1` que anulaba
+el `width/height` del modo compacto y colapsaba la grilla de 52 cartas.
+
+**(e) Instalación como app independiente: pospuesta, con lo investigado
+registrado** para que la decisión futura no se re-investigue. Verificado contra
+la doc de Apple y de Expo: con **Apple ID gratis** el perfil caduca a los **7
+días** (3 dispositivos, 10 App IDs) y hay que reinstalar desde el Mac con cable;
+con **Apple Developer de pago (US$99/año)** el perfil dura 12 meses y se
+distribuye por aire (TestFlight o interna). **No existe** opción gratuita y
+permanente. Un build de Release **sí** empaqueta el JS (verificado en
+`node_modules/react-native/scripts/react-native-xcode.sh`), así que correría sin
+servidor Metro. `npx expo prebuild` generaría `ios/`+`android/`, ya ignorados
+por `.gitignore`, así que la estructura versionada no cambiaría. Esto
+contradice `PROJECT_BRIEF.md:124`, que eligió Expo precisamente para no
+necesitar cuenta de desarrollador — por eso la decisión queda al operador.
+
+**Consecuencia:** se agrega la migración 007 (`ALTER TABLE preferencias ADD
+COLUMN tipografia`) para el selector de tipografía que pidió el operador,
+independiente del tema. Queda pendiente de verificación en dispositivo un
+defecto reportado y **no reproducido por análisis estático**: los botones "Bien"
+y "Fácil" no aparecen en Fonética Flash y Reverso. El análisis mecánico concluyó
+que los 4 caben y deberían pintarse; la observación del dispositivo dice lo
+contrario, así que manda el dispositivo. Como medida de robustez (no como
+corrección confirmada) se dejó de combinar `fontWeight` con familias que ya
+llevan el peso en el nombre — un fallo conocido de resolución de fuentes en iOS
+que puede dejar texto sin pintar.
+
+## ADR-028 · 2026-08-22 · Aceptada
+
+**Decisión:** la Fase 8 se cierra **con alcance reducido y sin cumplir su
+`done when`**, por decisión explícita del operador. El proyecto se detiene aquí.
+
+**Lo que NO se cumplió, dicho sin rodeos:** el criterio de la Fase 8
+(`PROJECT_BRIEF.md:260`) es *"Notificación local de racha en riesgo se dispara
+correctamente en un test manual"*. `src/notificaciones/racha.ts` **nunca se
+construyó**. El spike P-4 se preparó (se instaló `expo-notifications@0.32.17` y
+se leyeron sus firmas reales) pero **nunca se ejecutó en el dispositivo**, así
+que sigue sin saberse si las notificaciones locales funcionan en Expo Go SDK 54.
+P-4 queda **abierto**.
+
+**Razón del cierre — no es técnica, es de distribución.** El operador quería usar
+la app a diario sin depender de `npx expo start`. Se investigó y se verificó
+contra fuentes oficiales de Apple y Expo que solo existen dos caminos:
+
+| Camino | Costo | Caducidad | Cómo se instala |
+|---|---|---|---|
+| Apple ID gratis + Xcode | US$0 | **7 días**, luego la app no abre | Mac + cable, reinstalar cada semana |
+| Apple Developer Program | US$99/año | 12 meses | Por aire (TestFlight o distribución interna con EAS) |
+
+**No existe** una opción gratuita y permanente: todo camino sin caducidad pasa
+por una identidad de firma que solo emite el programa de pago
+([compare-memberships](https://developer.apple.com/support/compare-memberships/),
+[internal-distribution](https://docs.expo.dev/build/internal-distribution/)).
+El operador consideró el costo desproporcionado para una app personal y prefirió
+detenerse y explorar alternativas por su cuenta más adelante.
+
+Dato adicional ya verificado, para que no haya que re-investigarlo: un build de
+**Release sí empaqueta el JS** dentro del `.app`
+(`node_modules/react-native/scripts/react-native-xcode.sh:168,179,190`), así que
+una vez instalada la app corre **sin servidor Metro** por cualquiera de los dos
+caminos. Y `npx expo prebuild` generaría `ios/`+`android/`, ya ignorados por
+`.gitignore`, así que la estructura versionada no cambiaría.
+
+**Por qué esto no se declara "Fase 8 completa":** `nueva-fase` Paso 9 prohíbe
+cerrar una fase porque "todo lo importante funciona". El Paso 10 sí permite un
+commit parcial con autorización explícita del operador, que es lo que ocurre
+aquí. La distinción importa para quien retome: **lo visual está construido, lo
+de notificaciones no existe.**
+
+**Consecuencia — estado real al detenerse:**
+- Construido y verificado automáticamente (tipos + 369 tests): íconos SVG,
+  conteo por inventario, naipes lado a lado, heatmap a tamaño real, llama SVG,
+  selector de tema y de tipografía, identidad "Ancla" con ícono y splash.
+- Construido pero **sin probar en dispositivo**: todo lo anterior.
+- **Sin construir**: notificaciones (`src/notificaciones/racha.ts`), y el
+  barrido de tema en 24 archivos que aún tienen color hardcodeado (Colgadero,
+  Listas, Números, Estadísticas y varios componentes).
+- **Bug abierto**: los botones "Bien" y "Fácil" no aparecen en Fonética Flash y
+  Reverso. El análisis estático dice que deberían pintarse; el dispositivo dice
+  que no. Se aplicó una medida de robustez (no combinar `fontWeight` con una
+  familia que ya lleva el peso en el nombre — fallo conocido de iOS) **sin
+  confirmar** que sea la causa. Diagnóstico más rápido para quien retome:
+  cambiar Tipografía a "La del sistema" en Ajustes; si con eso aparecen, la
+  causa es la resolución de fuentes.
