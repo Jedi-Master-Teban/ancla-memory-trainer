@@ -40,5 +40,36 @@
     <!-- The root element for your Expo app. -->
     <div id="root"></div>
   <script src="/ancla-memory-trainer/_expo/static/js/web/entry-68e64e1f0a0a7a5db5a53c527e0ac90a.js" defer></script>
+<div id="ancla-diag" onclick="this.remove()" style="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#fff3cd;color:#664d03;font:12px monospace;padding:6px 10px;">Ancla: iniciando…</div>
+  <script>
+  (function() {
+    var d = document.getElementById("ancla-diag");
+    var set = function(t) { if (d) d.textContent = "Ancla: " + t; };
+    window.addEventListener("error", function(e) {
+      if (e.target && e.target !== window) {
+        set("fallo al cargar " + String(e.target.src || e.target.href || "recurso").split("/").pop());
+      } else {
+        set("error JS: " + String(e.message).slice(0, 140));
+      }
+    }, true);
+    window.addEventListener("unhandledrejection", function(e) {
+      set("promesa rechazada: " + String((e.reason && e.reason.message) || e.reason).slice(0, 140));
+    });
+    setTimeout(function() {
+      var root = document.getElementById("root");
+      var vacio = !root || root.children.length === 0 || !root.innerText.trim();
+      if (vacio) set("la app no monto contenido. Toca este mensaje para ocultarlo.");
+    }, 15000);
+    var obs = new MutationObserver(function() {
+      var root = document.getElementById("root");
+      if (root && root.innerText.trim().length > 10) {
+        if (d) d.remove();
+        obs.disconnect();
+      }
+    });
+    var rootEl = document.getElementById("root");
+    if (rootEl) obs.observe(rootEl, { childList: true, subtree: true });
+  })();
+  </script>
 </body>
 </html>
