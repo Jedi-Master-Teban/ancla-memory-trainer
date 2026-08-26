@@ -21,7 +21,12 @@
       ]
     ],
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": true,
+      "baseUrl": "/ancla-memory-trainer"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
     },
     "icon": "./assets/icon.png",
     "ios": {

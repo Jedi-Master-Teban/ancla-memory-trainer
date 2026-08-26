@@ -41,3 +41,5 @@ yarn-error.*
 # datos locales (nunca versionar la BD del usuario)
 *.db
 *.db-journal
+.ghpages-test/
+dist/
