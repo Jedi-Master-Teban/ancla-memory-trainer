@@ -28,6 +28,7 @@
       "bundler": "metro",
       "output": "single"
     },
+    "theme_color": "#101029",
     "icon": "./assets/icon.png",
     "ios": {
       "bundleIdentifier": "com.estebanarriaga.ancla"

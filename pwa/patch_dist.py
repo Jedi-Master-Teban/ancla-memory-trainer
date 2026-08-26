@@ -23,6 +23,15 @@ for size in (192, 512):
 
 # 2. Inyectar en index.html (idempotente)
 html = (DIST / "index.html").read_text()
+
+# 2a. Fondo del body con el azul de la app: elimina la franja blanca de la
+#     zona del status bar en iOS standalone (la app tarda ~1s en montar y
+#     el body sin fondo deja ver el blanco del sistema).
+BODY_BG = '<style id="ancla-body-bg">html,body{background:#101029}</style>\n'
+if "ancla-body-bg" not in html:
+    html = html.replace("</style>", "</style>\n" + BODY_BG, 1)
+    print("body bg #101029 aplicado (fix franja blanca iOS)")
+
 if "manifest.json" not in html:
     inject = (
         '<link rel="manifest" href="manifest.json"/>\n'

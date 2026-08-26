@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es-CO">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>Ancla · Investigación de diseño — Arcade Neón v2</title>
+<style>
+  :root{
+    /* Paleta actual (baseline) */
+    --bg-actual:#101029; --card-actual:#1c1d3e; --ink:#f8f8fc; --muted:#a0a3b8;
+    --a1:#00d0ec; --a2:#f85ab1; --a3:#7ae163; --a4:#f0bb3b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#08081a;color:var(--ink);font-family:-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.55}
+  .wrap{max-width:860px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:26px;margin-bottom:4px}
+  .sub{color:var(--muted);margin-bottom:28px;font-size:14px}
+  h2{font-size:20px;margin:44px 0 6px;color:var(--a1)}
+  .nota{font-size:13px;color:var(--muted);margin-bottom:16px}
+  code{background:#1c1d3e;padding:2px 7px;border-radius:6px;font-size:12.5px}
+
+  /* ====== comparador A/B ====== */
+  .duo{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+  .panel{border-radius:20px;padding:22px;position:relative;overflow:hidden}
+  .panel h3{font-size:13px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:14px;color:var(--muted)}
+  .actual{background:var(--bg-actual);border:2px dashed #33355c}
+  .propuesto{background:linear-gradient(180deg,#141433 0%,#0d0d22 100%);border:2px solid #2b2d5e}
+
+  /* ---- componentes dentro de paneles ---- */
+  .fila{display:flex;align-items:center;gap:10px;background:var(--card-actual);padding:14px;border-radius:14px;margin-bottom:10px}
+  .propuesto .fila{background:rgba(255,255,255,.045);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.07)}
+  .num{font-size:22px;font-weight:800;min-width:34px;text-align:center}
+  .lbl{font-size:14px}
+  .lbl small{display:block;color:var(--muted);font-size:11.5px}
+
+  /* llama actual vs propuesta */
+  .llamas{display:flex;gap:26px;align-items:flex-end;justify-content:center;padding:18px 0 8px}
+  .llama-item{text-align:center}
+  .llama-item small{display:block;color:var(--muted);margin-top:8px;font-size:11.5px}
+
+  /* botones */
+  .botones{display:flex;flex-wrap:wrap;gap:12px;padding:14px 0}
+  .btn{border:none;cursor:pointer;font-weight:700;font-size:15px;padding:13px 22px;border-radius:16px;color:#090917;transition:transform .08s}
+  .btn:active{transform:translateY(3px)}
+
+  .btn-actual{background:var(--a1);box-shadow:0 5px 0 rgba(0,0,0,.35)}
+  .btn-neon{background:linear-gradient(180deg,#3ee6ff,#00b4d8);box-shadow:0 5px 0 #00698f,0 0 18px rgba(0,208,236,.45)}
+  .btn-neon:active{box-shadow:0 2px 0 #00698f,0 0 10px rgba(0,208,236,.45)}
+  .btn-neon-pink{background:linear-gradient(180deg,#ff8ac7,#f83aa5);box-shadow:0 5px 0 #99156a,0 0 18px rgba(248,90,177,.4)}
+  .btn-ghost{background:rgba(255,255,255,.06);color:var(--ink);border:1px solid rgba(255,255,255,.14)}
+
+  /* heatmap / stats */
+  .heat{display:grid;grid-template-columns:repeat(13,1fr);gap:4px;padding:14px;background:var(--card-actual);border-radius:14px}
+  .propuesto .heat{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07)}
+  .cel{aspect-ratio:1;border-radius:4px;background:#25273c}
+  .propuesto .cel{background:rgba(255,255,255,.05);border-radius:5px}
+  .cel.n1{background:#25467d}.cel.n2{background:#007fbc}.cel.n3{background:#00d0ec;box-shadow:0 0 6px rgba(0,208,236,.6)}
+  .propuesto .cel.n3{box-shadow:0 0 10px rgba(0,208,236,.75)}
+
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+  .stat{background:var(--card-actual);border-radius:14px;padding:14px;text-align:center}
+  .propuesto .stat{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07)}
+  .stat b{font-size:20px;display:block}
+  .stat span{font-size:11.5px;color:var(--muted)}
+
+  /* ====== secciones de investigación ====== */
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:8px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid #22244a;vertical-align:top}
+  th{color:var(--a1);font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+  td:first-child{font-weight:600;white-space:nowrap}
+
+  .principio{background:var(--card-actual);border-radius:14px;padding:16px;margin-bottom:12px;border-left:3px solid var(--a3)}
+  .principio b{color:var(--a3)}
+  .principio p{font-size:13.5px;color:#cfd2e4;margin-top:4px}
+  .principio em{color:var(--muted);font-style:normal;font-size:12.5px;display:block;margin-top:4px}
+
+  .veredicto{background:linear-gradient(135deg,#1a1b40,#12132e);border:1px solid var(--a1);border-radius:18px;padding:22px;margin-top:14px}
+  .veredicto h3{color:var(--a1);margin-bottom:10px}
+  .veredicto li{margin:8px 0 8px 18px;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔥 Ancla — Investigación de diseño · Arcade Neón v2</h1>
+  <p class="sub">Gamificación premium + neurociencia del aprendizaje · Prototipos locales para decidir antes de tocar producción</p>
+
+  <!-- ======================= INVESTIGACIÓN ======================= -->
+  <h2>1 · Neurociencia del aprendizaje → decisiones de diseño</h2>
+  <p class="nota">Cada principio viene de investigación cognitiva y se traduce en una regla concreta de UI.</p>
+
+  <div class="principio"><b>Effecto de prueba (testing effect)</b><p>Recuperar información de la memoria fortalece más el recuerdo que releerla. La interfaz debe hacer del recuerdo un <em>evento</em>, no una evaluación.</p><em>→ Regla Ancla: una pregunta por pantalla, cero distracciones visuales durante el recall. El feedback color llega DESPUÉS de responder, nunca antes.</em></div>
+
+  <div class="principio"><b>Carga cognitiva (Sweller)</b><p>La memoria de trabajo es limitada: todo elemento decorativo compite con el material de estudio por recursos atencionales.</p><em>→ Regla Ancla: durante una sesión de repaso, máximo 2 jerarquías visibles. La decoración neón vive en transiciones y recompensas, NO junto a la tarjeta que se estudia.</em></div>
+
+  <div class="principio"><b>Error de predicción de recompensa (dopamina)</b><p>La dopamina responde más fuerte a recompensas MEJORES DE LO ESPERADO que a las esperadas. Lo predecible se apaga.</p><em>→ Regla Ancla: variar la celebración al cerrar sesión (intensidad/mensaje), no siempre el mismo confeti. La racha en riesgo debe notificarse con urgencia visual (pulso rápido), no con castigo.</em></div>
+
+  <div class="principio"><b>Aversión a la pérdida + progreso dotado</b><p>Perder duele ~2× más de lo que gana agrada (Kahneman). Ver progreso ya hecho compromete a terminarlo (Nunes &amp; Drèze 2006).</p><em>→ Regla Ancla: la llama late más rápido cuando la racha está en riesgo (ya implementado ✓) y el heatmap muestra "tu inversión" acumulada, no días sueltos.</em></div>
+
+  <div class="principio"><b>Efecto Zeigarnik + meta diaria</b><p>Las tareas incompletas permanecen activas en la mente. Una meta visible y casi-completa tira del usuario de vuelta.</p><em>→ Regla Ancla: "Meta de hoy 17/20" arriba del dashboard SIEMPRE — es el gancho de retorno, no un adorno.</em></div>
+
+  <h2>2 · Qué hace Duolingo y qué nos conviene copiar (o no)</h2>
+  <table>
+    <tr><th>Mecánica Duo</th><th>Por qué funciona</th><th>Veredicto para Ancla</th></tr>
+    <tr><td>Llama con hitos (etapas de evolución)</td><td>La llama "crece" con hitos: 7, 30, 100 días — estatus acumulado, no solo contador</td><td style="color:var(--a3)">✅ Adoptar: 4 etapas de llama (chispa → llama → hoguera → fenix) con cambio sutil de forma/color</td></tr>
+    <tr><td>Sombra dura 3D en botones</td><td>Peso táctil: el botón "se hunde" al presionar — feedback físico</td><td style="color:var(--a3)">✅ Conservar (ya lo tienes) + añadir glow neón sutil</td></tr>
+    <tr><td>Calendario de racha con checkmarks animados</td><td>Inversión visible: "llevo 12 días invertidos"</td><td style="color:var(--a3)">✅ Adoptar en racha.tsx (heatmap ya existe; falta marcar "hoy" con pulso)</td></tr>
+    <tr><td>Gemas/moneda virtual</td><td>Economía interna de recompensas</td><td style="color:var(--f85ab1)">❌ Descartar: añade carga cognitiva sin servir a la retención FSRS</td></tr>
+    <tr><td>Animación de celebración de racha (flame compress)</td><td>Cierre de ciclo de dopamina al completar sesión</td><td style="color:var(--a3)">✅ Adoptar versión ligera al terminar sesión (escala + brillo de la llama)</td></tr>
+    <tr><td>Personaje mascota insistente</td><td>Presión social simulada</td><td style="color:#f85ab1">❌ Descartar: tono distinto — Ancla es herramienta seria de estudio, no juego infantil</td></tr>
+  </table>
+
+  <h2>3 · Tendencias premium 2025–26 aplicables</h2>
+  <table>
+    <tr><th>Tendencia</th><th>Aplicación en Ancla Arcade</th></tr>
+    <tr><td>Profundidad en dark mode (capas, no gris plano)</td><td>Cards con <code>rgba(255,255,255,.045)</code> + blur sutil sobre fondo con gradiente vertical — profundidad real en vez de bordes duros</td></tr>
+    <tr><td>Glow controlado (neón funcional)</td><td>El glow SOLO en: llama activa, celda de hoy, botón primario presionado. Nunca en texto ni bordes estáticos — si todo brilla, nada brilla</td></tr>
+    <tr><td>Microinteracciones &lt;150 ms</td><td>Hundir botón (ya existe), pulso de llama (existe), añadir: pop de checkmark al acertar, shake corto al fallar</td></tr>
+    <tr><td>Tipografía display expresiva</td><td>Fredoka solo para NÚMEROS y títulos (racha, meta); cuerpo en Nunito. Nunca Fredoka en párrafos</td></tr>
+    <tr><td>Gradientes sutiles verticales</td><td>Fondo de app: gradiente #141433 → #0d0d22 en vez de plano #101029 — da profundidad sin ruido</td></tr>
+  </table>
+
+  <!-- ======================= COMPARADOR ======================= -->
+  <h2>4 · Comparador en vivo: actual vs propuesto</h2>
+  <p class="nota">Mismos datos, dos tratamientos. Lo propuesto NO cambia la paleta — cambia profundidad, glow y capas.</p>
+
+  <div class="duo">
+    <div class="panel actual">
+      <h3>Actual (v1.0-web)</h3>
+      <div class="llamas">
+        <div class="llama-item">
+          <svg width="52" height="52" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2c0 0 6.5 5.8 6.5 10.5a6.5 6.5 0 0 1-13 0C5.5 7.8 12 2 12 2z" fill="#f9601f"/>
+            <path d="M12 12.5c0 0 3.2 2.8 3.2 5a3.2 3.2 0 0 1-6.4 0c0-2.2 3.2-5 3.2-5z" fill="#ffe46e"/>
+          </svg>
+          <small>Llama actual:<br/>2 gotas planas</small>
+        </div>
+      </div>
+      <div class="fila"><span class="num" style="color:var(--a4)">17</span><span class="lbl">Meta de hoy<small>de 20 tarjetas</small></span></div>
+      <div class="heat">
+        <div class="cel"></div><div class="cel n1"></div><div class="cel"></div><div class="cel n2"></div><div class="cel n1"></div><div class="cel n3"></div><div class="cel n2"></div><div class="cel n1"></div><div class="cel"></div><div class="cel n2"></div><div class="cel n3"></div><div class="cel n1"></div><div class="cel n3"></div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat"><b>87%</b><span>Retención</span></div>
+        <div class="stat"><b>342</b><span>Tarjetas vistas</span></div>
+      </div>
+    </div>
+
+    <div class="panel propuesto">
+      <h3>Propuesto (Arcade v2)</h3>
+      <div class="llamas">
+        <div class="llama-item">
+          <!-- Llama premium: núcleo + cuerpo con curvas + halo -->
+          <svg width="60" height="60" viewBox="0 0 48 48" fill="none">
+            <defs>
+              <radialGradient id="halo" cx="50%" cy="62%" r="55%">
+                <stop offset="0%" stop-color="#ff821d" stop-opacity=".55"/><stop offset="100%" stop-color="#ff821d" stop-opacity="0"/>
+              </radialGradient>
+              <linearGradient id="cuerpo" x1="24" y1="4" x2="24" y2="40" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#ffc31a"/><stop offset="70%" stop-color="#f9601f"/><stop offset="100%" stop-color="#e03e12"/>
+              </linearGradient>
+              <radialGradient id="nucleo" cx="50%" cy="68%" r="60%">
+                <stop offset="0%" stop-color="#fff7d6"/><stop offset="100%" stop-color="#ffe46e"/>
+              </radialGradient>
+            </defs>
+            <circle cx="24" cy="27" r="21" fill="url(#halo)"/>
+            <path fill="url(#cuerpo)" d="M24 4c1.2 4.6 6.8 8.4 9.6 12.6 2.1 3.1 3.4 6.1 3.4 9.4A13 13 0 0 1 24 39a13 13 0 0 1-13-13c0-4.5 2.6-8.3 5.2-11.6C19.2 10.6 22.6 7.6 24 4z"/>
+            <path fill="url(#nucleo)" opacity=".95" d="M24 22.5c.7 2.4 3.4 4.2 4.7 6.3 1 1.6 1.6 3 1.6 4.6a6.3 6.3 0 0 1-12.6 0c0-2.2 1.2-4.1 2.5-5.7 1.3-1.6 3-2.9 3.8-5.2z"/>
+          </svg>
+          <small>Propuesta:<br/>gradientes + halo</small>
+        </div>
+        <div class="llama-item">
+          <svg width="46" height="46" viewBox="0 0 48 48" fill="none">
+            <circle cx="24" cy="27" r="19" fill="#ff821d" fill-opacity=".25"/>
+            <path fill="#9aa0b5" d="M24 4c1.2 4.6 6.8 8.4 9.6 12.6 2.1 3.1 3.4 6.1 3.4 9.4A13 13 0 0 1 24 39a13 13 0 0 1-13-13c0-4.5 2.6-8.3 5.2-11.6C19.2 10.6 22.6 7.6 24 4z"/>
+          </svg>
+          <small>Rota (gris,<br/>sin halo)</small>
+        </div>
+      </div>
+      <div class="fila"><span class="num" style="color:var(--a4)">17<span style="font-size:13px;color:var(--muted)">/20</span></span><span class="lbl">Meta de hoy<div style="height:5px;background:rgba(255,255,255,.08);border-radius:3px;margin-top:5px"><div style="width:85%;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--a4),#ffd66e);box-shadow:0 0 8px rgba(240,187,59,.5)"></div></div></span></div>
+      <div class="heat">
+        <div class="cel"></div><div class="cel n1"></div><div class="cel"></div><div class="cel n2"></div><div class="cel n1"></div><div class="cel n3"></div><div class="cel n2"></div><div class="cel n1"></div><div class="cel"></div><div class="cel n2"></div><div class="cel n3" style="outline:2px solid rgba(0,208,236,.5);outline-offset:1px"></div><div class="cel n1"></div><div class="cel n3"></div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat"><b style="color:var(--a3)">87%</b><span>Retención</span></div>
+        <div class="stat"><b>342</b><span>Tarjetas vistas</span></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>5 · Botones: tres niveles de énfasis</h2>
+  <div class="panel propuesto" style="max-width:520px">
+    <h3>Jerarquía propuesta</h3>
+    <div class="botones">
+      <button class="btn btn-neon">Primario</button>
+      <button class="btn btn-neon-pink">Acción cálida</button>
+      <button class="btn btn-ghost">Secundario</button>
+    </div>
+    <p style="font-size:12.5px;color:var(--muted)">Primario = única acción principal por pantalla (glow azul). Acción cálida = repasar/completar (glow rosa). Secundario ghost = navegación. Máximo UNO de cada por pantalla — la jerarquía ES la reducción de carga cognitiva.</p>
+  </div>
+
+  <div class="veredicto">
+    <h3>🎯 Veredicto: dirección propuesta para Arcade Neón v2</h3>
+    <ul>
+      <li><b>Conservar:</b> paleta exacta, sombras duras 3D de Duolingo, pulso de llama, tipografías Fredoka/Nunito</li>
+      <li><b>Añadir:</b> gradiente vertical de fondo, cards translúcidas con borde hairline, glow funcional (solo llama/hoy/botón primario), barra de progreso en meta diaria, llama rediseñada con gradientes+halo y 4 etapas de evolución</li>
+      <li><b>No tocar:</b> layout de dashboard, flujo de repaso, tokens de color base</li>
+      <li><b>Descartado tras investigación:</b> gemas/economía interna, mascota, glassmorphism agresivo (rompe legibilidad sobre neón)</li>
+    </ul>
+    <p style="margin-top:12px;font-size:13px;color:var(--muted)">Todo lo anterior respeta la regla neurociencia: el brillo premia y guía, jamás compite con el contenido de estudio.</p>
+  </div>
+</div>
+</body>
+</html>
