@@ -13,9 +13,10 @@ PWA = ROOT / "pwa"
 
 assert (DIST / "index.html").exists(), "dist/index.html no existe; corre `npx expo export --platform web` primero"
 
-# 1. Copiar manifest, sw.js e íconos
+# 2. Copiar manifest, sw.js, íconos y .nojekyll (evita que Jekyll ignore _expo/)
 shutil.copy(PWA / "manifest.json", DIST / "manifest.json")
 shutil.copy(PWA / "sw.js", DIST / "sw.js")
+(DIST / ".nojekyll").touch()
 icons = DIST / "icons"
 icons.mkdir(exist_ok=True)
 for size in (192, 512):
