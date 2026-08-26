@@ -376,6 +376,31 @@ agent_docs/   Especificaciones, decisiones y prototipos.
 
 ---
 
+## Créditos y reconocimiento
+
+Este proyecto existe gracias al trabajo de **Harry Lorayne** (con Jerry Lucas),
+cuyo libro *Cómo adquirir una supermemoria* (*The Memory Book*) sistematizó las
+técnicas que aquí se practican:
+
+- **Sistema del Colgadero** (peg system) y sus 100 palabras ancla
+- **Alfabeto Fonético** para números
+- **Sistema de naipes** para memorizar barajas
+- **Sistema de la Cadena** (listas encadenadas)
+
+Ancla es una herramienta de práctica personal, sin fines comerciales, basada en
+esas técnicas. La selección, adaptación al español, las 100 palabras colgadero
+en colombiano, el contenido de naipes, el software y su diseño son obra del
+autor de este repositorio. El algoritmo de repetición espaciada usa
+[**FSRS**](https://github.com/open-spaced-repetition/fsrs4anki) (open-spaced-repetition),
+implementado vía [`ts-fsrs`](https://github.com/open-spaced-repetition/ts-fsrs).
+
+- 📖 Libro original: Harry Lorayne & Jerry Lucas, *The Memory Book* (1974);
+  ed. en español *Cómo adquirir una supermemoria*.
+- Este proyecto no está afiliado ni respaldado por los autores ni herederos
+  de la obra; es un homenaje de un lector agradecido.
+
+---
+
 <div align="center">
 <sub>Proyecto personal. Las técnicas de memoria son de Harry Lorayne;<br>
 las 100 palabras colgadero y las 52 de naipes son del autor de este repositorio.</sub>
