@@ -99,7 +99,7 @@ export function IndicadorRacha({ diasConsecutivos, estado, tamano = 'grande' }: 
   }, [estado, escala, halo]);
 
   const esGrande = tamano === 'grande';
-  const tamanoLlama = esGrande ? 72 : 34;
+  const tamanoLlama = esGrande ? 56 : 28;
   const colorLlama = estado === 'rota' ? t.inkMuted : t.flameOuterEnd;
 
   return (
