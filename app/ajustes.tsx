@@ -16,6 +16,7 @@ import { useTema, useTemaStore } from '../src/stores/tema';
 
 const OPCIONES_TEMA: { id: TemaId; etiqueta: string; descripcion: string }[] = [
   { id: 'arcade', etiqueta: 'Arcade Neón', descripcion: 'Colorido, redondeado, gamificado' },
+  { id: 'soft', etiqueta: 'Soft UI', descripcion: 'Cálido, táctil, bordes suaves' },
   { id: 'papel', etiqueta: 'Papel y Tinta', descripcion: 'Cálido, editorial, silencioso' },
 ];
 

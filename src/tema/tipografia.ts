@@ -17,7 +17,13 @@ export interface TokensTipografia {
 
 export function tipografiaDelTema(tema: TemaId, preferencia: TipografiaId): TokensTipografia {
   if (preferencia === 'sistema') return {};
-  return tema === 'arcade'
-    ? { display: 'Fredoka_600SemiBold', body: 'Nunito_400Regular' }
-    : { display: 'Lora_600SemiBold', body: 'Karla_400Regular' };
+  switch (tema) {
+    case 'soft':
+      // Soft UI prioriza legibilidad y calidez — Nunito (sans redondeada) encaja.
+      return { display: 'Nunito_600SemiBold', body: 'Nunito_400Regular' };
+    case 'arcade':
+      return { display: 'Fredoka_600SemiBold', body: 'Nunito_400Regular' };
+    case 'papel':
+      return { display: 'Lora_600SemiBold', body: 'Karla_400Regular' };
+  }
 }

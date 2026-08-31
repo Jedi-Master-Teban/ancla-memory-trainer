@@ -7,7 +7,7 @@ import type { ViewStyle } from 'react-native';
  * navegador real y leyendo el resultado, nunca calculado de memoria.
  */
 
-export type TemaId = 'arcade' | 'papel';
+export type TemaId = 'arcade' | 'soft' | 'papel';
 
 export interface TokensColor {
   bg: string;
@@ -79,7 +79,32 @@ const PAPEL: TokensColor = {
   borderMuted: '#42352b',
 };
 
-const PALETAS: Record<TemaId, TokensColor> = { arcade: ARCADE, papel: PAPEL };
+const SOFT: TokensColor = {
+  // Warm cream + neumorphic soft shadows. Paleta validada en
+  // agent_docs/prototipos/investigacion/v2/prototipo-soft-ui.html
+  bg: '#F0EEE9',
+  card: '#FAF9F7',
+  ink: '#2D2A26',
+  inkMuted: '#7A756C',
+  accent1: '#FF6B35',
+  accent2: '#FFB399',
+  accent3: '#10B981',
+  accent4: '#FF9F0A',
+  inkOnAccent: '#FFFFFF',
+  otraVez: '#DC2626',
+  dificil: '#F59E0B',
+  bien: '#10B981',
+  facil: '#3B82F6',
+  // Flama — naranja saturado al centro (contraste con bg claro)
+  flameOuterStart: '#FFB84D',
+  flameOuterEnd: '#FF6B35',
+  flameInner: '#FFD66E',
+  flameGlow: '#FF6B35',
+  celdaEscala: ['#E8E5DF', '#F5C9A8', '#FFB399', '#FF6B35'],
+  borderMuted: '#E8E5DF',
+};
+
+const PALETAS: Record<TemaId, TokensColor> = { arcade: ARCADE, soft: SOFT, papel: PAPEL };
 
 export function coloresDelTema(tema: TemaId): TokensColor {
   return PALETAS[tema];
@@ -117,6 +142,20 @@ export function recetaBotonCalificacion(tema: TemaId, colorAcento: string): Rece
         shadowOffset: { width: 0, height: 5 },
         shadowOpacity: 0.25,
         shadowRadius: 0,
+      },
+      texto: { color: t.inkOnAccent },
+    };
+  }
+  if (tema === 'soft') {
+    // Soft UI: píldora con relleno + sombra neumorphic suave.
+    return {
+      contenedor: {
+        borderRadius: 18,
+        backgroundColor: colorAcento,
+        shadowColor: colorAcento,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.35,
+        shadowRadius: 12,
       },
       texto: { color: t.inkOnAccent },
     };

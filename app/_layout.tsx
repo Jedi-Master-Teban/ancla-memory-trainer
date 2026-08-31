@@ -4,7 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
 import { Fredoka_600SemiBold } from '@expo-google-fonts/fredoka/600SemiBold';
-import { Nunito_400Regular } from '@expo-google-fonts/nunito/400Regular';
+import { Nunito_400Regular, Nunito_600SemiBold } from '@expo-google-fonts/nunito';
 import { Lora_600SemiBold } from '@expo-google-fonts/lora/600SemiBold';
 import { Karla_400Regular } from '@expo-google-fonts/karla/400Regular';
 import { obtenerBD } from '../src/db/client';
@@ -40,6 +40,7 @@ export default function RootLayout() {
   const [fontsListas, errorFuentes] = useFonts({
     Fredoka_600SemiBold,
     Nunito_400Regular,
+    Nunito_600SemiBold,
     Lora_600SemiBold,
     Karla_400Regular,
   });

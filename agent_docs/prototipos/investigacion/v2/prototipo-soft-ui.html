@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Ancla — Soft UI (v2 app real)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg: #F0EEE9;
+    --surface: #FAF9F7;
+    --surface-deep: #E8E5DF;
+    --ink: #2D2A26;
+    --ink-soft: #7A756C;
+    --accent: #FF6B35;
+    --accent-soft: #FFB399;
+    --success: #10B981;
+    --radius: 20px;
+    --shadow-soft: 6px 6px 16px rgba(174,166,152,0.4), -6px -6px 16px rgba(255,255,255,0.9);
+    --shadow-inset: inset 3px 3px 8px rgba(174,166,152,0.3), inset -3px -3px 8px rgba(255,255,255,0.8);
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    padding-bottom: 100px;
+  }
+  .page { max-width: 420px; margin: 0 auto; padding: 20px; display: none; }
+  .page.activa { display: block; }
+
+  /* Header */
+  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+  .marca { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+  .streak-pill {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface); padding: 10px 18px; border-radius: 999px;
+    box-shadow: var(--shadow-soft); cursor: pointer;
+  }
+  .flama { font-size: 22px; transition: transform 0.3s; }
+  .flama.activa { animation: fuego 0.6s ease; }
+  @keyframes fuego { 0%{transform:scale(1)} 40%{transform:scale(1.6) rotate(-8deg)} 70%{transform:scale(1.2) rotate(4deg)} 100%{transform:scale(1)} }
+  .odometro { display: flex; overflow: hidden; height: 24px; font-weight: 800; font-size: 20px; }
+  .odo-col { display: flex; flex-direction: column; transition: transform 0.5s cubic-bezier(0.4,0,0.2,1); }
+  .odo-col span { height: 24px; line-height: 24px; }
+  .streak-label { font-size: 12px; color: var(--ink-soft); }
+
+  /* Tarjetas y botones soft */
+  .tarjeta-modo {
+    background: var(--surface); border-radius: var(--radius);
+    padding: 22px; margin-bottom: 14px; box-shadow: var(--shadow-soft);
+    border: none; width: 100%; text-align: left; cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .tarjeta-modo:active { transform: scale(0.98); box-shadow: var(--shadow-inset); }
+  .tarjeta-modo h3 { font-size: 18px; margin-bottom: 4px; }
+  .tarjeta-modo p { font-size: 13px; color: var(--ink-soft); }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* FAB */
+  .fab {
+    position: fixed; bottom: 100px; right: 20px; width: 58px; height: 58px;
+    border-radius: 50%; border: none; cursor: pointer;
+    background: var(--surface); box-shadow: var(--shadow-soft);
+    font-size: 26px; color: var(--accent); display: flex; align-items: center; justify-content: center;
+    transition: transform 0.2s;
+  }
+  .fab:active { transform: scale(0.92); box-shadow: var(--shadow-inset); }
+
+  /* Tab Bar liquid glass */
+  .tabbar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    display: flex; justify-content: space-around;
+    background: rgba(250,249,247,0.75);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border-top: 0.5px solid rgba(0,0,0,0.06);
+    padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+  }
+  .tab {
+    background: none; border: none; display: flex; flex-direction: column;
+    align-items: center; gap: 4px; font-size: 11px; color: var(--ink-soft);
+    cursor: pointer; padding: 4px 14px; border-radius: 14px; transition: all 0.25s;
+  }
+  .tab.activa { color: var(--accent); background: rgba(255,107,53,0.1); }
+  .tab svg { width: 24px; height: 24px; }
+
+  /* Lista edición */
+  .fila-editor {
+    background: var(--surface); border-radius: 14px; padding: 14px 18px;
+    margin-bottom: 8px; display: flex; gap: 14px; align-items: center;
+    box-shadow: 3px 3px 8px rgba(174,166,152,0.25), -3px -3px 8px rgba(255,255,255,0.8);
+  }
+  .fila-num { font-weight: 800; font-size: 17px; width: 34px; }
+  .fila-pal { color: var(--ink); font-size: 15px; }
+
+  /* Radar stats */
+  .radar-wrap { background: var(--surface); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow-soft); margin-bottom: 16px; }
+  .stat-titulo { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .stat-sub { font-size: 12px; color: var(--ink-soft); margin-bottom: 12px; }
+
+  .insight {
+    background: linear-gradient(135deg, #FFF4ED, #FFE8DB);
+    border-left: 4px solid var(--accent);
+    border-radius: 14px; padding: 16px; margin-bottom: 12px; font-size: 14px;
+  }
+  .insight strong { color: var(--accent); }
+  .barra { height: 8px; border-radius: 4px; background: var(--surface-deep); overflow: hidden; margin-top: 6px; }
+  .barra-fill { height: 100%; background: var(--accent); border-radius: 4px; }
+
+  /* Demo trigger */
+  .demo-btn {
+    background: var(--accent); color: white; border: none; border-radius: 14px;
+    padding: 14px; width: 100%; font-size: 15px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(255,107,53,0.35); margin-top: 8px;
+  }
+  .demo-btn:active { transform: scale(0.97); }
+  .seccion-titulo { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); margin: 24px 0 12px; }
+</style>
+</head>
+<body>
+
+<!-- ═══ PÁGINA REPASAR ═══ -->
+<div class="page activa" id="pg-repasar">
+  <div class="topbar">
+    <div class="marca">Ancla</div>
+    <div class="streak-pill" id="streakPill">
+      <span class="flama" id="flamaIcono">🔥</span>
+      <div class="odometro" id="odometro">
+        <div class="odo-col"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span></div>
+      </div>
+      <span class="streak-label">días</span>
+    </div>
+  </div>
+
+  <h2 style="font-size:22px; margin-bottom:4px;">Colgadero</h2>
+  <p style="color:var(--ink-soft); font-size:14px; margin-bottom:20px;">Elige tu modo de repaso</p>
+
+  <div class="grid-2">
+    <button class="tarjeta-modo"><h3>Fonética Flash</h3><p>Número → palabra</p></button>
+    <button class="tarjeta-modo"><h3>Reverso</h3><p>Palabra → número</p></button>
+    <button class="tarjeta-modo"><h3>Velocidad</h3><p>Serie cronometrada</p></button>
+    <button class="tarjeta-modo"><h3>Repaso libre</h3><p>Mix adaptativo</p></button>
+  </div>
+
+  <button class="demo-btn" id="demoRacha">Simular meta diaria (+1 racha)</button>
+</div>
+
+<!-- ═══ PÁGINA EDITAR ═══ -->
+<div class="page" id="pg-editar">
+  <div class="topbar"><div class="marca">Colgadero</div><span style="color:var(--ink-soft); font-size:13px;">100 palabras</span></div>
+  <div id="listaPalabras"></div>
+</div>
+
+<!-- ═══ PÁGINA STATS ═══ -->
+<div class="page" id="pg-stats">
+  <div class="topbar"><div class="marca">Estadísticas</div></div>
+
+  <div class="radar-wrap">
+    <div class="stat-titulo">Retención por categoría</div>
+    <div class="stat-sub">Mapa de tu memoria ahora mismo</div>
+    <svg viewBox="0 0 200 200" style="width:100%; max-width:280px; display:block; margin:0 auto;">
+      <g id="radarEjes"></g>
+      <polygon id="radarArea" fill="rgba(255,107,53,0.22)" stroke="#FF6B35" stroke-width="2" points=""/>
+      <g id="radarPuntos"></g>
+      <g id="radarEtiquetas" font-size="10" fill="#7A756C" font-weight="600"></g>
+    </svg>
+  </div>
+
+  <div class="insight">
+    <strong>⚠︎ Punto débil:</strong> Colgadero bajó a 62%. 5 tarjetas bastan para recuperarlo.<br>
+    <div class="barra"><div class="barra-fill" style="width:62%"></div></div>
+  </div>
+  <div class="insight" style="border-color:var(--success); background:linear-gradient(135deg,#ECFDF5,#D1FAE5);">
+    <strong style="color:var(--success)">↑ Tendencia positiva:</strong> +23% XP esta semana vs la anterior. Tu mejor día: martes (45 XP).
+  </div>
+
+  <div class="radar-wrap">
+    <div class="stat-titulo">XP por día</div>
+    <div class="stat-sub">Últimos 14 días · meta diaria: 20 XP</div>
+    <svg viewBox="0 0 360 120" style="width:100%">
+      <line x1="10" y1="45" x2="350" y2="45" stroke="#FFB399" stroke-dasharray="4 4" stroke-width="1"/>
+      <text x="352" y="48" font-size="9" fill="#FF6B35">20</text>
+      <defs>
+        <linearGradient id="gradXP" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#FF6B35" stop-opacity="0.5"/>
+          <stop offset="100%" stop-color="#FF6B35" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path id="xpArea" fill="url(#gradXP)" d=""/>
+      <polyline id="xpLinea" fill="none" stroke="#FF6B35" stroke-width="2.5" stroke-linejoin="round" points=""/>
+      <g id="xpPuntos"></g>
+    </svg>
+  </div>
+</div>
+
+<!-- ═══ PÁGINA AJUSTES ═══ -->
+<div class="page" id="pg-ajustes">
+  <div class="topbar"><div class="marca">Ajustes</div></div>
+  <div class="seccion-titulo">Estilo de la app</div>
+  <button class="tarjeta-modo"><h3>Soft UI ✓</h3><p>Neumorphism suave, cálido, táctil</p></button>
+  <button class="tarjeta-modo"><h3>Dark Mode First</h3><p>Negro puro, elevado, premium</p></button>
+  <button class="tarjeta-modo"><h3>Papel y Tinta</h3><p>Editorial, serif, cuaderno de campo</p></button>
+  <div class="seccion-titulo">Metas</div>
+  <button class="tarjeta-modo"><h3>Meta diaria: 20 XP</h3><p>Toca para ajustar</p></button>
+</div>
+
+<!-- FAB + Tab Bar -->
+<button class="fab" title="Añadir">+</button>
+<nav class="tabbar">
+  <button class="tab activa" data-tab="pg-repasar">🏠<span>Repasar</span></button>
+  <button class="tab" data-tab="pg-editar">📝<span>Editar</span></button>
+  <button class="tab" data-tab="pg-stats">📊<span>Stats</span></button>
+  <button class="tab" data-tab="pg-ajustes">⚙️<span>Ajustes</span></button>
+</nav>
+
+<script>
+// ─── Tabs ───
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('activa'));
+  document.querySelectorAll('.page').forEach(x => x.classList.remove('activa'));
+  t.classList.add('activa');
+  document.getElementById(t.dataset.tab).classList.add('activa');
+}));
+
+// ─── Odómetro de racha ───
+let racha = 7;
+function pintarRacha() {
+  const col = document.querySelector('#odometro .odo-col');
+  col.style.transform = `translateY(-${racha * 24}px)`;
+}
+document.getElementById('demoRacha').addEventListener('click', () => {
+  racha++;
+  const f = document.getElementById('flamaIcono');
+  f.classList.remove('activa'); void f.offsetWidth; f.classList.add('activa');
+  pintarRacha();
+});
+pintarRacha();
+
+// ─── Lista editable (muestra 8 de ejemplo) ───
+const PALABRAS = [['00','Amo'],['01','Año'],['02','Ana'],['03','Emma'],['04','Araña'],['05','Año'],['06','Asa'],['07','Hada']];
+document.getElementById('listaPalabras').innerHTML = PALABRAS.map(([n,p]) =>
+  `<div class="fila-editor"><span class="fila-num">${n}</span><span class="fila-pal">${p}</span></div>`).join('');
+
+// ─── Radar chart (4 categorías) ───
+const datos = [0.62, 0.81, 0.94, 0.55]; // Colgadero, Naipes, Números, Listas
+const labels = ['Colgadero','Naipes','Números','Listas'];
+const cx=100, cy=100, R=70;
+function punto(i, r) { const a = -Math.PI/2 + i*(Math.PI*2/4); return [cx + Math.cos(a)*r, cy + Math.sin(a)*r]; }
+// anillos guía
+const ejes = document.getElementById('radarEjes');
+[0.25,0.5,0.75,1].forEach(f => {
+  const pts = [0,1,2,3].map(i => punto(i, R*f).join(',')).join(' ');
+  ejes.innerHTML += `<polygon points="${pts}" fill="none" stroke="rgba(0,0,0,0.08)" stroke-dasharray="3 3"/>`;
+});
+for (let i=0;i<4;i++){ const [x,y]=punto(i,R); ejes.innerHTML += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="rgba(0,0,0,0.08)"/>`; }
+// área de datos
+document.getElementById('radarArea').setAttribute('points', datos.map((v,i)=>punto(i,R*v).join(',')).join(' '));
+document.getElementById('radarPuntos').innerHTML = datos.map((v,i)=>{ const [x,y]=punto(i,R*v); return `<circle cx="${x}" cy="${y}" r="4" fill="#FF6B35" stroke="#fff" stroke-width="2"/>`; }).join('');
+document.getElementById('radarEtiquetas').innerHTML = labels.map((l,i)=>{ const [x,y]=punto(i,R+18); return `<text x="${x}" y="${y}" text-anchor="middle">${l} ${(datos[i]*100)|0}%</text>`; }).join('');
+
+// ─── Línea XP (14 días) ───
+const xp = [8,22,45,18,30,12,25,40,20,33,18,28,36,42];
+const W=340, H=120, pad=10, maxY=50;
+const px = i => pad + i*(W)/(xp.length-1);
+const py = v => H-10-(v/maxY)*(H-30);
+document.getElementById('xpLinea').setAttribute('points', xp.map((v,i)=>`${px(i)},${py(v)}`).join(' '));
+document.getElementById('xpArea').setAttribute('d', `M${px(0)},${H-10} ` + xp.map((v,i)=>`L${px(i)},${py(v)}`).join(' ') + ` L${px(xp.length-1)},${H-10} Z`);
+document.getElementById('xpPuntos').innerHTML = xp.map((v,i)=>`<circle cx="${px(i)}" cy="${py(v)}" r="3.5" fill="#fff" stroke="#FF6B35" stroke-width="2"/>`).join('');
+</script>
+</body>
+</html>
