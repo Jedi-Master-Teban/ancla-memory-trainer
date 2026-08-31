@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Ancla — Papel y Tinta</title>
+<style>
+  :root {
+    --paper: #F5F0E6;
+    --paper-dark: #EDE5D8;
+    --ink: #1A1A1A;
+    --ink-soft: #4A4A4A;
+    --ink-faint: #8A8A8A;
+    --accent: #C45C4A;
+    --accent-soft: #D4A59A;
+    --ruled: rgba(26, 26, 26, 0.06);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 20px;
+    line-height: 1.6;
+    /* Textura de papel sutil */
+    background-image:
+      radial-gradient(circle at 25% 25%, rgba(0,0,0,0.015) 1px, transparent 1px),
+      radial-gradient(circle at 75% 75%, rgba(0,0,0,0.01) 1px, transparent 1px);
+    background-size: 20px 20px, 30px 30px;
+  }
+  .container { max-width: 420px; margin: 0 auto; }
+
+  /* Header editorial */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--ink);
+  }
+  .logo {
+    font-size: 28px;
+    font-weight: 400;
+    font-style: italic;
+    letter-spacing: -0.02em;
+  }
+  .racha {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 14px;
+  }
+  .racha-icon { font-size: 16px; }
+  .racha-num { font-weight: 700; font-size: 18px; }
+  .racha-label { color: var(--ink-soft); font-style: italic; }
+
+  /* Card como hoja de papel */
+  .card {
+    background: var(--paper);
+    padding: 32px 28px;
+    margin-bottom: 24px;
+    position: relative;
+    /* Sombra de papel */
+    box-shadow:
+      0 1px 3px rgba(0,0,0,0.08),
+      0 4px 12px rgba(0,0,0,0.04);
+    /* Borde de página */
+    border: 1px solid var(--ruled);
+    border-radius: 2px;
+  }
+  .card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 8%; right: 8%;
+    height: 1px;
+    background: var(--ruled);
+  }
+  .card-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--ink-faint);
+    margin-bottom: 12px;
+    font-family: -apple-system, sans-serif;
+  }
+  .card-frente {
+    font-size: 36px;
+    font-weight: 400;
+    margin-bottom: 28px;
+    line-height: 1.2;
+    font-variant-numeric: oldstyle-nums;
+    /* Kerning de imprenta */
+    letter-spacing: -0.02em;
+  }
+  .card-input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    border-bottom: 1.5px solid var(--ink-soft);
+    padding: 8px 0 12px;
+    font-size: 18px;
+    color: var(--ink);
+    margin-bottom: 28px;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.2s;
+  }
+  .card-input:focus {
+    border-bottom-color: var(--accent);
+  }
+  .card-input::placeholder {
+    color: var(--ink-faint);
+    font-style: italic;
+  }
+
+  .boton {
+    display: inline-block;
+    width: 100%;
+    padding: 14px 24px;
+    border: 1.5px solid var(--ink);
+    background: transparent;
+    color: var(--ink);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    font-family: -apple-system, sans-serif;
+    letter-spacing: 0.02em;
+    transition: all 0.2s;
+    border-radius: 2px;
+  }
+  .boton:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  /* Métricas como notas al margen */
+  .metricas {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 24px;
+    padding: 0 8px;
+  }
+  .metrica {
+    text-align: center;
+  }
+  .metrica-valor {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--accent);
+    font-style: italic;
+  }
+  .metrica-label {
+    font-size: 10px;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-family: -apple-system, sans-serif;
+  }
+
+  /* Nota al pie */
+  .nota {
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 14px;
+    padding: 24px 16px;
+    line-height: 1.8;
+    font-style: italic;
+  }
+  .nota strong {
+    color: var(--accent);
+    font-style: normal;
+    font-weight: 600;
+  }
+
+  /* Detalle: línea de tinta */
+  .tinta {
+    position: absolute;
+    bottom: 12px; left: 12px;
+    width: 40px; height: 40px;
+    opacity: 0.1;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">Ancla</div>
+      <div class="racha">
+        <span class="racha-icon">🔥</span>
+        <span class="racha-num">7</span>
+        <span class="racha-label">días</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Número a memorizar</div>
+      <div class="card-frente">3.14159</div>
+      <input type="text" class="card-input" placeholder="Escribe la palabra asociada..." value="Amo">
+      <button class="boton">Verificar respuesta</button>
+    </div>
+
+    <div class="metricas">
+      <div class="metrica">
+        <div class="metrica-valor">12</div>
+        <div class="metrica-label">Hoy</div>
+      </div>
+      <div class="metrica">
+        <div class="metrica-valor">89%</div>
+        <div class="metrica-label">Retención</div>
+      </div>
+      <div class="metrica">
+        <div class="metrica-valor">∞</div>
+        <div class="metrica-label">π-100</div>
+      </div>
+    </div>
+
+    <div class="nota">
+      <strong>Papel y Tinta</strong> — Textura de papel real, tipografía serif con
+      números oldstyle, línea de base visible, subrayados manuscritos. La interfaz
+      se siente como un cuaderno de campo: permanente, personal, sin distracciones
+      digitales. Cada elemento tiene peso tipográfico, no peso visual.
+    </div>
+  </div>
+</body>
+</html>

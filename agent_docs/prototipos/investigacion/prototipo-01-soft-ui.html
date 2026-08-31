@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Ancla — Soft UI</title>
+<style>
+  :root {
+    --bg: #E8F0FE;
+    --surface: #FFFFFF;
+    --surface-soft: #F0F7FF;
+    --text: #1A1A2E;
+    --text-muted: #6B7280;
+    --accent: #7C6FF0;
+    --accent-soft: #B8AFFE;
+    --success: #4ADE80;
+    --glow: rgba(124, 111, 240, 0.25);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 20px;
+    line-height: 1.5;
+  }
+  .container { max-width: 420px; margin: 0 auto; }
+
+  /* Header */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    padding: 8px 0;
+  }
+  .logo { font-size: 24px; font-weight: 700; color: var(--accent); }
+  .racha {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface);
+    padding: 8px 16px;
+    border-radius: 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .racha-icon { font-size: 18px; }
+  .racha-num { font-weight: 700; font-size: 16px; }
+  .racha-label { font-size: 12px; color: var(--text-muted); }
+
+  /* Card principal (tarjeta de estudio) */
+  .card {
+    background: var(--surface);
+    border-radius: 24px;
+    padding: 32px 28px;
+    margin-bottom: 24px;
+    box-shadow:
+      0 4px 20px rgba(0,0,0,0.04),
+      0 1px 3px rgba(0,0,0,0.03),
+      inset 0 1px 0 rgba(255,255,255,0.8);
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-soft));
+    border-radius: 4px 4px 0 0;
+  }
+  .card-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .card-frente {
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    letter-spacing: -0.02em;
+  }
+  .card-input {
+    width: 100%;
+    border: none;
+    background: var(--surface-soft);
+    border-radius: 16px;
+    padding: 16px 20px;
+    font-size: 18px;
+    color: var(--text);
+    margin-bottom: 20px;
+    outline: none;
+    transition: all 0.2s;
+  }
+  .card-input:focus {
+    box-shadow: 0 0 0 3px var(--glow);
+    background: var(--surface);
+  }
+  .card-input::placeholder { color: var(--text-muted); }
+
+  .boton {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .boton-primario {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 4px 14px var(--glow);
+  }
+  .boton-primario:active {
+    transform: scale(0.98);
+    box-shadow: 0 2px 8px var(--glow);
+  }
+
+  /* Métricas */
+  .metricas {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .metrica {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 16px 12px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  }
+  .metrica-valor {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .metrica-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 4px;
+  }
+
+  /* Nota al pie */
+  .nota {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+    padding: 20px;
+    line-height: 1.6;
+  }
+  .nota strong { color: var(--accent); }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">⌘ Ancla</div>
+      <div class="racha">
+        <span class="racha-icon">🔥</span>
+        <div>
+          <div class="racha-num">7</div>
+          <div class="racha-label">días</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Número a memorizar</div>
+      <div class="card-frente">3.14159</div>
+      <input type="text" class="card-input" placeholder="Escribe la palabra asociada..." value="Amo">
+      <button class="boton boton-primario">Verificar respuesta</button>
+    </div>
+
+    <div class="metricas">
+      <div class="metrica">
+        <div class="metrica-valor">12</div>
+        <div class="metrica-label">Hoy</div>
+      </div>
+      <div class="metrica">
+        <div class="metrica-valor">89%</div>
+        <div class="metrica-label">Retención</div>
+      </div>
+      <div class="metrica">
+        <div class="metrica-valor">∞</div>
+        <div class="metrica-label">π-100</div>
+      </div>
+    </div>
+
+    <div class="nota">
+      <strong>Soft UI</strong> — Superficies cristalinas con glow interno, bordes suaves,
+      sombras difusas. La interfaz se siente como vidrio esmerilado: sólida pero
+      translúcida, premium sin ser fría. Ideal para uso diario prolongado.
+    </div>
+  </div>
+</body>
+</html>
