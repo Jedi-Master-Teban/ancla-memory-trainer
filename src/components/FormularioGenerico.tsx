@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { Categoria, FilaTarjeta } from '../db/tipos';
 import { REGISTRO } from '../domain/categorias/registro';
+import { sanitizarDigitosConDecimal } from '../domain/numeros/entrada';
 
 interface Props {
   categoria: Categoria;
@@ -79,22 +80,14 @@ export function FormularioGenerico({ categoria, tarjetaExistente, onGuardar }: P
                 if (campo.tipo === 'numero') {
                   set(campo.clave, texto.replace(/[^0-9]/g, ''));
                 } else if (campo.tipo === 'decimal') {
-                  // Decimales de longitud arbitraria: dígitos + UN punto opcional
-                  // (π-100, φ, e, √2…). Sin signos, comas ni exponentes: la app de
-                  // memoria trata el valor como CADENA DE DÍGITOS, no como float.
-                  let limpio = texto.replace(/[^0-9.]/g, '');
-                  const primerPunto = limpio.indexOf('.');
-                  if (primerPunto !== -1) {
-                    limpio = limpio.slice(0, primerPunto + 1) + limpio.slice(primerPunto + 1).replace(/\./g, '');
-                  }
-                  set(campo.clave, limpio);
+                  set(campo.clave, sanitizarDigitosConDecimal(texto));
                 } else {
                   set(campo.clave, texto);
                 }
               }}
               placeholder={campo.etiqueta}
               placeholderTextColor="#6c7086"
-              keyboardType={campo.tipo === 'numero' ? 'number-pad' : campo.tipo === 'decimal' ? 'decimal-pad' : 'default'}
+              keyboardType={campo.tipo === 'numero' ? 'number-pad' : campo.tipo === 'decimal' ? 'default' : 'default'}
               style={estilos.input}
             />
           )}

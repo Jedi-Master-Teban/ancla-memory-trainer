@@ -5,6 +5,7 @@ import { obtenerBD } from '../../src/db/client';
 import { crearNumeroImportante, listarTarjetasPorMazo, obtenerMazoPorCategoria } from '../../src/db/repository';
 import type { ConexionBD } from '../../src/db/tipos';
 import { descomponer, type Trozo } from '../../src/domain/numeros/descomposicion';
+import { sanitizarDigitosConDecimal } from '../../src/domain/numeros/entrada';
 
 export default function NumeroNuevo() {
   const [cargando, setCargando] = useState(true);
@@ -82,10 +83,10 @@ export default function NumeroNuevo() {
       <Text style={estilos.etiquetaCampo}>Dígitos</Text>
       <TextInput
         value={digitos}
-        onChangeText={(texto) => setDigitos(texto.replace(/[^0-9]/g, ''))}
-        placeholder="Ej. 0453"
+        onChangeText={(texto) => setDigitos(sanitizarDigitosConDecimal(texto))}
+        placeholder="Ej. 3.14159 (o solo 0453)"
         placeholderTextColor="#6c7086"
-        keyboardType="number-pad"
+        keyboardType="default"
         style={estilos.input}
       />
 

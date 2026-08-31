@@ -11,6 +11,7 @@ import {
 } from '../../src/db/repository';
 import type { ConexionBD, FilaNumeroImportante } from '../../src/db/tipos';
 import { descomponer, type Trozo } from '../../src/domain/numeros/descomposicion';
+import { sanitizarDigitosConDecimal } from '../../src/domain/numeros/entrada';
 
 export default function NumerosIndex() {
   const [cargando, setCargando] = useState(true);
@@ -135,10 +136,10 @@ export default function NumerosIndex() {
               />
               <TextInput
                 value={digitosEdit}
-                onChangeText={(texto) => setDigitosEdit(texto.replace(/[^0-9]/g, ''))}
-                placeholder="Dígitos..."
+                onChangeText={(texto) => setDigitosEdit(sanitizarDigitosConDecimal(texto))}
+                placeholder="Dígitos (ej. 3.14159… o solo 0453)"
                 placeholderTextColor="#6c7086"
-                keyboardType="number-pad"
+                keyboardType="default"
                 style={estilos.input}
               />
               {trozosEdit.length > 0 ? (

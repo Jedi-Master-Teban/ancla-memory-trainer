@@ -30,6 +30,21 @@ describe('trocear — pares de dígitos de izquierda a derecha', () => {
   it('rechaza caracteres no numéricos', () => {
     expect(() => trocear('12a4')).toThrow();
   });
+
+  it('acepta punto decimal — lo elimina antes de trocear (π-100, φ)', () => {
+    expect(trocear('3.14')).toEqual(['31', '4']);
+    expect(trocear('31.415')).toEqual(['31', '41', '5']);
+    expect(trocear('.141592')).toEqual(['14', '15', '92']);
+  });
+
+  it('acepta coma decimal — también la elimina (es-MX/es-ES iOS)', () => {
+    expect(trocear('3,14159')).toEqual(['31', '41', '59']);
+  });
+
+  it('rechaza solo separador sin dígitos', () => {
+    expect(() => trocear('.')).toThrow();
+    expect(() => trocear(',')).toThrow();
+  });
 });
 
 describe('descomponer — resuelve cada trozo a su palabra colgadero', () => {

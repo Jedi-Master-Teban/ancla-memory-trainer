@@ -16,10 +16,16 @@ export interface Trozo {
 const SOLO_DIGITOS = /^[0-9]+$/;
 
 export function trocear(digitos: string): string[] {
-  if (!SOLO_DIGITOS.test(digitos)) {
-    throw new Error(`"${digitos}" debe contener solo dígitos 0-9, sin estar vacío`);
+  // Decimales (π-100, φ, e): la descomposición opera solo sobre DÍGITOS;
+  // el separador no pertenece a la fonética. Lo eliminamos antes de validar.
+  const soloDigitos = digitos.replace(/[.,]/g, '');
+  if (!/^[0-9]+$/.test(soloDigitos) || soloDigitos.length === 0) {
+    throw new Error(`"${digitos}" debe contener solo dígitos 0-9 (con un . opcional), sin estar vacío`);
   }
+  return trocearSoloDigitos(soloDigitos);
+}
 
+function trocearSoloDigitos(digitos: string): string[] {
   const trozos: string[] = [];
   let i = 0;
   while (i < digitos.length - 1) {
