@@ -17,6 +17,7 @@ import type { Categoria, FilaMazo } from '../src/db/tipos';
 import { fechaLocal } from '../src/domain/racha/calculo';
 import { useRachaStore } from '../src/stores/racha';
 import { useTema } from '../src/stores/tema';
+import { cardStyle } from '../src/tema/colores';
 import type { TokensColor } from '../src/tema/colores';
 
 const RUTA_POR_CATEGORIA: Record<Categoria, '/colgadero' | '/naipes' | '/listas' | '/numeros'> = {
@@ -131,7 +132,7 @@ export default function Index() {
           style={[
             estilos.botonAjustes,
             esArcade
-              ? { backgroundColor: t.card, borderRadius: 12 }
+              ? { ...cardStyle(tema), borderRadius: 12 }
               : { backgroundColor: t.card, borderRadius: 2, borderWidth: 1, borderColor: t.borderMuted },
           ]}
         >
@@ -144,7 +145,7 @@ export default function Index() {
           estilos.tarjetaRacha,
           esArcade
             ? {
-                backgroundColor: t.card,
+                ...cardStyle(tema),
                 borderRadius: 24,
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: 8 },
@@ -167,7 +168,7 @@ export default function Index() {
         </Link>
       </View>
 
-      <View style={esArcade ? [estilos.tarjetaMeta, { backgroundColor: t.card, borderRadius: 20 }] : estilos.tarjetaMetaPlana}>
+      <View style={esArcade ? [estilos.tarjetaMeta, { ...cardStyle(tema), borderRadius: 20 }] : estilos.tarjetaMetaPlana}>
         <View style={estilos.filaMeta}>
           <Text style={[estilos.textoMeta, { color: t.ink, fontFamily: tipografia.display }]}>Meta de hoy</Text>
           <Text style={[estilos.fraccionMeta, { color: t.accent1, fontFamily: tipografia.display }]}>
@@ -197,7 +198,7 @@ export default function Index() {
               style={[
                 estilos.filaCategoria,
                 esArcade
-                  ? { backgroundColor: t.card, borderRadius: 18, marginBottom: 10 }
+                  ? { ...cardStyle(tema), borderRadius: 18, marginBottom: 10 }
                   : { borderBottomWidth: 1, borderBottomColor: t.borderMuted, paddingHorizontal: 0 },
               ]}
             >

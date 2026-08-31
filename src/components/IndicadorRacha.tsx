@@ -146,6 +146,6 @@ const estilos = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: 'rgba(255,130,29,0.30)',
   },
-  haloMini: { width: 52, height: 52, top: -9 },
-  haloGrande: { width: 104, height: 104, top: -16 },
+  haloMini: { width: 40, height: 40, top: -6 },
+  haloGrande: { width: 76, height: 76, top: -10 },
 });

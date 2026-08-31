@@ -1,3 +1,5 @@
+import type { ViewStyle } from 'react-native';
+
 /**
  * Tokens de color de las 2 direcciones visuales (Fase 8, ADR-026). Valores
  * convertidos a mano de oklch→hex desde agent_docs/prototipos/pantallas/*.html
@@ -28,11 +30,13 @@ export interface TokensColor {
   celdaEscala: [string, string, string, string];
   /** Solo Papel — Arcade distingue con sombra, no con borde. */
   borderMuted?: string;
+  /** Solo Arcade — hairline luminoso para cards translúcidas (V2). */
+  borderHairline?: string;
 }
 
 const ARCADE: TokensColor = {
-  bg: '#101029',
-  card: '#1c1d3e',
+  bg: '#141433',
+  card: 'rgba(255,255,255,0.045)',
   ink: '#f8f8fc',
   inkMuted: '#a0a3b8',
   accent1: '#00d0ec',
@@ -49,6 +53,8 @@ const ARCADE: TokensColor = {
   flameInner: '#ffe46e',
   flameGlow: '#ff821d',
   celdaEscala: ['#25273c', '#25467d', '#007fbc', '#00d0ec'],
+  /** Solo Arcade — border hairline luminoso para cards translúcidas. */
+  borderHairline: 'rgba(255,255,255,0.07)',
 };
 
 const PAPEL: TokensColor = {
@@ -120,3 +126,23 @@ export function recetaBotonCalificacion(tema: TemaId, colorAcento: string): Rece
     texto: { color: colorAcento },
   };
 }
+
+/**
+ * V2 — Estilo de card para Arcade Neón: translúcido + borde hairline.
+ * No es un hook de React (puro, sin efectos), solo pereza de shape.
+ */
+export function cardStyle(tema: TemaId): ViewStyle {
+  const t = coloresDelTema(tema);
+  if (tema === 'arcade') {
+    return {
+      backgroundColor: 'rgba(255,255,255,0.045)',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.07)',
+    } as const;
+  }
+  return {
+    backgroundColor: t.card,
+    borderWidth: 0,
+  } as const;
+}
+

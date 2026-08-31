@@ -9,6 +9,7 @@ import type { ConexionBD, FilaDiaPractica } from '../src/db/tipos';
 import { diaAnterior, fechaLocal } from '../src/domain/racha/calculo';
 import { useRachaStore } from '../src/stores/racha';
 import { useTema } from '../src/stores/tema';
+import { cardStyle } from '../src/tema/colores';
 
 const VENTANA_CONGELABLE_DIAS = 14;
 
@@ -112,7 +113,7 @@ export default function Racha() {
         style={[
           estilos.hero,
           esArcade
-            ? { backgroundColor: t.card, borderRadius: 28, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.35, shadowRadius: 20 }
+            ? { ...cardStyle(tema), borderRadius: 28, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.35, shadowRadius: 20 }
             : { borderBottomWidth: 1, borderBottomColor: t.borderMuted, paddingBottom: 20 },
         ]}
       >
@@ -139,7 +140,7 @@ export default function Racha() {
         <Text style={[estilos.subtitulo, { color: t.ink, fontFamily: tipografia.display }]}>Configuración</Text>
         <Pressable
           onPress={() => router.push('/ajustes')}
-          style={esArcade ? [estilos.cajaConfig, { backgroundColor: t.card }] : undefined}
+          style={esArcade ? [estilos.cajaConfig, cardStyle(tema)] : undefined}
         >
           {(
             [
@@ -180,7 +181,7 @@ export default function Racha() {
               disabled={config.congeladores_disponibles <= 0}
               style={[
                 estilos.filaDia,
-                { backgroundColor: t.card },
+                cardStyle(tema),
                 config.congeladores_disponibles <= 0 && estilos.filaDiaDeshabilitada,
               ]}
             >
