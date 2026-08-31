@@ -7,6 +7,8 @@
 **Una app de bolsillo para entrenar la memoria con las técnicas de Harry Lorayne,
 con repetición espaciada de verdad y una racha que te obliga a volver.**
 
+**👉 [Abrir Ancla (PWA web)](https://jedi-master-teban.github.io/ancla-memory-trainer/)** — funciona en iPhone, Android y desktop sin instalar nada.
+
 *Aplicación personal · iOS · 100 % local · sin cuentas, sin nube, sin anuncios*
 
 </div>
