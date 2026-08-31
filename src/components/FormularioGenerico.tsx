@@ -87,7 +87,7 @@ export function FormularioGenerico({ categoria, tarjetaExistente, onGuardar }: P
               }}
               placeholder={campo.etiqueta}
               placeholderTextColor="#6c7086"
-              keyboardType={campo.tipo === 'numero' ? 'number-pad' : campo.tipo === 'decimal' ? 'default' : 'default'}
+              keyboardType={campo.tipo === 'numero' ? 'number-pad' : campo.tipo === 'decimal' ? 'decimal-pad' : 'default'}
               style={estilos.input}
             />
           )}

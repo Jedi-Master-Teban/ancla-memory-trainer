@@ -14,14 +14,19 @@ import {
   obtenerMazoPorCategoria,
 } from '../../src/db/repository';
 import type { ConexionBD } from '../../src/db/tipos';
-import { descomponer } from '../../src/domain/numeros/descomposicion';
+import { descomponerConDecimal } from '../../src/domain/numeros/descomposicion';
 import type { Calificacion } from '../../src/domain/fsrs/scheduler';
 import { useSesionStore } from '../../src/stores/sesion';
 
 function formatearDescomposicion(digitos: string, mapa: Map<number, string>): string {
-  return descomponer(digitos, (valor) => mapa.get(valor))
-    .map((t) => `${t.digitos}→${t.palabra ?? 'sin colgadero'}`)
-    .join(' · ');
+  const d = descomponerConDecimal(digitos, (valor) => mapa.get(valor));
+  const fmt = (trozos: typeof d.parteEntera) =>
+    trozos.map((t) => `${t.digitos}→${t.palabra ?? 'sin colgadero'}`).join(' · ');
+
+  const partes: string[] = [];
+  if (d.parteEntera.length > 0) partes.push(fmt(d.parteEntera));
+  if (d.parteDecimal.length > 0) partes.push(`    ·    ${fmt(d.parteDecimal)}`);
+  return partes.join('\n');
 }
 
 /**

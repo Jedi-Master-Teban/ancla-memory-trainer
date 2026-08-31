@@ -1,4 +1,4 @@
-import { descomponer, ORO, RARA, trocear } from './descomposicion';
+import { descomponer, descomponerConDecimal, ORO, RARA, trocear, trocearConDecimal } from './descomposicion';
 
 describe('trocear — pares de dígitos de izquierda a derecha', () => {
   it('cantidad par de dígitos → solo pares', () => {
@@ -44,6 +44,36 @@ describe('trocear — pares de dígitos de izquierda a derecha', () => {
   it('rechaza solo separador sin dígitos', () => {
     expect(() => trocear('.')).toThrow();
     expect(() => trocear(',')).toThrow();
+  });
+});
+
+describe('trocearConDecimal — separa entera y decimal (petición UX: π=3, no 31)', () => {
+  it('3.14159 → entera "3", decimal "14 15 9"', () => {
+    expect(trocearConDecimal('3.14159')).toEqual({ parteEntera: ['3'], parteDecimal: ['14', '15', '9'] });
+  });
+
+  it('sin punto se comporta como trocear', () => {
+    expect(trocearConDecimal('0453')).toEqual({ parteEntera: ['04', '53'], parteDecimal: [] });
+  });
+
+  it('solo-punto inicial → entera vacía, todo decimal', () => {
+    expect(trocearConDecimal('.141592')).toEqual({ parteEntera: [], parteDecimal: ['14', '15', '92'] });
+  });
+
+  it('π con punto y coma mezclados — el primero gana', () => {
+    expect(trocearConDecimal('3.14,159')).toEqual({ parteEntera: ['3'], parteDecimal: ['14', '15', '9'] });
+  });
+
+  it('φ (phi) con decimal', () => {
+    expect(trocearConDecimal('1.61803')).toEqual({ parteEntera: ['1'], parteDecimal: ['61', '80', '3'] });
+  });
+
+  it('e con entero', () => {
+    expect(trocearConDecimal('2.71828')).toEqual({ parteEntera: ['2'], parteDecimal: ['71', '82', '8'] });
+  });
+
+  it('entero largo con decimal (raíz de 2)', () => {
+    expect(trocearConDecimal('1.41421356')).toEqual({ parteEntera: ['1'], parteDecimal: ['41', '42', '13', '56'] });
   });
 });
 

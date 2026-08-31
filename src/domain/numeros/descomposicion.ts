@@ -15,6 +15,24 @@ export interface Trozo {
 
 const SOLO_DIGITOS = /^[0-9]+$/;
 
+export function trocearConDecimal(digitos: string): { parteEntera: string[]; parteDecimal: string[] } {
+  const indicePunto = digitos.indexOf('.');
+  const indiceComa = digitos.indexOf(',');
+  const indiceSeparador = [indicePunto, indiceComa].filter(i => i !== -1).sort((a, b) => a - b)[0] ?? -1;
+
+  if (indiceSeparador === -1) {
+    return { parteEntera: trocear(digitos), parteDecimal: [] };
+  }
+
+  const parteEntera = digitos.slice(0, indiceSeparador);
+  const parteDecimal = digitos.slice(indiceSeparador + 1).replace(/[.,]/g, '');
+
+  const trozosEntera = parteEntera ? trocear(parteEntera) : [];
+  const trozosDecimal = parteDecimal ? trocear(parteDecimal) : [];
+
+  return { parteEntera: trozosEntera, parteDecimal: trozosDecimal };
+}
+
 export function trocear(digitos: string): string[] {
   // Decimales (π-100, φ, e): la descomposición opera solo sobre DÍGITOS;
   // el separador no pertenece a la fonética. Lo eliminamos antes de validar.
@@ -44,6 +62,25 @@ function trocearSoloDigitos(digitos: string): string[] {
  * inyecta en vez de importar la semilla estática — el operador puede haber
  * editado o vaciado una palabra desde entonces.
  */
+export function descomponerConDecimal(
+  digitos: string,
+  buscarPalabra: (valor: number) => string | undefined
+): { parteEntera: Trozo[]; parteDecimal: Trozo[] } {
+  const { parteEntera, parteDecimal } = trocearConDecimal(digitos);
+
+  const procesar = (trozos: string[]): Trozo[] =>
+    trozos.map((chunk) => {
+      const valor = Number(chunk);
+      if (valor === 0) {
+        return { digitos: chunk, valor, palabra: chunk.length === 1 ? ORO : RARA };
+      }
+      const palabra = buscarPalabra(valor);
+      return { digitos: chunk, valor, palabra: palabra ? palabra : null };
+    });
+
+  return { parteEntera: procesar(parteEntera), parteDecimal: procesar(parteDecimal) };
+}
+
 export function descomponer(digitos: string, buscarPalabra: (valor: number) => string | undefined): Trozo[] {
   return trocear(digitos).map((chunk) => {
     const valor = Number(chunk);

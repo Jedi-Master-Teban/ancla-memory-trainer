@@ -4,7 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 import { obtenerBD } from '../../src/db/client';
 import { crearNumeroImportante, listarTarjetasPorMazo, obtenerMazoPorCategoria } from '../../src/db/repository';
 import type { ConexionBD } from '../../src/db/tipos';
-import { descomponer, type Trozo } from '../../src/domain/numeros/descomposicion';
+import { descomponerConDecimal } from '../../src/domain/numeros/descomposicion';
 import { sanitizarDigitosConDecimal } from '../../src/domain/numeros/entrada';
 
 export default function NumeroNuevo() {
@@ -38,12 +38,12 @@ export default function NumeroNuevo() {
     };
   }, []);
 
-  const trozos: Trozo[] = useMemo(() => {
-    if (digitos.length === 0) return [];
+  const descomposicion = useMemo(() => {
+    if (digitos.length === 0) return null;
     try {
-      return descomponer(digitos, (valor) => mapaColgadero.get(valor));
+      return descomponerConDecimal(digitos, (valor) => mapaColgadero.get(valor));
     } catch {
-      return [];
+      return null;
     }
   }, [digitos, mapaColgadero]);
 
@@ -86,18 +86,33 @@ export default function NumeroNuevo() {
         onChangeText={(texto) => setDigitos(sanitizarDigitosConDecimal(texto))}
         placeholder="Ej. 3.14159 (o solo 0453)"
         placeholderTextColor="#6c7086"
-        keyboardType="default"
+        keyboardType="decimal-pad"
         style={estilos.input}
       />
 
-      {trozos.length > 0 ? (
+      {descomposicion ? (
         <View style={estilos.bloquePreview}>
           <Text style={estilos.tituloPreview}>Descomposición</Text>
-          {trozos.map((trozo, i) => (
-            <Text key={i} style={estilos.filaTrozo}>
-              {trozo.digitos} → {trozo.palabra ?? 'sin colgadero'}
-            </Text>
-          ))}
+          {descomposicion.parteEntera.length > 0 && (
+            <View>
+              <Text style={estilos.seccionPreview}>Entera</Text>
+              {descomposicion.parteEntera.map((trozo, i) => (
+                <Text key={`entera-${i}`} style={estilos.filaTrozo}>
+                  {trozo.digitos} → {trozo.palabra ?? 'sin colgadero'}
+                </Text>
+              ))}
+            </View>
+          )}
+          {descomposicion.parteDecimal.length > 0 && (
+            <View>
+              <Text style={estilos.seccionPreview}>Decimal</Text>
+              {descomposicion.parteDecimal.map((trozo, i) => (
+                <Text key={`decimal-${i}`} style={estilos.filaTrozo}>
+                  {trozo.digitos} → {trozo.palabra ?? 'sin colgadero'}
+                </Text>
+              ))}
+            </View>
+          )}
         </View>
       ) : null}
 
@@ -128,6 +143,7 @@ const estilos = StyleSheet.create({
   },
   bloquePreview: { backgroundColor: '#313244', borderRadius: 12, padding: 16, marginTop: 16, gap: 4 },
   tituloPreview: { color: '#ffffff', fontWeight: '600', marginBottom: 4 },
+  seccionPreview: { color: '#89b4fa', fontSize: 12, fontWeight: '600', marginTop: 6, marginBottom: 2 },
   filaTrozo: { color: '#a6e3a1', fontSize: 15 },
   botonGuardar: { backgroundColor: '#89b4fa', borderRadius: 8, paddingVertical: 14, alignItems: 'center', marginTop: 24 },
   deshabilitado: { opacity: 0.4 },

@@ -13,10 +13,10 @@
  *   - Solo UN separador decimal (el primero gana; los demás se ignoran)
  *   - No permite signos, notación científica, ni espacios
  *
- * Teclado recomendado en UI: `keyboardType="default"` (no `decimal-pad`
- * ni `number-pad`) para que el usuario siempre vea tanto dígitos como
- * punto/coma en el teclado completo. La guía visual vendrá de la etiqueta
- * del campo ("Dígitos con decimales opcionales").
+ * Teclado recomendado en UI: `keyboardType="decimal-pad"`. En iOS nativo y
+ * Android expone el separador (punto o coma según locale). En web/PWA RN lo
+ * traduce a `inputmode="decimal"`, igualmente numérico con decimal. El
+ * sanitizador acepta ambos indistintamente — el locale no importa.
  */
 
 /**
