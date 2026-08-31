@@ -75,10 +75,26 @@ export function FormularioGenerico({ categoria, tarjetaExistente, onGuardar }: P
           ) : (
             <TextInput
               value={valores[campo.clave] ?? ''}
-              onChangeText={(texto) => set(campo.clave, campo.tipo === 'numero' ? texto.replace(/[^0-9]/g, '') : texto)}
+              onChangeText={(texto) => {
+                if (campo.tipo === 'numero') {
+                  set(campo.clave, texto.replace(/[^0-9]/g, ''));
+                } else if (campo.tipo === 'decimal') {
+                  // Decimales de longitud arbitraria: dígitos + UN punto opcional
+                  // (π-100, φ, e, √2…). Sin signos, comas ni exponentes: la app de
+                  // memoria trata el valor como CADENA DE DÍGITOS, no como float.
+                  let limpio = texto.replace(/[^0-9.]/g, '');
+                  const primerPunto = limpio.indexOf('.');
+                  if (primerPunto !== -1) {
+                    limpio = limpio.slice(0, primerPunto + 1) + limpio.slice(primerPunto + 1).replace(/\./g, '');
+                  }
+                  set(campo.clave, limpio);
+                } else {
+                  set(campo.clave, texto);
+                }
+              }}
               placeholder={campo.etiqueta}
               placeholderTextColor="#6c7086"
-              keyboardType={campo.tipo === 'numero' ? 'number-pad' : 'default'}
+              keyboardType={campo.tipo === 'numero' ? 'number-pad' : campo.tipo === 'decimal' ? 'decimal-pad' : 'default'}
               style={estilos.input}
             />
           )}

@@ -2,7 +2,7 @@ import type { Categoria, FilaTarjeta, MetadataColgadero, MetadataNaipe } from '.
 import { validarColgadero } from '../fonetica/decodificador';
 import { validarPalabraNaipe, type Carta } from '../fonetica/naipes';
 
-export type TipoCampo = 'texto' | 'numero' | 'seleccion';
+export type TipoCampo = 'texto' | 'numero' | 'decimal' | 'seleccion';
 
 export interface CampoCategoria {
   clave: string;
@@ -83,7 +83,9 @@ export const REGISTRO: Record<Categoria, DefinicionCategoria> = {
     etiquetaPlural: 'Números',
     campos: [
       { clave: 'etiqueta', etiqueta: 'Etiqueta', tipo: 'texto', requerido: true },
-      { clave: 'digitos', etiqueta: 'Dígitos', tipo: 'numero', requerido: true },
+      // 'decimal': permite dígitos + un punto decimal opcional (π-100 y otros
+      // irracionales). A diferencia de 'numero' (enteros), el regex admite '.'.
+      { clave: 'digitos', etiqueta: 'Dígitos', tipo: 'decimal', requerido: true },
     ],
     // Sin validar: no existe validador de dominio para números — descomponer() es un
     // transform puro (Trozo.palabra === null es informativo, "sin colgadero", nunca
