@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { HeaderFlotante } from '../../src/components/HeaderFlotante';
 import { obtenerBD } from '../../src/db/client';
 import { crearNumeroImportante, listarTarjetasPorMazo, obtenerMazoPorCategoria } from '../../src/db/repository';
 import type { ConexionBD } from '../../src/db/tipos';
@@ -55,7 +56,7 @@ export default function NumeroNuevo() {
 
   if (cargando) {
     return (
-      <View style={estilos.centro}>
+      <View  style={estilos.centro}>
         <ActivityIndicator color="#ffffff" />
       </View>
     );

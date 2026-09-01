@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { MorphIcon } from 'morphicons/react-native';
 import type { TemaId } from '../tema/colores';
 import { coloresDelTema } from '../tema/colores';
 import { tipografiaDelTema } from '../tema/tipografia';
@@ -71,20 +72,12 @@ export function PreviewEstilo({ temaAVista, etiqueta, descripcion, activa, onPre
         <Text style={[estilos.previewBotonTexto, { color: t.inkOnAccent }]}>+ Palabra nueva</Text>
       </View>
 
-      {/* Preview: tab bar reducida */}
+      {/* Preview: tab bar reducida (igual estilo que TabBarInferior) */}
       <View style={[estilos.previewTabBar, { borderTopColor: t.borderMuted ?? t.inkMuted }]}>
-        {['🏠', '📝', '📊', '⚙️'].map((icono, i) => (
-          <Text
-            key={i}
-            style={{
-              fontSize: 14,
-              opacity: i === 0 ? 1 : 0.5,
-              color: i === 0 ? t.accent1 : t.inkMuted,
-            }}
-          >
-            {icono}
-          </Text>
-        ))}
+        <MorphIcon icon="lucide-house" size={14} color={t.accent1} />
+        <MorphIcon icon="lucide-pencil" size={14} color={t.inkMuted} />
+        <MorphIcon icon="lucide-bar-chart-3" size={14} color={t.inkMuted} />
+        <MorphIcon icon="lucide-settings" size={14} color={t.inkMuted} />
       </View>
     </Pressable>
   );

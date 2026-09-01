@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { HeaderFlotante } from '../src/components/HeaderFlotante';
 import { BotonesCalificacion } from '../src/components/BotonesCalificacion';
 import { Flashcard } from '../src/components/Flashcard';
 import { PausaVisualizacion } from '../src/components/PausaVisualizacion';
@@ -68,7 +69,7 @@ export default function PracticaLibre() {
 
   if (cargando) {
     return (
-      <View style={estilos.centro}>
+      <View  style={estilos.centro}>
         <ActivityIndicator color="#ffffff" />
       </View>
     );

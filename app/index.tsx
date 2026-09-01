@@ -284,7 +284,7 @@ export default function Index() {
 
 const estilos = StyleSheet.create({
   contenedorScroll: { flex: 1 },
-  contenido: { padding: 24, gap: 18 },
+  contenido: { padding: 24, gap: 18, paddingBottom: 160 },
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   error: { padding: 24, textAlign: 'center' },
   filaSuperior: { flexDirection: 'row', justifyContent: 'flex-end' },

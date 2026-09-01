@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { HeaderFlotante } from '../../src/components/HeaderFlotante';
 import { CaraFisica } from '../../src/components/CartaVisual';
 import { obtenerBD } from '../../src/db/client';
 import { calificarTarjeta, crearSesion, cerrarSesion, listarTarjetasPorMazo, obtenerMazoPorCategoria } from '../../src/db/repository';
@@ -109,7 +110,7 @@ export default function NaipesBarajaCompleta() {
 
   if (fase === 'cargando') {
     return (
-      <View style={[estilos.centro, { backgroundColor: t.bg }]}>
+      <View  style={[estilos.centro, { backgroundColor: t.bg }]}>
         <ActivityIndicator color={t.ink} />
       </View>
     );

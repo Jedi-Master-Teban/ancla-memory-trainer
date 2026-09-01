@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { HeaderFlotante } from '../../src/components/HeaderFlotante';
 import { BotonesCalificacion } from '../../src/components/BotonesCalificacion';
 import { PausaVisualizacion } from '../../src/components/PausaVisualizacion';
 import { TemporizadorEstudio } from '../../src/components/TemporizadorEstudio';
@@ -148,7 +149,7 @@ export default function ListasEstudiar() {
 
   if (fase === 'cargando') {
     return (
-      <View style={estilos.centro}>
+      <View  style={estilos.centro}>
         <ActivityIndicator color="#ffffff" />
       </View>
     );

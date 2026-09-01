@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { HeaderFlotante } from '../../src/components/HeaderFlotante';
 import { CartaVisual } from '../../src/components/CartaVisual';
 import { obtenerBD } from '../../src/db/client';
 import {
@@ -79,7 +80,7 @@ export default function NaipesVelocidad() {
 
   if (cargando) {
     return (
-      <View style={[estilos.centro, { backgroundColor: t.bg }]}>
+      <View  style={[estilos.centro, { backgroundColor: t.bg }]}>
         <ActivityIndicator color={t.ink} />
       </View>
     );

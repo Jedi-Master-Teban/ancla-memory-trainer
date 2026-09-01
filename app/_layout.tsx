@@ -113,21 +113,22 @@ export default function RootLayout() {
       >
         <Stack.Screen name="index" options={{ title: 'Ancla' }} />
         <Stack.Screen name="editar" options={{ title: 'Editar categorías', headerBackTitle: 'Inicio' }} />
-        <Stack.Screen name="colgadero/index" options={{ title: 'Colgadero', headerBackTitle: 'Inicio' }} />
-        <Stack.Screen name="colgadero/flash" options={{ title: 'Fonética Flash' }} />
-        <Stack.Screen name="colgadero/reverso" options={{ title: 'Reverso' }} />
-        <Stack.Screen name="colgadero/velocidad" options={{ title: 'Velocidad' }} />
-        <Stack.Screen name="naipes/index" options={{ title: 'Naipes', headerBackTitle: 'Inicio' }} />
-        <Stack.Screen name="naipes/flash" options={{ title: 'Fonética Flash' }} />
-        <Stack.Screen name="naipes/reverso" options={{ title: 'Reverso' }} />
-        <Stack.Screen name="naipes/velocidad" options={{ title: 'Velocidad' }} />
-        <Stack.Screen name="naipes/baraja-completa" options={{ title: 'Baraja Completa' }} />
-        <Stack.Screen name="listas/index" options={{ title: 'Listas', headerBackTitle: 'Inicio' }} />
-        <Stack.Screen name="listas/[id]" options={{ title: 'Lista' }} />
-        <Stack.Screen name="listas/estudiar" options={{ title: 'Estudiar' }} />
-        <Stack.Screen name="numeros/index" options={{ title: 'Números', headerBackTitle: 'Inicio' }} />
-        <Stack.Screen name="numeros/nuevo" options={{ title: 'Número nuevo' }} />
-        <Stack.Screen name="numeros/repasar" options={{ title: 'Repasar' }} />
+        {/* Categorías: headerShown false porque ahora hay TabBar global + título flotante en cada pantalla */}
+        <Stack.Screen name="colgadero/index" options={{ title: 'Colgadero', headerShown: false }} />
+        <Stack.Screen name="colgadero/flash" options={{ title: 'Fonética Flash', headerShown: false }} />
+        <Stack.Screen name="colgadero/reverso" options={{ title: 'Reverso', headerShown: false }} />
+        <Stack.Screen name="colgadero/velocidad" options={{ title: 'Velocidad', headerShown: false }} />
+        <Stack.Screen name="naipes/index" options={{ title: 'Naipes', headerShown: false }} />
+        <Stack.Screen name="naipes/flash" options={{ title: 'Fonética Flash', headerShown: false }} />
+        <Stack.Screen name="naipes/reverso" options={{ title: 'Reverso', headerShown: false }} />
+        <Stack.Screen name="naipes/velocidad" options={{ title: 'Velocidad', headerShown: false }} />
+        <Stack.Screen name="naipes/baraja-completa" options={{ title: 'Baraja Completa', headerShown: false }} />
+        <Stack.Screen name="listas/index" options={{ title: 'Listas', headerShown: false }} />
+        <Stack.Screen name="listas/[id]" options={{ title: 'Lista', headerShown: false }} />
+        <Stack.Screen name="listas/estudiar" options={{ title: 'Estudiar', headerShown: false }} />
+        <Stack.Screen name="numeros/index" options={{ title: 'Números', headerShown: false }} />
+        <Stack.Screen name="numeros/nuevo" options={{ title: 'Número nuevo', headerShown: false }} />
+        <Stack.Screen name="numeros/repasar" options={{ title: 'Repasar', headerShown: false }} />
         <Stack.Screen name="racha" options={{ title: 'Tu racha', headerBackTitle: 'Inicio' }} />
         <Stack.Screen name="practicar" options={{ title: 'Practicar', headerBackTitle: 'Inicio' }} />
         <Stack.Screen name="practica-libre" options={{ title: 'Práctica libre', headerBackTitle: 'Inicio' }} />

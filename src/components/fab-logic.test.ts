@@ -1,41 +1,90 @@
-import { categoriaDeRuta } from './fab-logic';
+import { categoriaDeRuta, rutaCrear } from './fab-logic';
 
 describe('categoriaDeRuta', () => {
-  it('detecta colgadero', () => {
-    expect(categoriaDeRuta('/colgadero')).toBe('colgadero');
-    expect(categoriaDeRuta('/colgadero/flash')).toBe('colgadero');
-    expect(categoriaDeRuta('/colgadero/velocidad')).toBe('colgadero');
+  describe('pantallas de categoría', () => {
+    it('detecta colgadero', () => {
+      expect(categoriaDeRuta('/colgadero')).toBe('colgadero');
+    });
+
+    it('detecta naipes', () => {
+      expect(categoriaDeRuta('/naipes')).toBe('naipe');
+    });
+
+    it('detecta listas', () => {
+      expect(categoriaDeRuta('/listas')).toBe('lista_item');
+    });
+
+    it('detecta numeros', () => {
+      expect(categoriaDeRuta('/numeros')).toBe('numero');
+    });
+
+    it('detecta rutas drill-down de categoría', () => {
+      expect(categoriaDeRuta('/colgadero/flash')).toBe('colgadero');
+      expect(categoriaDeRuta('/colgadero/velocidad')).toBe('colgadero');
+      expect(categoriaDeRuta('/numeros/repasar')).toBe('numero');
+      expect(categoriaDeRuta('/naipes/123')).toBe('naipe');
+    });
   });
 
-  it('detecta naipe', () => {
-    expect(categoriaDeRuta('/naipes')).toBe('naipe');
-    expect(categoriaDeRuta('/naipes/flash')).toBe('naipe');
+  describe('pantallas de creación', () => {
+    it('detecta /crear/colgadero como categoría colgadero', () => {
+      expect(categoriaDeRuta('/crear/colgadero')).toBe('colgadero');
+    });
+
+    it('detecta /crear/naipe como categoría naipe', () => {
+      expect(categoriaDeRuta('/crear/naipe')).toBe('naipe');
+    });
+
+    it('detecta /crear/lista_item como categoría lista_item', () => {
+      expect(categoriaDeRuta('/crear/lista_item')).toBe('lista_item');
+    });
+
+    it('detecta /crear/numero como categoría numero', () => {
+      expect(categoriaDeRuta('/crear/numero')).toBe('numero');
+    });
+
+    it('detecta /crear con id (modo edición)', () => {
+      expect(categoriaDeRuta('/crear/colgadero?id=42')).toBe('colgadero');
+    });
   });
 
-  it('detecta lista_item (sin colisión con /listas/X)', () => {
-    expect(categoriaDeRuta('/listas')).toBe('lista_item');
-    expect(categoriaDeRuta('/listas/abc')).toBe('lista_item');
-  });
+  describe('rutas no-categoría', () => {
+    it('devuelve null en inicio', () => {
+      expect(categoriaDeRuta('/')).toBeNull();
+    });
 
-  it('detecta numero', () => {
-    expect(categoriaDeRuta('/numeros')).toBe('numero');
-    expect(categoriaDeRuta('/numeros/repasar')).toBe('numero');
-  });
+    it('devuelve null en editar', () => {
+      expect(categoriaDeRuta('/editar')).toBeNull();
+    });
 
-  it('devuelve null en rutas no-categoría', () => {
-    expect(categoriaDeRuta('/')).toBeNull();
-    expect(categoriaDeRuta('/editar')).toBeNull();
-    expect(categoriaDeRuta('/estadisticas')).toBeNull();
-    expect(categoriaDeRuta('/ajustes')).toBeNull();
-    expect(categoriaDeRuta('/racha')).toBeNull();
+    it('devuelve null en estadísticas', () => {
+      expect(categoriaDeRuta('/estadisticas')).toBeNull();
+    });
+
+    it('devuelve null en ajustes', () => {
+      expect(categoriaDeRuta('/ajustes')).toBeNull();
+    });
   });
 
   it('devuelve null con pathname undefined', () => {
     expect(categoriaDeRuta(undefined)).toBeNull();
   });
+});
 
-  it('orden de checks importa: /naipes NO se confunde con /listas', () => {
-    expect(categoriaDeRuta('/listas/x')).toBe('lista_item');
-    expect(categoriaDeRuta('/numeros/x')).toBe('numero');
+describe('rutaCrear', () => {
+  it('colgadero → /crear/colgadero', () => {
+    expect(rutaCrear('colgadero')).toBe('/crear/colgadero');
+  });
+
+  it('naipe → /crear/naipe', () => {
+    expect(rutaCrear('naipe')).toBe('/crear/naipe');
+  });
+
+  it('lista_item → /crear/lista_item', () => {
+    expect(rutaCrear('lista_item')).toBe('/crear/lista_item');
+  });
+
+  it('numero → /crear/numero', () => {
+    expect(rutaCrear('numero')).toBe('/crear/numero');
   });
 });

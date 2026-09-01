@@ -1,6 +1,7 @@
 import { Link, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { HeaderFlotante } from '../../src/components/HeaderFlotante';
 import { EditorLista, type ObjetoEditable } from '../../src/components/EditorLista';
 import { obtenerBD } from '../../src/db/client';
 import {
@@ -83,7 +84,7 @@ export default function ListaDetalle() {
 
   if (cargando) {
     return (
-      <View style={estilos.centro}>
+      <View  style={estilos.centro}>
         <ActivityIndicator color="#ffffff" />
       </View>
     );

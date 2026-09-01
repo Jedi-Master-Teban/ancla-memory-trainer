@@ -1,6 +1,7 @@
 import { Link, router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { HeaderFlotante } from '../../src/components/HeaderFlotante';
 import { obtenerBD } from '../../src/db/client';
 import { crearLista, listarListas, listarObjetosDeLista } from '../../src/db/repository';
 import type { ConexionBD, FilaLista } from '../../src/db/tipos';
@@ -55,7 +56,7 @@ export default function ListasIndex() {
 
   if (cargando) {
     return (
-      <View style={estilos.centro}>
+      <View  style={estilos.centro}>
         <ActivityIndicator color="#ffffff" />
       </View>
     );

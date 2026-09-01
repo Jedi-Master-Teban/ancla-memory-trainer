@@ -1,6 +1,7 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { HeaderFlotante } from '../../src/components/HeaderFlotante';
 import { SegmentedControl } from '../../src/components/SegmentedControl';
 import { obtenerBD } from '../../src/db/client';
 import { listarTarjetasPorMazo, obtenerMazoPorCategoria } from '../../src/db/repository';
@@ -79,49 +80,48 @@ export default function ColgaderoIndex() {
   }
 
   return (
-    <ScrollView
-      style={[estilos.contenedor, { backgroundColor: t.bg }]}
-      contentContainerStyle={estilos.contenido}
-    >
-      <View style={estilos.segmentoWrap}>
-        <SegmentedControl segmentos={SEGMENTOS} activo={tab} onChange={setTab} />
-      </View>
-
-      {tab === 'repasar' ? (
-        <View style={estilos.seccion}>
-          <Link href="/crear/colgadero" style={[estilos.botonNueva, { backgroundColor: t.accent1 }]}>
-            <Text style={[estilos.textoBotonNueva, { color: t.inkOnAccent }]}>+ Palabra nueva</Text>
-          </Link>
-
-          {MODOS.map((modo) => (
-            <Link key={modo.href} href={modo.href} style={[estilos.tarjetaModo, { backgroundColor: t.card }]}>
-              <Text style={[estilos.etiqueta, { color: t.ink }]}>{modo.etiqueta}</Text>
-              <Text style={[estilos.descripcion, { color: t.inkMuted }]}>{modo.descripcion}</Text>
-            </Link>
-          ))}
+    <>
+      <HeaderFlotante titulo="Colgadero" />
+      <ScrollView
+        style={[estilos.contenedor, { backgroundColor: t.bg }]}
+        contentContainerStyle={estilos.contenido}
+      >
+        <View style={estilos.segmentoWrap}>
+          <SegmentedControl segmentos={SEGMENTOS} activo={tab} onChange={setTab} />
         </View>
-      ) : (
-        <View style={estilos.seccion}>
-          <Text style={[estilos.subtitulo, { color: t.ink }]}>
-            Todas las palabras ({palabras.length})
-          </Text>
-          {palabras.map((tarjeta) => (
-            <Link
-              key={tarjeta.id}
-              href={`/crear/colgadero?id=${tarjeta.id}` as never}
-              style={[estilos.filaPalabra, { backgroundColor: t.card }]}
-            >
-              <Text style={[estilos.numeroPalabra, { color: t.inkMuted }]}>
-                {tarjeta.contenido_frente}
-              </Text>
-              <Text style={[estilos.textoPalabra, { color: t.ink }]}>
-                {tarjeta.contenido_reverso || 'sin asignar'}
-              </Text>
-            </Link>
-          ))}
-        </View>
-      )}
-    </ScrollView>
+
+        {tab === 'repasar' ? (
+          <View style={estilos.seccion}>
+            {MODOS.map((modo) => (
+              <Link key={modo.href} href={modo.href} style={[estilos.tarjetaModo, { backgroundColor: t.card }]}>
+                <Text style={[estilos.etiqueta, { color: t.ink }]}>{modo.etiqueta}</Text>
+                <Text style={[estilos.descripcion, { color: t.inkMuted }]}>{modo.descripcion}</Text>
+              </Link>
+            ))}
+          </View>
+        ) : (
+          <View style={estilos.seccion}>
+            <Text style={[estilos.subtitulo, { color: t.ink }]}>
+              Todas las palabras ({palabras.length})
+            </Text>
+            {palabras.map((tarjeta) => (
+              <Link
+                key={tarjeta.id}
+                href={`/crear/colgadero?id=${tarjeta.id}` as never}
+                style={[estilos.filaPalabra, { backgroundColor: t.card }]}
+              >
+                <Text style={[estilos.numeroPalabra, { color: t.inkMuted }]}>
+                  {tarjeta.contenido_frente}
+                </Text>
+                <Text style={[estilos.textoPalabra, { color: t.ink }]}>
+                  {tarjeta.contenido_reverso || 'sin asignar'}
+                </Text>
+              </Link>
+            ))}
+          </View>
+        )}
+      </ScrollView>
+    </>
   );
 }
 
@@ -132,8 +132,6 @@ const estilos = StyleSheet.create({
   error: { padding: 24, textAlign: 'center' },
   segmentoWrap: { marginBottom: 4 },
   seccion: { gap: 12 },
-  botonNueva: { borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
-  textoBotonNueva: { fontWeight: '600' },
   tarjetaModo: { borderRadius: 12, padding: 16 },
   etiqueta: { fontSize: 18, fontWeight: '600' },
   descripcion: { fontSize: 13, marginTop: 8 },

@@ -6,10 +6,10 @@ import { Animated, StyleSheet, Text, View } from 'react-native';
  * cambia. La altura fija de cada celda + un `overflow: hidden` en el
  * contenedor simula un "flip clock" simple sin dependencias externas.
  *
- * - Funciona con reanimated 3 (Animated estándar de RN) — `useNativeDriver:
- *   true` para no bloquear JS thread.
- * - Solo dígitos 0-9, sin signo ni separador.
- * - Para valores grandes se concatenan varios dígitos independientes.
+ * Importante: NO anima en mount. Solo anima cuando el dígito de
+ * destino realmente cambia desde la última renderización. Esto evita
+ * la "animación de bienvenida" cada vez que el usuario entra a la
+ * pantalla de racha.
  */
 interface Props {
   valor: number;
@@ -65,20 +65,33 @@ interface DigitoProps {
 }
 
 function DigitoRodante({ destino, color, fontFamily, fontSize, fontWeight, ancho, alto }: DigitoProps) {
-  const translateY = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(-destino * alto)).current;
+  const destinoAnteriorRef = useRef(destino);
+  const montadoRef = useRef(false);
 
   useEffect(() => {
-    Animated.timing(translateY, {
-      toValue: -destino * alto,
-      duration: 500,
-      useNativeDriver: true,
-    }).start();
+    // Primer mount: NO animar. Solo posicionarse en el destino.
+    if (!montadoRef.current) {
+      montadoRef.current = true;
+      translateY.setValue(-destino * alto);
+      destinoAnteriorRef.current = destino;
+      return;
+    }
+    // Cambios posteriores: animar solo si el dígito realmente cambió.
+    if (destinoAnteriorRef.current !== destino) {
+      Animated.timing(translateY, {
+        toValue: -destino * alto,
+        duration: 500,
+        useNativeDriver: true,
+      }).start();
+      destinoAnteriorRef.current = destino;
+    }
   }, [destino, alto, translateY]);
 
   return (
     <View style={[estilos.celda, { width: ancho, height: alto }]}>
       <Animated.View style={{ transform: [{ translateY }] }}>
-        {DIGITOS.map((d, i) => (
+        {DIGITOS.map((d) => (
           <Text
             key={d}
             style={[

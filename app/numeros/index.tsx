@@ -1,6 +1,7 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { HeaderFlotante } from '../../src/components/HeaderFlotante';
 import { obtenerBD } from '../../src/db/client';
 import {
   editarNumeroImportante,
@@ -94,7 +95,7 @@ export default function NumerosIndex() {
 
   if (cargando) {
     return (
-      <View style={estilos.centro}>
+      <View  style={estilos.centro}>
         <ActivityIndicator color="#ffffff" />
       </View>
     );
@@ -111,9 +112,6 @@ export default function NumerosIndex() {
   return (
     <ScrollView style={estilos.contenedor} contentContainerStyle={estilos.contenido}>
       <View style={estilos.filaBotones}>
-        <Link href="/numeros/nuevo" style={estilos.boton}>
-          <Text style={estilos.textoBoton}>+ Número nuevo</Text>
-        </Link>
         {numeros.length > 0 ? (
           <Link href="/numeros/repasar" style={[estilos.boton, estilos.botonRepasar]}>
             <Text style={estilos.textoBoton}>Repasar</Text>

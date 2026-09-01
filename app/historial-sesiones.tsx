@@ -1,6 +1,7 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { HeaderFlotante } from '../src/components/HeaderFlotante';
 import { obtenerBD } from '../src/db/client';
 import { listarRevisionesDeSesion, listarSesionesEstudio } from '../src/db/repository';
 import type { ConexionBD, FilaRevision, FilaSesionEstudio } from '../src/db/tipos';
@@ -57,7 +58,7 @@ export default function HistorialSesiones() {
 
   if (cargando) {
     return (
-      <View style={estilos.centro}>
+      <View  style={estilos.centro}>
         <ActivityIndicator color="#ffffff" />
       </View>
     );

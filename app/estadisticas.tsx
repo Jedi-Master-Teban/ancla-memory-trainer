@@ -185,37 +185,39 @@ export default function Estadisticas() {
 
       {insightsVisibles.length > 0 && (
         <View style={estilos.bloqueInsights}>
-          {insightsVisibles.map((ins, i) => (
-            <View
-              key={i}
-              style={[
-                estilos.insight,
-                {
-                  backgroundColor:
-                    ins.tipo === 'alerta'
-                      ? '#FEF3C7'
-                      : ins.tipo === 'positivo'
-                      ? '#D1FAE5'
-                      : ins.tipo === 'motivacion'
-                      ? '#DBEAFE'
-                      : t.card,
-                  borderLeftColor:
-                    ins.tipo === 'alerta'
-                      ? '#F59E0B'
-                      : ins.tipo === 'positivo'
-                      ? '#10B981'
-                      : ins.tipo === 'motivacion'
-                      ? '#3B82F6'
-                      : t.borderMuted ?? t.inkMuted,
-                },
-              ]}
-            >
-              <Text style={[estilos.insightTitulo, { color: t.ink }]}>{ins.titulo}</Text>
-              {ins.detalle && (
-                <Text style={[estilos.insightDetalle, { color: t.inkMuted }]}>{ins.detalle}</Text>
-              )}
-            </View>
-          ))}
+          {insightsVisibles.map((ins, i) => {
+            // Colores fijos por tipo para legibilidad cross-tema. En
+            // lugar de depender de t.ink/t.inkMuted (que cambian entre
+            // temas), forzamos paleta explícita por tipo:
+            //   alerta      → ámbar / texto marrón oscuro
+            //   positivo    → verde / texto verde oscuro
+            //   motivacion  → azul  / texto azul oscuro
+            //   neutral     → fondo del tema
+            const coloresPorTipo = {
+              alerta: { fondo: '#FEF3C7', acento: '#92400E', texto: '#78350F' },
+              positivo: { fondo: '#D1FAE5', acento: '#065F46', texto: '#064E3B' },
+              motivacion: { fondo: '#DBEAFE', acento: '#1E40AF', texto: '#1E3A8A' },
+              neutral: { fondo: t.card, acento: t.borderMuted ?? t.inkMuted, texto: t.ink },
+            } as const;
+            const pal = coloresPorTipo[ins.tipo];
+            return (
+              <View
+                key={i}
+                style={[
+                  estilos.insight,
+                  {
+                    backgroundColor: pal.fondo,
+                    borderLeftColor: pal.acento,
+                  },
+                ]}
+              >
+                <Text style={[estilos.insightTitulo, { color: pal.texto }]}>{ins.titulo}</Text>
+                {ins.detalle && (
+                  <Text style={[estilos.insightDetalle, { color: pal.texto, opacity: 0.85 }]}>{ins.detalle}</Text>
+                )}
+              </View>
+            );
+          })}
         </View>
       )}
 

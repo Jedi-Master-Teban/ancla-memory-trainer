@@ -1,6 +1,7 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { HeaderFlotante } from '../../src/components/HeaderFlotante';
 import { EditorNaipe } from '../../src/components/EditorNaipe';
 import { obtenerBD } from '../../src/db/client';
 import { actualizarContenidoTarjeta, listarTarjetasPorMazo, obtenerMazoPorCategoria } from '../../src/db/repository';
@@ -71,7 +72,7 @@ export default function NaipesIndex() {
 
   if (cargando) {
     return (
-      <View style={estilos.centro}>
+      <View  style={estilos.centro}>
         <ActivityIndicator color="#ffffff" />
       </View>
     );
