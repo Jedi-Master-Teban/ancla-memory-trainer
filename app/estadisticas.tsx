@@ -1,14 +1,19 @@
 import { Link, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as Sharing from 'expo-sharing';
+import { LineChart } from '../src/components/LineChart';
 import { RadarChart } from '../src/components/RadarChart';
 import { TarjetasProblematicas } from '../src/components/TarjetasProblematicas';
 import { obtenerBD, rutaArchivoBD } from '../src/db/client';
-import { obtenerPanelRetencion } from '../src/db/repository';
+import { listarDiasPractica, obtenerPanelRetencion } from '../src/db/repository';
+import type { ConexionBD, FilaDiaPractica } from '../src/db/tipos';
 import type { Categoria } from '../src/db/tipos';
 import type { PanelRetencion, Ventana } from '../src/domain/estadisticas/retencion';
+import { generarInsights, type Insight } from '../src/domain/estadisticas/insights';
+import { retencionPorCategoria, type RetencionPorCategoria } from '../src/domain/estadisticas/retencion-categorias';
 import { useTema } from '../src/stores/tema';
+import type { PuntoLinea, PeriodoLineChart } from '../src/components/line-chart-logic';
 
 const ETIQUETA_CATEGORIA: Record<Categoria, string> = {
   colgadero: 'Colgadero',
@@ -41,18 +46,47 @@ export default function Estadisticas() {
   const [ventana, setVentana] = useState<Ventana>('30d');
   const [panel, setPanel] = useState<PanelRetencion | null>(null);
   const [ahoraCarga, setAhoraCarga] = useState<Date | null>(null);
+  const [dias, setDias] = useState<FilaDiaPractica[]>([]);
+  const [retencion, setRetencion] = useState<RetencionPorCategoria>({
+    colgadero: 0, naipe: 0, lista_item: 0, numero: 0,
+  });
+  const [periodoLinea, setPeriodoLinea] = useState<PeriodoLineChart>('dia');
   const { colores: t } = useTema();
+
+  const puntosLinea: PuntoLinea[] = useMemo(
+    () => dias.map((d) => ({ fecha: d.fecha_local, valor: d.tarjetas_revisadas })),
+    [dias],
+  );
+
+  const insightsVisibles: Insight[] = useMemo(
+    () =>
+      generarInsights({
+        retencion,
+        xpSemanaActual: 0,
+        xpSemanaAnterior: 0,
+        diasConsecutivos: 0,
+        xpHoy: 0,
+        metaDiaria: 20,
+      }),
+    [retencion],
+  );
 
   const cargar = useCallback(() => {
     let cancelado = false;
     (async () => {
       try {
-        const conexion = await obtenerBD();
+        const conexion: ConexionBD = await obtenerBD();
         const ahora = new Date();
-        const panelCalculado = await obtenerPanelRetencion(conexion, ventana, ahora);
+        const [panelCalculado, diasPractica, retencionCats] = await Promise.all([
+          obtenerPanelRetencion(conexion, ventana, ahora),
+          listarDiasPractica(conexion),
+          retencionPorCategoria(conexion, ventana, ahora),
+        ]);
         if (cancelado) return;
         setAhoraCarga(ahora);
         setPanel(panelCalculado);
+        setDias(diasPractica);
+        setRetencion(retencionCats);
         setCargando(false);
       } catch (e) {
         if (!cancelado) {
@@ -135,6 +169,56 @@ export default function Estadisticas() {
         </View>
       )}
 
+      {puntosLinea.length > 0 && (
+        <View style={[estilos.bloqueLinea, { backgroundColor: t.card, borderColor: t.borderMuted ?? 'transparent' }]}>
+          <LineChart
+            puntos={puntosLinea}
+            titulo="Tarjetas por día"
+            subtitulo="XP ganado (cada tarjeta = 1 XP)"
+            metaY={20}
+            periodos={['dia', 'semana', 'mes', 'todo']}
+            periodoActivo={periodoLinea}
+            onCambiarPeriodo={setPeriodoLinea}
+          />
+        </View>
+      )}
+
+      {insightsVisibles.length > 0 && (
+        <View style={estilos.bloqueInsights}>
+          {insightsVisibles.map((ins, i) => (
+            <View
+              key={i}
+              style={[
+                estilos.insight,
+                {
+                  backgroundColor:
+                    ins.tipo === 'alerta'
+                      ? '#FEF3C7'
+                      : ins.tipo === 'positivo'
+                      ? '#D1FAE5'
+                      : ins.tipo === 'motivacion'
+                      ? '#DBEAFE'
+                      : t.card,
+                  borderLeftColor:
+                    ins.tipo === 'alerta'
+                      ? '#F59E0B'
+                      : ins.tipo === 'positivo'
+                      ? '#10B981'
+                      : ins.tipo === 'motivacion'
+                      ? '#3B82F6'
+                      : t.borderMuted ?? t.inkMuted,
+                },
+              ]}
+            >
+              <Text style={[estilos.insightTitulo, { color: t.ink }]}>{ins.titulo}</Text>
+              {ins.detalle && (
+                <Text style={[estilos.insightDetalle, { color: t.inkMuted }]}>{ins.detalle}</Text>
+              )}
+            </View>
+          ))}
+        </View>
+      )}
+
       {panel.porCategoria.map((metricas) => (
         <View key={metricas.categoria} style={estilos.bloqueCategoria}>
           <Text style={estilos.nombreCategoria}>{ETIQUETA_CATEGORIA[metricas.categoria]}</Text>
@@ -168,6 +252,11 @@ const estilos = StyleSheet.create({
   contenedorScroll: { flex: 1, backgroundColor: '#1e1e2e' },
   contenido: { padding: 24, gap: 12 },
   bloqueRadar: { borderRadius: 16, borderWidth: 1, padding: 8, alignItems: 'center' },
+  bloqueLinea: { borderRadius: 16, borderWidth: 1, padding: 4 },
+  bloqueInsights: { gap: 8 },
+  insight: { borderRadius: 12, borderLeftWidth: 4, padding: 14 },
+  insightTitulo: { fontSize: 14, fontWeight: '700', marginBottom: 4 },
+  insightDetalle: { fontSize: 12 },
   centro: { flex: 1, backgroundColor: '#1e1e2e', alignItems: 'center', justifyContent: 'center' },
   error: { color: '#f38ba8', padding: 24, textAlign: 'center' },
   filaVentanas: { flexDirection: 'row', gap: 8, marginBottom: 8 },
