@@ -1,6 +1,6 @@
 import { Link, router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { IndicadorRacha } from '../src/components/IndicadorRacha';
 import { IconoAjustes, IconoColgadero, IconoLista, IconoNaipe, IconoNumero } from '../src/components/iconos';
 import { obtenerBD } from '../src/db/client';
@@ -69,7 +69,7 @@ export default function Index() {
   const { tema, colores: t, tipografia } = useTema();
   const esArcade = tema === 'arcade';
 
-  const cargar = useCallback(() => {
+  const cargarInterno = useCallback((resolver?: () => void) => {
     let cancelado = false;
     (async () => {
       try {
@@ -84,7 +84,10 @@ export default function Index() {
           contarElementosPorCategoria(db),
           contarPendientesPorCategoria(db, ahora),
         ]);
-        if (cancelado) return;
+        if (cancelado) {
+          resolver?.();
+          return;
+        }
         const elementosPorCategoria = new Map(elementos.map((e) => [e.categoria, e.elementos]));
         establecer({ resultado: resultadoRacha, config: configRacha, dias });
         setTarjetasHoy(dia?.tarjetas_revisadas ?? 0);
@@ -96,6 +99,8 @@ export default function Index() {
           setError(String(e));
           setCargando(false);
         }
+      } finally {
+        resolver?.();
       }
     })();
     return () => {
@@ -104,7 +109,18 @@ export default function Index() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useFocusEffect(cargar);
+  /**
+   * Versión que devuelve Promise<void> para RefreshControl (pull-to-refresh).
+   * Envuelve cargarInterno con un Promise que se resuelve cuando termina.
+   */
+  const cargar = useCallback(async (): Promise<void> => {
+    return new Promise<void>((resolver) => {
+      cargarInterno(resolver);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useFocusEffect(cargarInterno);
 
   const metaDiaria = config?.meta_diaria ?? 20;
 
@@ -125,7 +141,19 @@ export default function Index() {
   }
 
   return (
-    <ScrollView style={[estilos.contenedorScroll, { backgroundColor: t.bg }]} contentContainerStyle={estilos.contenido}>
+    <ScrollView
+      style={[estilos.contenedorScroll, { backgroundColor: t.bg }]}
+      contentContainerStyle={estilos.contenido}
+      refreshControl={
+        <RefreshControl
+          refreshing={cargando}
+          onRefresh={cargar}
+          tintColor={t.accent1}
+          colors={[t.accent1]}
+          progressBackgroundColor={t.card}
+        />
+      }
+    >
       <View style={estilos.filaSuperior}>
         <Pressable
           onPress={() => router.push('/ajustes')}
