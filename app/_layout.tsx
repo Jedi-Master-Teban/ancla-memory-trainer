@@ -11,6 +11,7 @@ import { obtenerBD } from '../src/db/client';
 import { obtenerPreferencias } from '../src/db/repository';
 import { useTema, useTemaStore } from '../src/stores/tema';
 import { TabBarInferior, type TabId } from '../src/components/TabBarInferior';
+import { FAB } from '../src/components/FAB';
 import { useUIStore } from '../src/stores/ui';
 
 SplashScreen.preventAutoHideAsync();
@@ -138,6 +139,7 @@ export default function RootLayout() {
       {!tabBarOculta && tabActiva !== null && (
         <TabBarInferior activa={tabActiva} onChange={cambiarTab} />
       )}
+      {!tabBarOculta && <FAB />}
     </SafeAreaProvider>
   );
 }
