@@ -10,6 +10,7 @@ import {
   obtenerPreferencias,
 } from '../src/db/repository';
 import type { ConexionBD } from '../src/db/tipos';
+import { PreviewEstilo } from '../src/components/PreviewEstilo';
 import type { TemaId } from '../src/tema/colores';
 import type { TipografiaId } from '../src/tema/tipografia';
 import { useTema, useTemaStore } from '../src/stores/tema';
@@ -118,31 +119,16 @@ export default function Ajustes() {
       automaticallyAdjustKeyboardInsets
     >
       <Text style={[estilos.subtitulo, { color: t.ink, fontFamily: tipografia.display }]}>Estilo visual</Text>
-      {OPCIONES_TEMA.map((opcion) => {
-        const seleccionada = tema === opcion.id;
-        return (
-          <Pressable
-            key={opcion.id}
-            onPress={() => elegirTema(opcion.id)}
-            style={[
-              estilos.filaOpcion,
-              { backgroundColor: t.card, borderColor: seleccionada ? t.accent1 : 'transparent' },
-            ]}
-          >
-            <View style={[estilos.swatch, { backgroundColor: t.accent1 }]} />
-            <View style={estilos.textoOpcion}>
-              <Text style={[estilos.etiquetaOpcion, { color: t.ink, fontFamily: tipografia.display }]}>{opcion.etiqueta}</Text>
-              <Text style={[estilos.descripcionOpcion, { color: t.inkMuted }]}>{opcion.descripcion}</Text>
-            </View>
-            <View
-              style={[
-                estilos.check,
-                { borderColor: seleccionada ? t.accent1 : t.inkMuted, backgroundColor: seleccionada ? t.accent1 : 'transparent' },
-              ]}
-            />
-          </Pressable>
-        );
-      })}
+      {OPCIONES_TEMA.map((opcion) => (
+        <PreviewEstilo
+          key={opcion.id}
+          temaAVista={opcion.id}
+          etiqueta={opcion.etiqueta}
+          descripcion={opcion.descripcion}
+          activa={tema === opcion.id}
+          onPress={() => elegirTema(opcion.id)}
+        />
+      ))}
 
       <Text style={[estilos.subtitulo, { color: t.ink, fontFamily: tipografia.display }]}>Tipografía</Text>
       {OPCIONES_TIPOGRAFIA.map((opcion) => {
