@@ -1,12 +1,14 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as Sharing from 'expo-sharing';
+import { RadarChart } from '../src/components/RadarChart';
 import { TarjetasProblematicas } from '../src/components/TarjetasProblematicas';
 import { obtenerBD, rutaArchivoBD } from '../src/db/client';
 import { obtenerPanelRetencion } from '../src/db/repository';
 import type { Categoria } from '../src/db/tipos';
 import type { PanelRetencion, Ventana } from '../src/domain/estadisticas/retencion';
+import { useTema } from '../src/stores/tema';
 
 const ETIQUETA_CATEGORIA: Record<Categoria, string> = {
   colgadero: 'Colgadero',
@@ -39,6 +41,7 @@ export default function Estadisticas() {
   const [ventana, setVentana] = useState<Ventana>('30d');
   const [panel, setPanel] = useState<PanelRetencion | null>(null);
   const [ahoraCarga, setAhoraCarga] = useState<Date | null>(null);
+  const { colores: t } = useTema();
 
   const cargar = useCallback(() => {
     let cancelado = false;
@@ -95,7 +98,19 @@ export default function Estadisticas() {
   }
 
   return (
-    <ScrollView style={estilos.contenedorScroll} contentContainerStyle={estilos.contenido}>
+    <ScrollView
+      style={estilos.contenedorScroll}
+      contentContainerStyle={estilos.contenido}
+      refreshControl={
+        <RefreshControl
+          refreshing={cargando}
+          onRefresh={cargar}
+          tintColor={t.accent1}
+          colors={[t.accent1]}
+          progressBackgroundColor={t.card}
+        />
+      }
+    >
       <View style={estilos.filaVentanas}>
         {VENTANAS.map(({ valor, etiqueta }) => (
           <Pressable
@@ -107,6 +122,18 @@ export default function Estadisticas() {
           </Pressable>
         ))}
       </View>
+
+      {panel.porCategoria.length >= 3 && (
+        <View style={[estilos.bloqueRadar, { backgroundColor: t.card, borderColor: t.borderMuted ?? 'transparent' }]}>
+          <RadarChart
+            etiquetas={panel.porCategoria.map((m) => ETIQUETA_CATEGORIA[m.categoria])}
+            valores={panel.porCategoria.map((m) => m.porcentajeRetencion ?? 0)}
+            tamano={280}
+            titulo="Retención por categoría"
+            subtitulo={`Últimos ${ventana === 'todo' ? 'todos los días' : ventana === '7d' ? '7 días' : '30 días'}`}
+          />
+        </View>
+      )}
 
       {panel.porCategoria.map((metricas) => (
         <View key={metricas.categoria} style={estilos.bloqueCategoria}>
@@ -140,6 +167,7 @@ export default function Estadisticas() {
 const estilos = StyleSheet.create({
   contenedorScroll: { flex: 1, backgroundColor: '#1e1e2e' },
   contenido: { padding: 24, gap: 12 },
+  bloqueRadar: { borderRadius: 16, borderWidth: 1, padding: 8, alignItems: 'center' },
   centro: { flex: 1, backgroundColor: '#1e1e2e', alignItems: 'center', justifyContent: 'center' },
   error: { color: '#f38ba8', padding: 24, textAlign: 'center' },
   filaVentanas: { flexDirection: 'row', gap: 8, marginBottom: 8 },
