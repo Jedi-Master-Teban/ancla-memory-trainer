@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, usePathname, useRouter } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
@@ -10,6 +10,8 @@ import { Karla_400Regular } from '@expo-google-fonts/karla/400Regular';
 import { obtenerBD } from '../src/db/client';
 import { obtenerPreferencias } from '../src/db/repository';
 import { useTema, useTemaStore } from '../src/stores/tema';
+import { TabBarInferior, type TabId } from '../src/components/TabBarInferior';
+import { useUIStore } from '../src/stores/ui';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -46,6 +48,36 @@ export default function RootLayout() {
   });
   const [temaListo, setTemaListo] = useState(false);
   const { colores: t } = useTema();
+  const router = useRouter();
+  const pathname = usePathname();
+  const tabBarOculta = useUIStore((s) => s.tabBarOculta);
+
+  /**
+   * Mapeo ruta actual → tab activa. Las rutas que NO son top-level (drill-down
+   * como /colgadero/flash o /numeros/nuevo) caen en `null` y la tab bar se
+   * oculta automáticamente. Las 4 rutas globales son:
+   *   - '/'               → inicio
+   *   - '/editar'         → listar categorías y entrar a editar
+   *   - '/estadisticas'   → stats
+   *   - '/ajustes'        → ajustes
+   */
+  const tabActiva: TabId | null = (() => {
+    if (pathname === '/' || pathname === '/index') return 'inicio';
+    if (pathname === '/editar') return 'editar';
+    if (pathname === '/estadisticas') return 'stats';
+    if (pathname === '/ajustes') return 'ajustes';
+    return null;
+  })();
+
+  const cambiarTab = useCallback((tab: TabId) => {
+    const ruta: Record<TabId, '/editar' | '/' | '/estadisticas' | '/ajustes'> = {
+      inicio: '/',
+      editar: '/editar',
+      stats: '/estadisticas',
+      ajustes: '/ajustes',
+    };
+    router.push(ruta[tab]);
+  }, [router]);
 
   const cargarTema = useCallback(async () => {
     const db = await obtenerBD();
@@ -79,6 +111,7 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="index" options={{ title: 'Ancla' }} />
+        <Stack.Screen name="editar" options={{ title: 'Editar categorías', headerBackTitle: 'Inicio' }} />
         <Stack.Screen name="colgadero/index" options={{ title: 'Colgadero', headerBackTitle: 'Inicio' }} />
         <Stack.Screen name="colgadero/flash" options={{ title: 'Fonética Flash' }} />
         <Stack.Screen name="colgadero/reverso" options={{ title: 'Reverso' }} />
@@ -102,6 +135,9 @@ export default function RootLayout() {
         <Stack.Screen name="crear/[categoria]" options={{ title: 'Crear' }} />
         <Stack.Screen name="ajustes" options={{ title: 'Ajustes', headerBackTitle: 'Inicio' }} />
       </Stack>
+      {!tabBarOculta && tabActiva !== null && (
+        <TabBarInferior activa={tabActiva} onChange={cambiarTab} />
+      )}
     </SafeAreaProvider>
   );
 }
