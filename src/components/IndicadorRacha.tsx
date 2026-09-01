@@ -4,6 +4,7 @@ import { MorphIcon } from 'morphicons/react-native';
 import type { MorphHandle } from 'morphicons/react-native';
 import type { EstadoRacha } from '../domain/racha/calculo';
 import { useTema } from '../stores/tema';
+import { Odometro } from './Odometro';
 
 interface Props {
   diasConsecutivos: number;
@@ -101,6 +102,8 @@ export function IndicadorRacha({ diasConsecutivos, estado, tamano = 'grande' }: 
   const esGrande = tamano === 'grande';
   const tamanoLlama = esGrande ? 56 : 28;
   const colorLlama = estado === 'rota' ? t.inkMuted : t.flameOuterEnd;
+  const fontSizeDias = esGrande ? 56 : 28;
+  const anchoDigito = esGrande ? 34 : 17;
 
   return (
     <View style={esGrande ? estilos.contenedorGrande : estilos.contenedor}>
@@ -126,11 +129,17 @@ export function IndicadorRacha({ diasConsecutivos, estado, tamano = 'grande' }: 
           />
         </Animated.View>
       </View>
-      <Text
-        style={[esGrande ? estilos.diasGrande : estilos.dias, { color: t.ink, fontFamily: tipografia.display }]}
-      >
-        {diasConsecutivos}
-      </Text>
+      <View style={esGrande ? estilos.diasWrapGrande : estilos.diasWrap}>
+        <Odometro
+          valor={diasConsecutivos}
+          color={t.ink}
+          fontFamily={tipografia.display}
+          fontSize={fontSizeDias}
+          fontWeight="700"
+          anchoDigito={anchoDigito}
+          altoDigito={Math.round(fontSizeDias * 1.05)}
+        />
+      </View>
     </View>
   );
 }
@@ -138,8 +147,10 @@ export function IndicadorRacha({ diasConsecutivos, estado, tamano = 'grande' }: 
 const estilos = StyleSheet.create({
   contenedor: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dias: { fontSize: 28, fontWeight: '700' },
+  diasWrap: { flexDirection: 'row', alignItems: 'center' },
   contenedorGrande: { alignItems: 'center' },
   diasGrande: { fontSize: 56, fontWeight: '700', marginTop: 4 },
+  diasWrapGrande: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
   halo: {
     position: 'absolute',
     alignSelf: 'center',
