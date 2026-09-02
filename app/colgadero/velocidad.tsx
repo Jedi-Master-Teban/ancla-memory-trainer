@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { HeaderFlotante } from '../../src/components/HeaderFlotante';
 import { Flashcard } from '../../src/components/Flashcard';
 import { obtenerBD } from '../../src/db/client';
 import {
@@ -129,27 +130,30 @@ export default function ColgaderoVelocidad() {
   const transcurridoSegundos = Math.round((ahoraMs - inicioMs) / 1000);
 
   return (
-    <View style={estilos.contenedor}>
-      <Text style={estilos.cronometro}>{transcurridoSegundos}s</Text>
-      <Text style={estilos.progreso}>
-        {indice + 1} / {tarjetas.length}
-      </Text>
-      <Flashcard frente={actual.contenido_frente} reverso={actual.contenido_reverso} revelada={revelada} />
-      {!revelada ? (
-        <Pressable onPress={revelar} style={estilos.botonRevelar}>
-          <Text style={estilos.textoRevelar}>Ver respuesta</Text>
-        </Pressable>
-      ) : (
-        <View style={estilos.filaAutoeval}>
-          <Pressable onPress={() => onAutoevaluar(false)} style={[estilos.botonAutoeval, estilos.fallo]}>
-            <Text style={estilos.textoRevelar}>Fallé</Text>
+    <>
+      <HeaderFlotante titulo="Velocidad" volverA="/colgadero" />
+      <View style={estilos.contenedor}>
+        <Text style={estilos.cronometro}>{transcurridoSegundos}s</Text>
+        <Text style={estilos.progreso}>
+          {indice + 1} / {tarjetas.length}
+        </Text>
+        <Flashcard frente={actual.contenido_frente} reverso={actual.contenido_reverso} revelada={revelada} />
+        {!revelada ? (
+          <Pressable onPress={revelar} style={estilos.botonRevelar}>
+            <Text style={estilos.textoRevelar}>Ver respuesta</Text>
           </Pressable>
-          <Pressable onPress={() => onAutoevaluar(true)} style={[estilos.botonAutoeval, estilos.acierto]}>
-            <Text style={estilos.textoRevelar}>Acerté</Text>
-          </Pressable>
-        </View>
-      )}
-    </View>
+        ) : (
+          <View style={estilos.filaAutoeval}>
+            <Pressable onPress={() => onAutoevaluar(false)} style={[estilos.botonAutoeval, estilos.fallo]}>
+              <Text style={estilos.textoRevelar}>Fallé</Text>
+            </Pressable>
+            <Pressable onPress={() => onAutoevaluar(true)} style={[estilos.botonAutoeval, estilos.acierto]}>
+              <Text style={estilos.textoRevelar}>Acerté</Text>
+            </Pressable>
+          </View>
+        )}
+      </View>
+    </>
   );
 }
 

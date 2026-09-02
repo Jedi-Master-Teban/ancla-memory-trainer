@@ -71,33 +71,36 @@ export default function ListasIndex() {
   }
 
   return (
-    <ScrollView style={estilos.contenedor} contentContainerStyle={estilos.contenido}>
-      <View style={estilos.filaCrear}>
-        <TextInput
-          value={nombreNueva}
-          onChangeText={setNombreNueva}
-          placeholder="Nombre de la lista nueva..."
-          placeholderTextColor="#6c7086"
-          style={estilos.input}
-        />
-        <Pressable onPress={crear} style={estilos.botonCrear}>
-          <Text style={estilos.textoBotonCrear}>Crear</Text>
-        </Pressable>
-      </View>
+    <>
+      <HeaderFlotante titulo="Listas" volverA="/" />
+      <ScrollView style={estilos.contenedor} contentContainerStyle={estilos.contenido}>
+        <View style={estilos.filaCrear}>
+          <TextInput
+            value={nombreNueva}
+            onChangeText={setNombreNueva}
+            placeholder="Nombre de la lista nueva..."
+            placeholderTextColor="#6c7086"
+            style={estilos.input}
+          />
+          <Pressable onPress={crear} style={estilos.botonCrear}>
+            <Text style={estilos.textoBotonCrear}>Crear</Text>
+          </Pressable>
+        </View>
 
-      {listas.length === 0 ? (
-        <Text style={estilos.aviso}>Todavía no hay listas. Crea la primera arriba.</Text>
-      ) : (
-        listas.map((lista) => (
-          <Link key={lista.id} href={`/listas/${lista.id}`} style={estilos.filaLista}>
-            <Text style={estilos.nombreLista}>{lista.nombre}</Text>
-            <Text style={estilos.detalleLista}>
-              {conteos[lista.id] ?? 0} objetos · {lista.segundos_estudio}s de estudio
-            </Text>
-          </Link>
-        ))
-      )}
-    </ScrollView>
+        {listas.length === 0 ? (
+          <Text style={estilos.aviso}>Todavía no hay listas. Crea la primera arriba.</Text>
+        ) : (
+          listas.map((lista) => (
+            <Link key={lista.id} href={`/listas/${lista.id}`} style={estilos.filaLista}>
+              <Text style={estilos.nombreLista}>{lista.nombre}</Text>
+              <Text style={estilos.detalleLista}>
+                {conteos[lista.id] ?? 0} objetos · {lista.segundos_estudio}s de estudio
+              </Text>
+            </Link>
+          ))
+        )}
+      </ScrollView>
+    </>
   );
 }
 

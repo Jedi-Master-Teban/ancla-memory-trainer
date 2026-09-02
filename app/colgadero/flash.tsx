@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { HeaderFlotante } from '../../src/components/HeaderFlotante';
 import { BotonesCalificacion } from '../../src/components/BotonesCalificacion';
 import { Flashcard } from '../../src/components/Flashcard';
 import { PausaVisualizacion } from '../../src/components/PausaVisualizacion';
@@ -112,26 +113,29 @@ export default function ColgaderoFlash() {
   const actual = tarjetas[indice];
 
   return (
-    <View style={estilos.contenedor}>
-      <Text style={estilos.progreso}>
-        {indice + 1} / {tarjetas.length}
-      </Text>
-      <Flashcard
-        frente={actual.contenido_frente}
-        reverso={actual.contenido_reverso}
-        revelada={revelada}
-        explicacion={revelada ? explicar(actual.contenido_reverso) : undefined}
-      />
-      {!revelada ? (
-        <PausaVisualizacion clave={actual.id}>
-          <Pressable onPress={revelar} style={estilos.botonRevelar}>
-            <Text style={estilos.textoRevelar}>Ver respuesta</Text>
-          </Pressable>
-        </PausaVisualizacion>
-      ) : (
-        <BotonesCalificacion onCalificar={onCalificar} />
-      )}
-    </View>
+    <>
+      <HeaderFlotante titulo="Fonética Flash" volverA="/colgadero" />
+      <View style={estilos.contenedor}>
+        <Text style={estilos.progreso}>
+          {indice + 1} / {tarjetas.length}
+        </Text>
+        <Flashcard
+          frente={actual.contenido_frente}
+          reverso={actual.contenido_reverso}
+          revelada={revelada}
+          explicacion={revelada ? explicar(actual.contenido_reverso) : undefined}
+        />
+        {!revelada ? (
+          <PausaVisualizacion clave={actual.id}>
+            <Pressable onPress={revelar} style={estilos.botonRevelar}>
+              <Text style={estilos.textoRevelar}>Ver respuesta</Text>
+            </Pressable>
+          </PausaVisualizacion>
+        ) : (
+          <BotonesCalificacion onCalificar={onCalificar} />
+        )}
+      </View>
+    </>
   );
 }
 

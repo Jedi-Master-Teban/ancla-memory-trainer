@@ -87,42 +87,45 @@ export default function NaipesIndex() {
   }
 
   return (
-    <ScrollView style={estilos.contenedor} contentContainerStyle={estilos.contenido}>
-      {filas.length === 0 ? (
-        <Text style={estilos.aviso}>
-          Todavía no hay mazo naipe sembrado — falta completar src/seed/naipes.ts y correr la migración.
-        </Text>
-      ) : (
-        MODOS.map((modo) => (
-          <Link key={modo.href} href={modo.href} style={estilos.tarjetaModo}>
-            <Text style={estilos.etiqueta}>{modo.etiqueta}</Text>
-            <Text style={estilos.descripcion}>{modo.descripcion}</Text>
-          </Link>
-        ))
-      )}
+      <>
+        <HeaderFlotante titulo="Naipes" volverA="/" />
+        <ScrollView style={estilos.contenedor} contentContainerStyle={estilos.contenido}>
+        {filas.length === 0 ? (
+          <Text style={estilos.aviso}>
+            Todavía no hay mazo naipe sembrado — falta completar src/seed/naipes.ts y correr la migración.
+          </Text>
+        ) : (
+          MODOS.map((modo) => (
+            <Link key={modo.href} href={modo.href} style={estilos.tarjetaModo}>
+              <Text style={estilos.etiqueta}>{modo.etiqueta}</Text>
+              <Text style={estilos.descripcion}>{modo.descripcion}</Text>
+            </Link>
+          ))
+        )}
 
-      {filas.length > 0 ? (
-        <>
-          <Text style={estilos.subtitulo}>Las 52 cartas</Text>
-          {filas.map(({ tarjeta, carta }) =>
-            editando === tarjeta.id ? (
-              <EditorNaipe
-                key={tarjeta.id}
-                carta={carta}
-                palabraActual={tarjeta.contenido_reverso}
-                onGuardar={(palabra) => guardarPalabra(tarjeta.id, palabra)}
-              />
-            ) : (
-              <Pressable key={tarjeta.id} onPress={() => setEditando(tarjeta.id)} style={estilos.filaCarta}>
-                <Text style={estilos.etiquetaCarta}>{etiquetaCarta(carta)}</Text>
-                <Text style={estilos.palabraCarta}>{tarjeta.contenido_reverso || 'sin asignar'}</Text>
-              </Pressable>
-            )
-          )}
-        </>
-      ) : null}
-    </ScrollView>
-  );
+        {filas.length > 0 ? (
+          <>
+            <Text style={estilos.subtitulo}>Las 52 cartas</Text>
+            {filas.map(({ tarjeta, carta }) =>
+              editando === tarjeta.id ? (
+                <EditorNaipe
+                  key={tarjeta.id}
+                  carta={carta}
+                  palabraActual={tarjeta.contenido_reverso}
+                  onGuardar={(palabra) => guardarPalabra(tarjeta.id, palabra)}
+                />
+              ) : (
+                <Pressable key={tarjeta.id} onPress={() => setEditando(tarjeta.id)} style={estilos.filaCarta}>
+                  <Text style={estilos.etiquetaCarta}>{etiquetaCarta(carta)}</Text>
+                  <Text style={estilos.palabraCarta}>{tarjeta.contenido_reverso || 'sin asignar'}</Text>
+                </Pressable>
+              )
+            )}
+          </>
+        ) : null}
+        </ScrollView>
+      </>
+    );
 }
 
 const estilos = StyleSheet.create({

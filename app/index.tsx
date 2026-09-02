@@ -2,7 +2,7 @@ import { Link, router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { IndicadorRacha } from '../src/components/IndicadorRacha';
-import { IconoAjustes, IconoColgadero, IconoLista, IconoNaipe, IconoNumero } from '../src/components/iconos';
+import { IconoColgadero, IconoLista, IconoNaipe, IconoNumero } from '../src/components/iconos';
 import { obtenerBD } from '../src/db/client';
 import {
   calcularRachaActual,
@@ -154,20 +154,6 @@ export default function Index() {
         />
       }
     >
-      <View style={estilos.filaSuperior}>
-        <Pressable
-          onPress={() => router.push('/ajustes')}
-          style={[
-            estilos.botonAjustes,
-            esArcade
-              ? { ...cardStyle(tema), borderRadius: 12 }
-              : { backgroundColor: t.card, borderRadius: 2, borderWidth: 1, borderColor: t.borderMuted },
-          ]}
-        >
-          <IconoAjustes color={t.ink} />
-        </Pressable>
-      </View>
-
       <View
         style={[
           estilos.tarjetaRacha,
@@ -274,10 +260,6 @@ export default function Index() {
           {totalPendientes > 0 ? 'Practicar ahora' : 'Todo al día — practicar de todas formas'}
         </Text>
       </Pressable>
-
-      <Link href="/estadisticas" style={[estilos.enlaceEstadisticas, { color: t.inkMuted, fontFamily: tipografia.body }]}>
-        Ver estadísticas →
-      </Link>
     </ScrollView>
   );
 }
@@ -287,8 +269,6 @@ const estilos = StyleSheet.create({
   contenido: { padding: 24, gap: 18, paddingBottom: 160 },
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   error: { padding: 24, textAlign: 'center' },
-  filaSuperior: { flexDirection: 'row', justifyContent: 'flex-end' },
-  botonAjustes: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   tarjetaRacha: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 18 },
   enlaceRachaPill: { borderRadius: 999, paddingHorizontal: 16, paddingVertical: 8, fontSize: 13, fontWeight: '600', overflow: 'hidden' },
   enlaceRachaPlano: { fontSize: 13.5, fontStyle: 'italic' },

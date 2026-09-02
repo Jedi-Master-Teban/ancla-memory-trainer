@@ -136,7 +136,7 @@ export default function NumerosRepasar() {
 
   return (
     <>
-      <HeaderFlotante titulo="Repasar" />
+      <HeaderFlotante titulo="Repasar" volverA="/numeros" />
       <View style={estilos.contenedor}>
         <Text style={estilos.progreso}>
           {indice + 1} / {tarjetas.length}

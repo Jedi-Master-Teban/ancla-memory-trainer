@@ -52,6 +52,11 @@ export function FAB() {
 
   const categoriaActual = categoriaDeRuta(pathname);
 
+// No mostrar FAB en la pantalla de inicio
+  if (pathname === '/' || pathname === '/index') {
+    return null;
+  }
+
   const onPressIn = useCallback(() => {
     escalaFab.value = withSpring(0.9, { damping: 18, stiffness: 280 });
   }, [escalaFab]);

@@ -5,10 +5,12 @@ import { useTema } from '../stores/tema';
 
 interface Props {
   titulo: string;
-  /** Si se omite, usa router.back(). Si se pasa, navega a esa ruta. */
+  /** Si se omite, no muestra botón de volver. Si se pasa, navega a esa ruta específica. */
   volverA?: string;
   /** Acciones a la derecha (ej. botón ayuda / ajustes). */
   derecha?: React.ReactNode;
+  /** Mostrar el botón de volver. Por defecto true, pero false en pantalla de inicio. */
+  mostrarVolver?: boolean;
 }
 
 /**
@@ -18,34 +20,35 @@ interface Props {
  * esquinas redondeadas). Compatible con `headerShown: false` en el
  * Stack.
  *
- * La flecha back siempre funciona porque `router.back()` cierra la
- * pantalla actual sin importar el stack state — antes fallaba porque
- * el header nativo no estaba montado (headerShown false) y el botón
- * que se renderizaba en su lugar no estaba cableado.
+ * La flecha back NO usa router.back() porque eso actuaría como el
+ * "regresar" del navegador web (saltando entre pestañas visitadas).
+ * En su lugar, recibe una ruta explícita `volverA` que define a dónde
+ * ir: típicamente la pantalla padre (categoría) o '/' (inicio).
+ * En la pantalla de inicio se oculta con `mostrarVolver={false}`.
  */
-export function HeaderFlotante({ titulo, volverA, derecha }: Props) {
+export function HeaderFlotante({ titulo, volverA, derecha, mostrarVolver = true }: Props) {
   const { colores: t } = useTema();
   const handleVolver = () => {
     if (volverA) {
       router.push(volverA as never);
-    } else {
-      router.back();
     }
   };
   return (
     <View style={estilos.contenedor}>
-      <Pressable
-        onPress={handleVolver}
-        hitSlop={10}
-        accessibilityLabel="Volver"
-        style={({ pressed }) => [
-          estilos.botonVolver,
-          { backgroundColor: t.card, borderColor: t.borderMuted ?? 'transparent' },
-          pressed && { opacity: 0.6 },
-        ]}
-      >
-        <MorphIcon icon="lucide-arrow-left" size={20} color={t.ink} />
-      </Pressable>
+      {mostrarVolver && volverA && (
+        <Pressable
+          onPress={handleVolver}
+          hitSlop={10}
+          accessibilityLabel="Volver"
+          style={({ pressed }) => [
+            estilos.botonVolver,
+            { backgroundColor: t.card, borderColor: t.borderMuted ?? 'transparent' },
+            pressed && { opacity: 0.6 },
+          ]}
+        >
+          <MorphIcon icon="lucide-arrow-left" size={20} color={t.ink} />
+        </Pressable>
+      )}
       <View style={[estilos.pillTitulo, { backgroundColor: t.card, borderColor: t.borderMuted ?? 'transparent' }]}>
         <Text style={[estilos.titulo, { color: t.ink }]} numberOfLines={1}>
           {titulo}

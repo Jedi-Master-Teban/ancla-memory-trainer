@@ -81,7 +81,7 @@ export default function ColgaderoIndex() {
 
   return (
     <>
-      <HeaderFlotante titulo="Colgadero" />
+      <HeaderFlotante titulo="Colgadero" volverA="/" />
       <ScrollView
         style={[estilos.contenedor, { backgroundColor: t.bg }]}
         contentContainerStyle={estilos.contenido}

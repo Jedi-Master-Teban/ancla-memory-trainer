@@ -119,33 +119,36 @@ export default function Practicar() {
   const actual = tarjetas[indice];
 
   return (
-    <View style={estilos.contenedor}>
-      <Text style={estilos.progreso}>
-        {indice + 1} / {tarjetas.length}
-      </Text>
-      <Text style={estilos.insignia}>{ETIQUETA_CATEGORIA[actual.categoria]}</Text>
-      {actual.categoria === 'naipe' ? (
-        <View style={estilos.centroCarta}>
-          <CartaVisual
-            key={actual.id}
-            carta={JSON.parse(actual.metadata_categoria) as MetadataNaipe}
-            palabra={actual.contenido_reverso}
-            revelada={revelada}
-          />
-        </View>
-      ) : (
-        <Flashcard frente={actual.contenido_frente} reverso={actual.contenido_reverso} revelada={revelada} />
-      )}
-      {!revelada ? (
-        <PausaVisualizacion clave={actual.id}>
-          <Pressable onPress={revelar} style={estilos.botonRevelar}>
-            <Text style={estilos.textoRevelar}>Ver respuesta</Text>
-          </Pressable>
-        </PausaVisualizacion>
-      ) : (
-        <BotonesCalificacion onCalificar={onCalificar} />
-      )}
-    </View>
+    <>
+      <HeaderFlotante titulo="Practicar" volverA="/" />
+      <View style={estilos.contenedor}>
+        <Text style={estilos.progreso}>
+          {indice + 1} / {tarjetas.length}
+        </Text>
+        <Text style={estilos.insignia}>{ETIQUETA_CATEGORIA[actual.categoria]}</Text>
+        {actual.categoria === 'naipe' ? (
+          <View style={estilos.centroCarta}>
+            <CartaVisual
+              key={actual.id}
+              carta={JSON.parse(actual.metadata_categoria) as MetadataNaipe}
+              palabra={actual.contenido_reverso}
+              revelada={revelada}
+            />
+          </View>
+        ) : (
+          <Flashcard frente={actual.contenido_frente} reverso={actual.contenido_reverso} revelada={revelada} />
+        )}
+        {!revelada ? (
+          <PausaVisualizacion clave={actual.id}>
+            <Pressable onPress={revelar} style={estilos.botonRevelar}>
+              <Text style={estilos.textoRevelar}>Ver respuesta</Text>
+            </Pressable>
+          </PausaVisualizacion>
+        ) : (
+          <BotonesCalificacion onCalificar={onCalificar} />
+        )}
+      </View>
+    </>
   );
 }
 

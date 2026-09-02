@@ -129,29 +129,32 @@ export default function NaipesVelocidad() {
   const transcurridoSegundos = Math.round((ahoraMs - inicioMs) / 1000);
 
   return (
-    <View style={[estilos.contenedor, { backgroundColor: t.bg }]}>
-      <Text style={[estilos.cronometro, { color: t.accent4 }]}>{transcurridoSegundos}s</Text>
-      <Text style={[estilos.progreso, { color: t.inkMuted }]}>
-        {indice + 1} / {tarjetas.length}
-      </Text>
-      <View style={estilos.centroCarta}>
-        <CartaVisual key={actual.id} carta={{ palo, valor }} palabra={actual.contenido_reverso} revelada={revelada} />
-      </View>
-      {!revelada ? (
-        <Pressable onPress={revelar} style={[estilos.botonRevelar, { backgroundColor: t.accent1 }]}>
-          <Text style={[estilos.textoRevelar, { color: t.inkOnAccent }]}>Ver respuesta</Text>
-        </Pressable>
-      ) : (
-        <View style={estilos.filaAutoeval}>
-          <Pressable onPress={() => onAutoevaluar(false)} style={[estilos.botonAutoeval, { backgroundColor: t.otraVez }]}>
-            <Text style={[estilos.textoRevelar, { color: t.inkOnAccent }]}>Fallé</Text>
-          </Pressable>
-          <Pressable onPress={() => onAutoevaluar(true)} style={[estilos.botonAutoeval, { backgroundColor: t.bien }]}>
-            <Text style={[estilos.textoRevelar, { color: t.inkOnAccent }]}>Acerté</Text>
-          </Pressable>
+    <>
+      <HeaderFlotante titulo="Velocidad" volverA="/naipes" />
+      <View style={[estilos.contenedor, { backgroundColor: t.bg }]}>
+        <Text style={[estilos.cronometro, { color: t.accent4 }]}>{transcurridoSegundos}s</Text>
+        <Text style={[estilos.progreso, { color: t.inkMuted }]}>
+          {indice + 1} / {tarjetas.length}
+        </Text>
+        <View style={estilos.centroCarta}>
+          <CartaVisual key={actual.id} carta={{ palo, valor }} palabra={actual.contenido_reverso} revelada={revelada} />
         </View>
-      )}
-    </View>
+        {!revelada ? (
+          <Pressable onPress={revelar} style={[estilos.botonRevelar, { backgroundColor: t.accent1 }]}>
+            <Text style={[estilos.textoRevelar, { color: t.inkOnAccent }]}>Ver respuesta</Text>
+          </Pressable>
+        ) : (
+          <View style={estilos.filaAutoeval}>
+            <Pressable onPress={() => onAutoevaluar(false)} style={[estilos.botonAutoeval, { backgroundColor: t.otraVez }]}>
+              <Text style={[estilos.textoRevelar, { color: t.inkOnAccent }]}>Fallé</Text>
+            </Pressable>
+            <Pressable onPress={() => onAutoevaluar(true)} style={[estilos.botonAutoeval, { backgroundColor: t.bien }]}>
+              <Text style={[estilos.textoRevelar, { color: t.inkOnAccent }]}>Acerté</Text>
+            </Pressable>
+          </View>
+        )}
+      </View>
+    </>
   );
 }
 

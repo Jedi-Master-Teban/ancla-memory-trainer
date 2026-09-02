@@ -111,21 +111,24 @@ export default function PracticaLibre() {
   const actual = tarjetas[indice];
 
   return (
-    <View style={estilos.contenedor}>
-      <Text style={estilos.progreso}>
-        {indice + 1} / {tarjetas.length} · práctica libre
-      </Text>
-      <Flashcard frente={actual.contenido_frente} reverso={actual.contenido_reverso} revelada={revelada} />
-      {!revelada ? (
-        <PausaVisualizacion clave={actual.id}>
-          <Pressable onPress={revelar} style={estilos.botonRevelar}>
-            <Text style={estilos.textoRevelar}>Ver respuesta</Text>
-          </Pressable>
-        </PausaVisualizacion>
-      ) : (
-        <BotonesCalificacion onCalificar={onCalificar} />
-      )}
-    </View>
+    <>
+      <HeaderFlotante titulo="Práctica libre" volverA="/" />
+      <View style={estilos.contenedor}>
+        <Text style={estilos.progreso}>
+          {indice + 1} / {tarjetas.length} · práctica libre
+        </Text>
+        <Flashcard frente={actual.contenido_frente} reverso={actual.contenido_reverso} revelada={revelada} />
+        {!revelada ? (
+          <PausaVisualizacion clave={actual.id}>
+            <Pressable onPress={revelar} style={estilos.botonRevelar}>
+              <Text style={estilos.textoRevelar}>Ver respuesta</Text>
+            </Pressable>
+          </PausaVisualizacion>
+        ) : (
+          <BotonesCalificacion onCalificar={onCalificar} />
+        )}
+      </View>
+    </>
   );
 }
 

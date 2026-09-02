@@ -110,79 +110,82 @@ export default function NumerosIndex() {
   }
 
   return (
-    <ScrollView style={estilos.contenedor} contentContainerStyle={estilos.contenido}>
-      <View style={estilos.filaBotones}>
-        {numeros.length > 0 ? (
-          <Link href="/numeros/repasar" style={[estilos.boton, estilos.botonRepasar]}>
-            <Text style={estilos.textoBoton}>Repasar</Text>
-          </Link>
-        ) : null}
-      </View>
+    <>
+      <HeaderFlotante titulo="Números" volverA="/" />
+      <ScrollView style={estilos.contenedor} contentContainerStyle={estilos.contenido}>
+        <View style={estilos.filaBotones}>
+          {numeros.length > 0 ? (
+            <Link href="/numeros/repasar" style={[estilos.boton, estilos.botonRepasar]}>
+              <Text style={estilos.textoBoton}>Repasar</Text>
+            </Link>
+          ) : null}
+        </View>
 
-      {numeros.length === 0 ? (
-        <Text style={estilos.aviso}>Todavía no hay números importantes guardados.</Text>
-      ) : (
-        numeros.map((numero) =>
-          editando === numero.id ? (
-            <View key={numero.id} style={estilos.filaEdicion}>
-              <TextInput
-                value={etiquetaEdit}
-                onChangeText={setEtiquetaEdit}
-                placeholder="Etiqueta..."
-                placeholderTextColor="#6c7086"
-                style={estilos.input}
-              />
-              <TextInput
-                value={digitosEdit}
-                onChangeText={(texto) => setDigitosEdit(sanitizarDigitosConDecimal(texto))}
-                placeholder="Dígitos (ej. 3.14159… o solo 0453)"
-                placeholderTextColor="#6c7086"
-                keyboardType="decimal-pad"
-                style={estilos.input}
-              />
-              {descomposicion ? (
-                <View style={estilos.bloquePreview}>
-                  <Text style={estilos.tituloPreview}>Descomposición</Text>
-                  {descomposicion.parteEntera.length > 0 && (
-                    <View>
-                      <Text style={estilos.seccionPreview}>Entera</Text>
-                      {descomposicion.parteEntera.map((trozo, i) => (
-                        <Text key={`entera-${i}`} style={estilos.filaTrozo}>
-                          {trozo.digitos} → {trozo.palabra ?? 'sin colgadero'}
-                        </Text>
-                      ))}
-                    </View>
-                  )}
-                  {descomposicion.parteDecimal.length > 0 && (
-                    <View>
-                      <Text style={estilos.seccionPreview}>Decimal</Text>
-                      {descomposicion.parteDecimal.map((trozo, i) => (
-                        <Text key={`decimal-${i}`} style={estilos.filaTrozo}>
-                          {trozo.digitos} → {trozo.palabra ?? 'sin colgadero'}
-                        </Text>
-                      ))}
-                    </View>
-                  )}
-                </View>
-              ) : null}
-              <Pressable onPress={() => guardarEdicion(numero.id)} style={estilos.botonGuardar}>
-                <Text style={estilos.textoBoton}>Guardar</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <Pressable key={numero.id} onPress={() => empezarEdicion(numero)} style={estilos.filaNumero}>
-              <View>
-                <Text style={estilos.etiquetaNumero}>{numero.etiqueta}</Text>
-                <Text style={estilos.digitosNumero}>{numero.digitos}</Text>
+        {numeros.length === 0 ? (
+          <Text style={estilos.aviso}>Todavía no hay números importantes guardados.</Text>
+        ) : (
+          numeros.map((numero) =>
+            editando === numero.id ? (
+              <View key={numero.id} style={estilos.filaEdicion}>
+                <TextInput
+                  value={etiquetaEdit}
+                  onChangeText={setEtiquetaEdit}
+                  placeholder="Etiqueta..."
+                  placeholderTextColor="#6c7086"
+                  style={estilos.input}
+                />
+                <TextInput
+                  value={digitosEdit}
+                  onChangeText={(texto) => setDigitosEdit(sanitizarDigitosConDecimal(texto))}
+                  placeholder="Dígitos (ej. 3.14159… o solo 0453)"
+                  placeholderTextColor="#6c7086"
+                  keyboardType="decimal-pad"
+                  style={estilos.input}
+                />
+                {descomposicion ? (
+                  <View style={estilos.bloquePreview}>
+                    <Text style={estilos.tituloPreview}>Descomposición</Text>
+                    {descomposicion.parteEntera.length > 0 && (
+                      <View>
+                        <Text style={estilos.seccionPreview}>Entera</Text>
+                        {descomposicion.parteEntera.map((trozo, i) => (
+                          <Text key={`entera-${i}`} style={estilos.filaTrozo}>
+                            {trozo.digitos} → {trozo.palabra ?? 'sin colgadero'}
+                          </Text>
+                        ))}
+                      </View>
+                    )}
+                    {descomposicion.parteDecimal.length > 0 && (
+                      <View>
+                        <Text style={estilos.seccionPreview}>Decimal</Text>
+                        {descomposicion.parteDecimal.map((trozo, i) => (
+                          <Text key={`decimal-${i}`} style={estilos.filaTrozo}>
+                            {trozo.digitos} → {trozo.palabra ?? 'sin colgadero'}
+                          </Text>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                ) : null}
+                <Pressable onPress={() => guardarEdicion(numero.id)} style={estilos.botonGuardar}>
+                  <Text style={estilos.textoBoton}>Guardar</Text>
+                </Pressable>
               </View>
-              <Pressable onPress={() => confirmarEliminar(numero)} hitSlop={8}>
-                <Text style={estilos.textoEliminar}>✕</Text>
+            ) : (
+              <Pressable key={numero.id} onPress={() => empezarEdicion(numero)} style={estilos.filaNumero}>
+                <View>
+                  <Text style={estilos.etiquetaNumero}>{numero.etiqueta}</Text>
+                  <Text style={estilos.digitosNumero}>{numero.digitos}</Text>
+                </View>
+                <Pressable onPress={() => confirmarEliminar(numero)} hitSlop={8}>
+                  <Text style={estilos.textoEliminar}>✕</Text>
+                </Pressable>
               </Pressable>
-            </Pressable>
+            )
           )
-        )
-      )}
-    </ScrollView>
+        )}
+      </ScrollView>
+    </>
   );
 }
 

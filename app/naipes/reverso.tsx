@@ -116,29 +116,32 @@ export default function NaipesReverso() {
   const { palo, valor } = JSON.parse(actual.metadata_categoria) as MetadataNaipe;
 
   return (
-    <View style={[estilos.contenedor, { backgroundColor: t.bg }]}>
-      <Text style={[estilos.progreso, { color: t.inkMuted }]}>
-        {indice + 1} / {tarjetas.length}
-      </Text>
-      <View style={estilos.centroCarta}>
-        <CartaVisual
-          key={actual.id}
-          carta={{ palo, valor }}
-          palabra={actual.contenido_reverso}
-          revelada={revelada}
-          disenoAlFrente={false}
-        />
+    <>
+      <HeaderFlotante titulo="Reverso" volverA="/naipes" />
+      <View style={[estilos.contenedor, { backgroundColor: t.bg }]}>
+        <Text style={[estilos.progreso, { color: t.inkMuted }]}>
+          {indice + 1} / {tarjetas.length}
+        </Text>
+        <View style={estilos.centroCarta}>
+          <CartaVisual
+            key={actual.id}
+            carta={{ palo, valor }}
+            palabra={actual.contenido_reverso}
+            revelada={revelada}
+            disenoAlFrente={false}
+          />
+        </View>
+        {!revelada ? (
+          <PausaVisualizacion clave={actual.id}>
+            <Pressable onPress={revelar} style={[estilos.botonRevelar, { backgroundColor: t.accent1 }]}>
+              <Text style={[estilos.textoRevelar, { color: t.inkOnAccent }]}>Ver respuesta</Text>
+            </Pressable>
+          </PausaVisualizacion>
+        ) : (
+          <BotonesCalificacion onCalificar={onCalificar} />
+        )}
       </View>
-      {!revelada ? (
-        <PausaVisualizacion clave={actual.id}>
-          <Pressable onPress={revelar} style={[estilos.botonRevelar, { backgroundColor: t.accent1 }]}>
-            <Text style={[estilos.textoRevelar, { color: t.inkOnAccent }]}>Ver respuesta</Text>
-          </Pressable>
-        </PausaVisualizacion>
-      ) : (
-        <BotonesCalificacion onCalificar={onCalificar} />
-      )}
-    </View>
+    </>
   );
 }
 
