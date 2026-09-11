@@ -1,10 +1,11 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { HeaderFlotante } from '../src/components/HeaderFlotante';
 import { BotonesCalificacion } from '../src/components/BotonesCalificacion';
 import { Flashcard } from '../src/components/Flashcard';
 import { PausaVisualizacion } from '../src/components/PausaVisualizacion';
+import { TramosProgreso } from '../src/components/TramosProgreso';
 import { obtenerBD } from '../src/db/client';
 import { cerrarSesion, crearSesion, listarMazos, listarTarjetasPorMazo } from '../src/db/repository';
 import type { ConexionBD } from '../src/db/tipos';
@@ -12,6 +13,8 @@ import { barajar } from '../src/domain/aleatorio';
 import type { Calificacion } from '../src/domain/fsrs/scheduler';
 import { TOPE_POR_DEFECTO } from '../src/domain/sesion/motor';
 import { useSesionStore } from '../src/stores/sesion';
+import { useTema } from '../src/stores/tema';
+import type { TokensColor } from '../src/tema/colores';
 
 /**
  * "Todo al día" (09-dashboard.md §4): repaso sin impacto en el scheduling
@@ -21,6 +24,8 @@ import { useSesionStore } from '../src/stores/sesion';
  * — así ni fsrs_state ni la racha se mueven un milímetro.
  */
 export default function PracticaLibre() {
+  const { colores: t } = useTema();
+  const estilos = useMemo(() => crearEstilos(t), [t]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [db, setDb] = useState<ConexionBD | null>(null);
@@ -70,7 +75,7 @@ export default function PracticaLibre() {
   if (cargando) {
     return (
       <View  style={estilos.centro}>
-        <ActivityIndicator color="#ffffff" />
+        <ActivityIndicator color={t.ink} />
       </View>
     );
   }
@@ -112,11 +117,20 @@ export default function PracticaLibre() {
 
   return (
     <>
-      <HeaderFlotante titulo="Práctica libre" volverA="/" />
+      <HeaderFlotante
+        titulo="Práctica libre"
+        volverA="/"
+        derecha={
+          <Text style={estilos.progresoChico}>
+            {indice + 1}/{tarjetas.length}
+          </Text>
+        }
+      />
+      <View style={estilos.tramos}>
+        <TramosProgreso total={tarjetas.length} indice={indice} />
+      </View>
       <View style={estilos.contenedor}>
-        <Text style={estilos.progreso}>
-          {indice + 1} / {tarjetas.length} · práctica libre
-        </Text>
+        <Text style={estilos.aviso}>práctica libre — no afecta tu racha ni tus repasos</Text>
         <Flashcard frente={actual.contenido_frente} reverso={actual.contenido_reverso} revelada={revelada} />
         {!revelada ? (
           <PausaVisualizacion clave={actual.id}>
@@ -125,6 +139,10 @@ export default function PracticaLibre() {
             </Pressable>
           </PausaVisualizacion>
         ) : (
+          // Sin `intervalos` a propósito: esta pantalla no reprograma la
+          // tarjeta (ver comentario del componente arriba) — mostrar un
+          // intervalo FSRS real que luego no se aplica sería mentirle al
+          // usuario sobre lo que su calificación va a hacer.
           <BotonesCalificacion onCalificar={onCalificar} />
         )}
       </View>
@@ -132,20 +150,24 @@ export default function PracticaLibre() {
   );
 }
 
-const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#1e1e2e', justifyContent: 'center', gap: 12 },
-  centro: { flex: 1, backgroundColor: '#1e1e2e', alignItems: 'center', justifyContent: 'center', gap: 12 },
-  progreso: { color: '#a6adc8', textAlign: 'center' },
-  titulo: { color: '#ffffff', fontSize: 20, fontWeight: '600' },
-  texto: { color: '#a6adc8', textAlign: 'center', paddingHorizontal: 24 },
-  error: { color: '#f38ba8', padding: 24, textAlign: 'center' },
-  enlace: { color: '#89b4fa', marginTop: 12 },
+const crearEstilos = (t: TokensColor) => StyleSheet.create({
+  // Los tramos van pegados al header, fuera del contenedor centrado.
+  tramos: { paddingHorizontal: 16, paddingTop: 2, paddingBottom: 10 },
+  contenedor: { flex: 1, backgroundColor: t.bg, justifyContent: 'center', gap: 12 },
+  centro: { flex: 1, backgroundColor: t.bg, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  progreso: { color: t.inkMuted, textAlign: 'center' },
+  progresoChico: { color: t.inkMuted, fontSize: 12, fontWeight: '600' },
+  aviso: { color: t.inkMuted, fontSize: 12, textAlign: 'center', fontStyle: 'italic' },
+  titulo: { color: t.ink, fontSize: 20, fontWeight: '600' },
+  texto: { color: t.inkMuted, textAlign: 'center', paddingHorizontal: 24 },
+  error: { color: t.otraVez, padding: 24, textAlign: 'center' },
+  enlace: { color: t.accent1, marginTop: 12 },
   botonRevelar: {
     alignSelf: 'center',
-    backgroundColor: '#89b4fa',
+    backgroundColor: t.accent1,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
-  textoRevelar: { color: '#1e1e2e', fontWeight: '600' },
+  textoRevelar: { color: t.inkOnAccent, fontWeight: '600' },
 });

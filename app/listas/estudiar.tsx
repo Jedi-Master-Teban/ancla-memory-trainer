@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { HeaderFlotante } from '../../src/components/HeaderFlotante';
 import { BotonesCalificacion } from '../../src/components/BotonesCalificacion';
@@ -15,7 +15,10 @@ import {
   obtenerLista,
 } from '../../src/db/repository';
 import type { ConexionBD, FilaListaObjeto, FilaTarjeta } from '../../src/db/tipos';
-import type { Calificacion } from '../../src/domain/fsrs/scheduler';
+import { intervalosPrevistos } from '../../src/domain/fsrs/preview';
+import { filaTarjetaACardInput, type Calificacion } from '../../src/domain/fsrs/scheduler';
+import { useTema } from '../../src/stores/tema';
+import type { TokensColor } from '../../src/tema/colores';
 
 type Fase = 'cargando' | 'error' | 'sin-eslabones' | 'memorizando' | 'directa' | 'transicion-inversa' | 'inversa' | 'completo';
 
@@ -38,6 +41,8 @@ interface Fallo {
  * nunca crean tarjetas nuevas.
  */
 export default function ListasEstudiar() {
+  const { colores: t } = useTema();
+  const estilos = useMemo(() => crearEstilos(t), [t]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const [fase, setFase] = useState<Fase>('cargando');
   const [error, setError] = useState<string | null>(null);
@@ -150,7 +155,7 @@ export default function ListasEstudiar() {
   if (fase === 'cargando') {
     return (
       <View  style={estilos.centro}>
-        <ActivityIndicator color="#ffffff" />
+        <ActivityIndicator color={t.ink} />
       </View>
     );
   }
@@ -261,8 +266,12 @@ export default function ListasEstudiar() {
     return null;
   }
 
+  const tarjetaDelPaso = eslabones.find((e) => e.id === paso.tarjetaId);
+  const intervalos = tarjetaDelPaso ? intervalosPrevistos(filaTarjetaACardInput(tarjetaDelPaso), new Date()) : undefined;
+
   return (
     <View style={estilos.contenedor}>
+      <HeaderFlotante titulo="Estudiar" volverA="/listas" />
       <Text style={estilos.progreso}>
         {fase === 'directa' ? 'Orden directo' : 'Orden inverso'} — {indice + 1} / {eslabones.length}
       </Text>
@@ -277,39 +286,39 @@ export default function ListasEstudiar() {
           </Pressable>
         </PausaVisualizacion>
       ) : (
-        <BotonesCalificacion onCalificar={onCalificar} />
+        <BotonesCalificacion onCalificar={onCalificar} intervalos={intervalos} />
       )}
     </View>
   );
 }
 
-const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#1e1e2e', padding: 16, gap: 16, justifyContent: 'center' },
+const crearEstilos = (t: TokensColor) => StyleSheet.create({
+  contenedor: { flex: 1, backgroundColor: t.bg, padding: 16, gap: 16, justifyContent: 'center' },
   // ScrollView exige que "justifyContent" (layout de los hijos) viva en
   // contentContainerStyle, no en style (ese es solo el contenedor exterior
   // con scroll) — de ahí el Render Error al llegar a la fase 'completo'.
-  contenedorScroll: { flex: 1, backgroundColor: '#1e1e2e' },
+  contenedorScroll: { flex: 1, backgroundColor: t.bg },
   contenidoCompleto: { flexGrow: 1, padding: 24, gap: 12, justifyContent: 'center' },
-  centro: { flex: 1, backgroundColor: '#1e1e2e', alignItems: 'center', justifyContent: 'center', gap: 12 },
-  error: { color: '#f38ba8', padding: 24, textAlign: 'center' },
-  enlace: { color: '#89b4fa', marginTop: 12 },
-  texto: { color: '#a6adc8', textAlign: 'center' },
-  titulo: { color: '#ffffff', fontSize: 20, fontWeight: '700', textAlign: 'center' },
-  subtitulo: { color: '#ffffff', fontSize: 15, fontWeight: '600', marginBottom: 4 },
+  centro: { flex: 1, backgroundColor: t.bg, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  error: { color: t.otraVez, padding: 24, textAlign: 'center' },
+  enlace: { color: t.accent1, marginTop: 12 },
+  texto: { color: t.inkMuted, textAlign: 'center' },
+  titulo: { color: t.ink, fontSize: 20, fontWeight: '700', textAlign: 'center' },
+  subtitulo: { color: t.ink, fontSize: 15, fontWeight: '600', marginBottom: 4 },
   lista: { flex: 1 },
-  filaLista: { color: '#ffffff', fontSize: 18, paddingVertical: 6, textAlign: 'center' },
-  progreso: { color: '#a6adc8', textAlign: 'center' },
+  filaLista: { color: t.ink, fontSize: 18, paddingVertical: 6, textAlign: 'center' },
+  progreso: { color: t.inkMuted, textAlign: 'center' },
   tarjeta: { alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24, minHeight: 160 },
-  cue: { fontSize: 32, color: '#ffffff', fontWeight: '600', textAlign: 'center' },
-  respuesta: { fontSize: 24, color: '#a6e3a1', textAlign: 'center' },
+  cue: { fontSize: 32, color: t.ink, fontWeight: '600', textAlign: 'center' },
+  respuesta: { fontSize: 24, color: t.bien, textAlign: 'center' },
   botonRevelar: {
     alignSelf: 'center',
-    backgroundColor: '#89b4fa',
+    backgroundColor: t.accent1,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
-  textoRevelar: { color: '#1e1e2e', fontWeight: '600' },
-  bloqueFallos: { backgroundColor: '#313244', borderRadius: 12, padding: 16 },
-  filaFallo: { color: '#f38ba8', fontSize: 14, paddingVertical: 2 },
+  textoRevelar: { color: t.inkOnAccent, fontWeight: '600' },
+  bloqueFallos: { backgroundColor: t.cardAlt, borderRadius: 12, padding: 16 },
+  filaFallo: { color: t.otraVez, fontSize: 14, paddingVertical: 2 },
 });

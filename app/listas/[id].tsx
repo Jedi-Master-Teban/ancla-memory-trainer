@@ -100,7 +100,7 @@ export default function ListaDetalle() {
 
   return (
     <ScrollView style={estilos.contenedor} contentContainerStyle={estilos.contenido}>
-      <Text style={estilos.titulo}>{lista.nombre}</Text>
+      <HeaderFlotante titulo={lista.nombre} volverA="/listas" />
 
       <View style={estilos.filaSegundos}>
         <Text style={estilos.etiquetaSegundos}>Segundos de estudio:</Text>

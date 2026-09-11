@@ -8,6 +8,7 @@ import * as m003 from './migrations/003_seed_naipes';
 import * as m004 from './migrations/004_listas_numeros';
 import * as m005 from './migrations/005_racha';
 import * as m006 from './migrations/006_preferencias';
+import * as m007 from './migrations/007_tipografia';
 import { ejecutarMigraciones } from './migrations';
 import type { Categoria, ConexionBD, MetadataColgadero, MetadataListaItem, MetadataNaipe, MetadataNumero } from './tipos';
 import {
@@ -101,6 +102,17 @@ async function bdEnVersion5(): Promise<ConexionBD> {
   const db = crearConexionDePrueba();
   await db.execAsync('CREATE TABLE IF NOT EXISTS migracion (version INTEGER PRIMARY KEY, aplicada_en TEXT NOT NULL);');
   for (const m of [m001, m002, m003, m004, m005]) {
+    await m.aplicar(db, AHORA);
+    await db.runAsync('INSERT INTO migracion (version, aplicada_en) VALUES (?, ?)', [m.version, AHORA.toISOString()]);
+  }
+  return db;
+}
+
+/** Estado exacto del dispositivo del operador antes de la 008. */
+async function bdEnVersion7(): Promise<ConexionBD> {
+  const db = crearConexionDePrueba();
+  await db.execAsync('CREATE TABLE IF NOT EXISTS migracion (version INTEGER PRIMARY KEY, aplicada_en TEXT NOT NULL);');
+  for (const m of [m001, m002, m003, m004, m005, m006, m007]) {
     await m.aplicar(db, AHORA);
     await db.runAsync('INSERT INTO migracion (version, aplicada_en) VALUES (?, ?)', [m.version, AHORA.toISOString()]);
   }
@@ -309,6 +321,7 @@ describe('migración — Skill db-migracion, paso 4: sobre BD con datos', () => 
       { version: 5 },
       { version: 6 },
       { version: 7 },
+      { version: 8 },
     ]);
   });
 });
@@ -440,7 +453,7 @@ describe('migración 004 — listas y números (aditiva, sin siembra) — Skill 
     await ejecutarMigraciones(db, AHORA);
 
     const versiones = await db.getAllAsync<{ version: number }>('SELECT version FROM migracion', []);
-    expect(versiones.map((v) => v.version)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(versiones.map((v) => v.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
   });
 
   it('arranque desde cero: todas las migraciones corren en orden sin error', async () => {
@@ -448,7 +461,7 @@ describe('migración 004 — listas y números (aditiva, sin siembra) — Skill 
     await expect(ejecutarMigraciones(db, AHORA)).resolves.not.toThrow();
 
     const versiones = await db.getAllAsync<{ version: number }>('SELECT version FROM migracion', []);
-    expect(versiones.map((v) => v.version)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(versiones.map((v) => v.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
   });
 });
 
@@ -501,7 +514,7 @@ describe('migración 005 — racha (aditiva, siembra racha_config) — Skill db-
     await expect(ejecutarMigraciones(db, AHORA)).resolves.not.toThrow();
 
     const versiones = await db.getAllAsync<{ version: number }>('SELECT version FROM migracion', []);
-    expect(versiones.map((v) => v.version)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(versiones.map((v) => v.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
   });
 });
 
@@ -530,7 +543,9 @@ describe('migración 006 — preferencias (aditiva, siembra tema) — Skill db-m
     expect(await listarRevisionesDeTarjeta(db, tarjeta.id)).toHaveLength(1);
     expect(await obtenerConfigRacha(db)).toEqual(configPrevio);
 
-    expect(await obtenerPreferencias(db)).toEqual({ id: 1, tema: 'arcade', tipografia: 'tematica' });
+    // 'soft' y no 'arcade' porque la pasada del runner aplica 006 (siembra
+    // 'arcade'), 007 y 008 (lo normaliza a 'soft') de corrido.
+    expect(await obtenerPreferencias(db)).toEqual({ id: 1, tema: 'soft', tipografia: 'tematica' });
   });
 
   it('idempotente: aplicar dos veces seguidas no duplica la fila de preferencias ni falla', async () => {
@@ -542,12 +557,12 @@ describe('migración 006 — preferencias (aditiva, siembra tema) — Skill db-m
     expect(prefs).toHaveLength(1);
   });
 
-  it('arranque desde cero: las 6 migraciones corren en orden sin error', async () => {
+  it('arranque desde cero: todas las migraciones corren en orden sin error', async () => {
     const db = crearConexionDePrueba();
     await expect(ejecutarMigraciones(db, AHORA)).resolves.not.toThrow();
 
     const versiones = await db.getAllAsync<{ version: number }>('SELECT version FROM migracion', []);
-    expect(versiones.map((v) => v.version)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(versiones.map((v) => v.version)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
   });
 });
 
@@ -556,7 +571,10 @@ describe('migración 007 — tipografía (ADD COLUMN con default) — Skill db-m
     const db = await bdEnVersion6();
     await actualizarTema(db, 'papel');
 
-    await ejecutarMigraciones(db, AHORA);
+    // Se aplica SOLO la 007, no el runner entero: desde la 008 el runner
+    // normaliza el tema a 'soft' y taparía justo lo que este test comprueba,
+    // que es que la 007 no toca las columnas que ya existían.
+    await m007.aplicar(db, AHORA);
 
     // El dato previo del operador sobrevive; la columna nueva toma su default.
     expect(await obtenerPreferencias(db)).toEqual({ id: 1, tema: 'papel', tipografia: 'tematica' });
@@ -570,10 +588,70 @@ describe('migración 007 — tipografía (ADD COLUMN con default) — Skill db-m
   });
 });
 
-describe('preferencias — obtenerPreferencias / actualizarTema / actualizarTipografia', () => {
-  it('obtiene la fila sembrada por la migración 006', async () => {
-    const db = await bdLista();
+describe('migración 008 — Soft UI por defecto (UPDATE del tema) — Skill db-migracion pasos 4-5', () => {
+  it('sobre una BD en versión 7 con datos reales: cambia el tema a soft y no toca nada más', async () => {
+    const db = await bdEnVersion7();
+
+    // Datos reales del operador, no una BD vacía.
+    const mazo = await crearMazo(db, { nombre: 'Colgadero', categoria: 'colgadero' }, AHORA);
+    const tarjeta = await crearTarjeta(
+      db,
+      { mazoId: mazo.id, categoria: 'colgadero', contenidoFrente: '1', contenidoReverso: 'Tea' },
+      AHORA
+    );
+    const sesion = await crearSesion(db, { modo: 'flash' }, AHORA);
+    const calificada = await calificarTarjeta(
+      db,
+      { tarjetaId: tarjeta.id, sesionId: sesion.id, calificacion: 'bien' },
+      AHORA
+    );
+    const configPrevio = await obtenerConfigRacha(db);
+
+    // El estado de partida es el del dispositivo: 'arcade' sembrado por la 006.
     expect(await obtenerPreferencias(db)).toEqual({ id: 1, tema: 'arcade', tipografia: 'tematica' });
+
+    await ejecutarMigraciones(db, AHORA);
+
+    // Lo único que cambia es `tema`. `tipografia` (007) se queda como estaba.
+    expect(await obtenerPreferencias(db)).toEqual({ id: 1, tema: 'soft', tipografia: 'tematica' });
+
+    // Y el resto de la BD sobrevive intacto.
+    expect(await obtenerTarjeta(db, tarjeta.id)).toEqual(calificada);
+    expect(await listarRevisionesDeTarjeta(db, tarjeta.id)).toHaveLength(1);
+    expect(await obtenerConfigRacha(db)).toEqual(configPrevio);
+  });
+
+  it('respeta la tipografía que el operador ya hubiera elegido', async () => {
+    const db = await bdEnVersion7();
+    await actualizarTipografia(db, 'sistema');
+
+    await ejecutarMigraciones(db, AHORA);
+
+    expect(await obtenerPreferencias(db)).toEqual({ id: 1, tema: 'soft', tipografia: 'sistema' });
+  });
+
+  it('corre una sola vez: un tema elegido DESPUÉS de migrar no se vuelve a pisar', async () => {
+    const db = await bdEnVersion7();
+    await ejecutarMigraciones(db, AHORA);
+
+    await actualizarTema(db, 'papel');
+    await ejecutarMigraciones(db, AHORA);
+
+    expect(await obtenerPreferencias(db)).toEqual({ id: 1, tema: 'papel', tipografia: 'tematica' });
+  });
+
+  it('idempotente: aplicar dos veces no duplica la fila ni falla', async () => {
+    const db = await bdEnVersion7();
+    await ejecutarMigraciones(db, AHORA);
+    await ejecutarMigraciones(db, AHORA);
+    expect(await db.getAllAsync('SELECT * FROM preferencias', [])).toHaveLength(1);
+  });
+});
+
+describe('preferencias — obtenerPreferencias / actualizarTema / actualizarTipografia', () => {
+  it('obtiene la fila sembrada por la 006 y normalizada por la 008', async () => {
+    const db = await bdLista();
+    expect(await obtenerPreferencias(db)).toEqual({ id: 1, tema: 'soft', tipografia: 'tematica' });
   });
 
   it('actualizarTema cambia el tema y persiste', async () => {

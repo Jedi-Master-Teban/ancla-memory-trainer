@@ -1,22 +1,30 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { HeaderFlotante } from '../../src/components/HeaderFlotante';
 import { BotonesCalificacion } from '../../src/components/BotonesCalificacion';
 import { Flashcard } from '../../src/components/Flashcard';
 import { PausaVisualizacion } from '../../src/components/PausaVisualizacion';
+import { TramosProgreso } from '../../src/components/TramosProgreso';
 import { obtenerBD } from '../../src/db/client';
 import {
   armarSesionDeMazo,
+  calcularRachaActual,
   calificarTarjeta,
   cerrarSesion,
   crearSesion,
+  obtenerConfigRacha,
+  obtenerDiaPractica,
   obtenerMazoPorCategoria,
 } from '../../src/db/repository';
 import type { ConexionBD } from '../../src/db/tipos';
 import { explicar } from '../../src/domain/fonetica/decodificador';
-import type { Calificacion } from '../../src/domain/fsrs/scheduler';
+import { fechaLocal } from '../../src/domain/racha/calculo';
+import { intervalosPrevistos } from '../../src/domain/fsrs/preview';
+import { filaTarjetaACardInput, type Calificacion } from '../../src/domain/fsrs/scheduler';
 import { useSesionStore } from '../../src/stores/sesion';
+import { useTema } from '../../src/stores/tema';
+import type { TokensColor } from '../../src/tema/colores';
 
 /**
  * Modo Reverso (palabra → número): misma tarjeta que Fonética Flash, mostrada
@@ -24,12 +32,15 @@ import { useSesionStore } from '../../src/stores/sesion';
  * (modulos/02-colgadero.md §2).
  */
 export default function ColgaderoReverso() {
+  const { colores: t } = useTema();
+  const estilos = useMemo(() => crearEstilos(t), [t]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [db, setDb] = useState<ConexionBD | null>(null);
 
   const { tarjetas, sesionId, indice, revelada, aciertos, fallos, iniciar, revelar, avanzar, reiniciar } =
     useSesionStore();
+  const terminadaRef = useRef(false);
 
   useEffect(() => {
     let cancelado = false;
@@ -61,8 +72,26 @@ export default function ColgaderoReverso() {
   }, []);
 
   useEffect(() => {
-    if (db && sesionId && tarjetas.length > 0 && indice >= tarjetas.length) {
-      cerrarSesion(db, { sesionId, duracionSegundos: 0, aciertos, fallos }, new Date());
+    if (db && sesionId && tarjetas.length > 0 && indice >= tarjetas.length && !terminadaRef.current) {
+      terminadaRef.current = true;
+      (async () => {
+        const ahora = new Date();
+        await cerrarSesion(db, { sesionId, duracionSegundos: 0, aciertos, fallos }, ahora);
+        const [rachaActualizada, configRacha, dia] = await Promise.all([
+          calcularRachaActual(db, ahora),
+          obtenerConfigRacha(db),
+          obtenerDiaPractica(db, fechaLocal(ahora)),
+        ]);
+        router.replace({
+          pathname: '/resumen-sesion',
+          params: {
+            racha: String(rachaActualizada.diasConsecutivos),
+            aciertos: String(aciertos),
+            fallos: String(fallos),
+            metaCumplida: (dia?.tarjetas_revisadas ?? 0) >= (configRacha.meta_diaria ?? 20) ? '1' : '0',
+          },
+        });
+      })();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [indice]);
@@ -77,7 +106,7 @@ export default function ColgaderoReverso() {
   if (cargando) {
     return (
       <View style={estilos.centro}>
-        <ActivityIndicator color="#ffffff" />
+        <ActivityIndicator color={t.ink} />
       </View>
     );
   }
@@ -116,14 +145,23 @@ export default function ColgaderoReverso() {
   }
 
   const actual = tarjetas[indice];
+  const intervalos = intervalosPrevistos(filaTarjetaACardInput(actual), new Date());
 
   return (
     <>
-      <HeaderFlotante titulo="Reverso" volverA="/colgadero" />
+      <HeaderFlotante
+        titulo="Reverso"
+        volverA="/colgadero"
+        derecha={
+          <Text style={estilos.progresoChico}>
+            {indice + 1}/{tarjetas.length}
+          </Text>
+        }
+      />
+      <View style={estilos.tramos}>
+        <TramosProgreso total={tarjetas.length} indice={indice} />
+      </View>
       <View style={estilos.contenedor}>
-        <Text style={estilos.progreso}>
-          {indice + 1} / {tarjetas.length}
-        </Text>
         <Flashcard
           frente={actual.contenido_reverso}
           reverso={actual.contenido_frente}
@@ -137,27 +175,30 @@ export default function ColgaderoReverso() {
             </Pressable>
           </PausaVisualizacion>
         ) : (
-          <BotonesCalificacion onCalificar={onCalificar} />
+          <BotonesCalificacion onCalificar={onCalificar} intervalos={intervalos} />
         )}
       </View>
     </>
   );
 }
 
-const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#1e1e2e', justifyContent: 'center', gap: 24 },
-  centro: { flex: 1, backgroundColor: '#1e1e2e', alignItems: 'center', justifyContent: 'center', gap: 12 },
-  progreso: { color: '#a6adc8', textAlign: 'center' },
-  titulo: { color: '#ffffff', fontSize: 20, fontWeight: '600' },
-  texto: { color: '#a6adc8' },
-  error: { color: '#f38ba8', padding: 24, textAlign: 'center' },
-  enlace: { color: '#89b4fa', marginTop: 12 },
+const crearEstilos = (t: TokensColor) => StyleSheet.create({
+  // Los tramos van pegados al header, fuera del contenedor centrado.
+  tramos: { paddingHorizontal: 16, paddingTop: 2, paddingBottom: 10 },
+  contenedor: { flex: 1, backgroundColor: t.bg, justifyContent: 'center', gap: 24 },
+  centro: { flex: 1, backgroundColor: t.bg, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  progreso: { color: t.inkMuted, textAlign: 'center' },
+  progresoChico: { color: t.inkMuted, fontSize: 12, fontWeight: '600' },
+  titulo: { color: t.ink, fontSize: 20, fontWeight: '600' },
+  texto: { color: t.inkMuted },
+  error: { color: t.otraVez, padding: 24, textAlign: 'center' },
+  enlace: { color: t.accent1, marginTop: 12 },
   botonRevelar: {
     alignSelf: 'center',
-    backgroundColor: '#89b4fa',
+    backgroundColor: t.accent1,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
-  textoRevelar: { color: '#1e1e2e', fontWeight: '600' },
+  textoRevelar: { color: t.inkOnAccent, fontWeight: '600' },
 });

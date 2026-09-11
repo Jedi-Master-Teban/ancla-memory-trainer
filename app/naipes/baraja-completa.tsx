@@ -176,6 +176,7 @@ export default function NaipesBarajaCompleta() {
   // fase === 'completo'
   return (
     <View style={[estilos.centro, { backgroundColor: t.bg }]}>
+      <HeaderFlotante titulo="Baraja completa" volverA="/naipes" />
       <Text style={[estilos.titulo, { color: t.ink }]}>Baraja completa</Text>
       <Text style={[estilos.texto, { color: t.inkMuted }]}>
         {resultado?.correctas}/{resultado?.total} correctas

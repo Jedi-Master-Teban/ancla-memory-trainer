@@ -1,20 +1,26 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { HeaderFlotante } from '../../src/components/HeaderFlotante';
 import { BotonesCalificacion } from '../../src/components/BotonesCalificacion';
 import { CartaVisual } from '../../src/components/CartaVisual';
 import { PausaVisualizacion } from '../../src/components/PausaVisualizacion';
+import { TramosProgreso } from '../../src/components/TramosProgreso';
 import { obtenerBD } from '../../src/db/client';
 import {
   armarSesionDeMazo,
+  calcularRachaActual,
   calificarTarjeta,
   cerrarSesion,
   crearSesion,
+  obtenerConfigRacha,
+  obtenerDiaPractica,
   obtenerMazoPorCategoria,
 } from '../../src/db/repository';
 import type { ConexionBD, MetadataNaipe } from '../../src/db/tipos';
-import type { Calificacion } from '../../src/domain/fsrs/scheduler';
+import { fechaLocal } from '../../src/domain/racha/calculo';
+import { intervalosPrevistos } from '../../src/domain/fsrs/preview';
+import { filaTarjetaACardInput, type Calificacion } from '../../src/domain/fsrs/scheduler';
 import { useSesionStore } from '../../src/stores/sesion';
 import { useTema } from '../../src/stores/tema';
 
@@ -27,6 +33,7 @@ export default function NaipesReverso() {
   const { tarjetas, sesionId, indice, revelada, aciertos, fallos, iniciar, revelar, avanzar, reiniciar } =
     useSesionStore();
   const { colores: t } = useTema();
+  const terminadaRef = useRef(false);
 
   useEffect(() => {
     let cancelado = false;
@@ -58,8 +65,26 @@ export default function NaipesReverso() {
   }, []);
 
   useEffect(() => {
-    if (db && sesionId && tarjetas.length > 0 && indice >= tarjetas.length) {
-      cerrarSesion(db, { sesionId, duracionSegundos: 0, aciertos, fallos }, new Date());
+    if (db && sesionId && tarjetas.length > 0 && indice >= tarjetas.length && !terminadaRef.current) {
+      terminadaRef.current = true;
+      (async () => {
+        const ahora = new Date();
+        await cerrarSesion(db, { sesionId, duracionSegundos: 0, aciertos, fallos }, ahora);
+        const [rachaActualizada, configRacha, dia] = await Promise.all([
+          calcularRachaActual(db, ahora),
+          obtenerConfigRacha(db),
+          obtenerDiaPractica(db, fechaLocal(ahora)),
+        ]);
+        router.replace({
+          pathname: '/resumen-sesion',
+          params: {
+            racha: String(rachaActualizada.diasConsecutivos),
+            aciertos: String(aciertos),
+            fallos: String(fallos),
+            metaCumplida: (dia?.tarjetas_revisadas ?? 0) >= (configRacha.meta_diaria ?? 20) ? '1' : '0',
+          },
+        });
+      })();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [indice]);
@@ -114,14 +139,23 @@ export default function NaipesReverso() {
 
   const actual = tarjetas[indice];
   const { palo, valor } = JSON.parse(actual.metadata_categoria) as MetadataNaipe;
+  const intervalos = intervalosPrevistos(filaTarjetaACardInput(actual), new Date());
 
   return (
     <>
-      <HeaderFlotante titulo="Reverso" volverA="/naipes" />
+      <HeaderFlotante
+        titulo="Reverso"
+        volverA="/naipes"
+        derecha={
+          <Text style={[estilos.progresoChico, { color: t.inkMuted }]}>
+            {indice + 1}/{tarjetas.length}
+          </Text>
+        }
+      />
+      <View style={estilos.tramos}>
+        <TramosProgreso total={tarjetas.length} indice={indice} />
+      </View>
       <View style={[estilos.contenedor, { backgroundColor: t.bg }]}>
-        <Text style={[estilos.progreso, { color: t.inkMuted }]}>
-          {indice + 1} / {tarjetas.length}
-        </Text>
         <View style={estilos.centroCarta}>
           <CartaVisual
             key={actual.id}
@@ -138,7 +172,7 @@ export default function NaipesReverso() {
             </Pressable>
           </PausaVisualizacion>
         ) : (
-          <BotonesCalificacion onCalificar={onCalificar} />
+          <BotonesCalificacion onCalificar={onCalificar} intervalos={intervalos} />
         )}
       </View>
     </>
@@ -146,10 +180,13 @@ export default function NaipesReverso() {
 }
 
 const estilos = StyleSheet.create({
+  // Los tramos van pegados al header, fuera del contenedor centrado.
+  tramos: { paddingHorizontal: 16, paddingTop: 2, paddingBottom: 10 },
   contenedor: { flex: 1, justifyContent: 'center', gap: 24 },
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   centroCarta: { alignItems: 'center' },
   progreso: { textAlign: 'center' },
+  progresoChico: { fontSize: 12, fontWeight: '600' },
   titulo: { fontSize: 20, fontWeight: '600' },
   texto: {},
   error: { padding: 24, textAlign: 'center' },

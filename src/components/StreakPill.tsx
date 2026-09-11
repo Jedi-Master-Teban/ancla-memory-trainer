@@ -1,92 +1,58 @@
-import { StyleSheet, Text, View } from 'react-native';
-import type { EstadoRacha } from '../domain/racha/calculo';
-import { colorRachaPorDias, siguienteUmbral } from '../domain/racha/streak-color';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTema } from '../stores/tema';
-import { IndicadorRacha } from './IndicadorRacha';
-
-interface Props {
-  diasConsecutivos: number;
-  estado: EstadoRacha;
-  /** 'mini' (default, header pill) o 'hero' (racha.tsx pantalla completa) */
-  tamano?: 'mini' | 'hero';
-}
+import { recetaForma } from '../tema/colores';
+import { Llama } from './Llama';
+import type { EstadoRacha } from '../domain/racha/calculo';
 
 /**
- * StreakPill — versión "premium" del IndicadorRacha:
- * - Marco coloreado que cambia en umbrales (gris → amarillo → naranja → rojo → gold).
- * - Halo glow alrededor de la flama en niveles altos.
- * - Muestra la meta del siguiente umbral como microcopy motivador.
+ * Píldora de racha del encabezado del dashboard (DESIGN.md §7.1).
  *
- * Investigación aplicada (Octalysis + loss aversion): cada umbral es un
- * achievement tangible; el color hace al usuario consciente de lo que
- * perdería si rompe la racha.
+ * ES UN BOTÓN, y eso era un bug de v1: la racha solo se podía ver al terminar
+ * una sesión. Es el número que más motiva de la app; tiene que estar a un tap
+ * desde el inicio, siempre.
  */
-export function StreakPill({ diasConsecutivos, estado, tamano = 'mini' }: Props) {
-  const { colores: t } = useTema();
-  const cRacha = colorRachaPorDias(diasConsecutivos, t);
-  const meta = siguienteUmbral(diasConsecutivos);
 
-  if (tamano === 'hero') {
-    return (
-      <View
-        style={[
-          estilos.heroContenedor,
-          {
-            backgroundColor: cRacha.fondo,
-            borderColor: cRacha.borde,
-            shadowColor: cRacha.halo,
-          },
-        ]}
-      >
-        <IndicadorRacha diasConsecutivos={diasConsecutivos} estado={estado} tamano="grande" />
-        {meta && (
-          <Text style={[estilos.heroMeta, { color: t.inkMuted }]}>
-            Siguiente meta: {meta.etiqueta}
-          </Text>
-        )}
-      </View>
-    );
-  }
+interface Props {
+  dias: number;
+  estado: EstadoRacha;
+  onPress: () => void;
+}
+
+export function StreakPill({ dias, estado, onPress }: Props) {
+  const { colores: t, tema, tipografia } = useTema();
+  const forma = recetaForma(tema);
 
   return (
-    <View
-      style={[
-        estilos.miniContenedor,
+    <Pressable
+      onPress={onPress}
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={`Racha de ${dias} días. Ver mi racha.`}
+      style={({ pressed }) => [
+        estilos.pildora,
         {
-          backgroundColor: cRacha.fondo,
-          borderColor: cRacha.borde,
+          borderRadius: forma.rPill,
+          backgroundColor: t.flameSoft,
+          borderColor: t.flameSoft,
         },
+        pressed && { opacity: 0.7, transform: [{ scale: 0.96 }] },
       ]}
     >
-      <IndicadorRacha diasConsecutivos={diasConsecutivos} estado={estado} tamano="normal" />
-    </View>
+      <Llama tamano={16} estado={estado} conHalo={false} />
+      <Text style={[estilos.dias, { color: t.flameOuterEnd, fontFamily: tipografia.display }]}>{dias}</Text>
+    </Pressable>
   );
 }
 
 const estilos = StyleSheet.create({
-  miniContenedor: {
+  pildora: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    gap: 4,
+    paddingLeft: 6,
+    paddingRight: 12,
     paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1.5,
+    borderWidth: 1,
   },
-  heroContenedor: {
-    alignItems: 'center',
-    paddingVertical: 24,
-    paddingHorizontal: 32,
-    borderRadius: 24,
-    borderWidth: 2,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 20,
-    elevation: 6,
-  },
-  heroMeta: {
-    fontSize: 12,
-    marginTop: 8,
-    fontWeight: '500',
-    letterSpacing: 0.5,
-  },
+  dias: { fontSize: 14, fontWeight: '800' },
 });

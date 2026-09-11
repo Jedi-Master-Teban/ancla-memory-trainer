@@ -82,6 +82,7 @@ export default function HistorialSesiones() {
 
   return (
     <ScrollView style={estilos.contenedorScroll} contentContainerStyle={estilos.contenido}>
+      <HeaderFlotante titulo="Historial de sesiones" volverA="/estadisticas" />
       {sesiones.map((sesion) => (
         <View key={sesion.id}>
           <Pressable onPress={() => alternarSesion(sesion.id)} style={estilos.filaSesion}>

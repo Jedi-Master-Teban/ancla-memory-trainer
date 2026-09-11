@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MorphIcon } from 'morphicons/react-native';
+import { ArrowLeft } from 'lucide';
 import { useTema } from '../stores/tema';
 
 interface Props {
@@ -46,7 +47,7 @@ export function HeaderFlotante({ titulo, volverA, derecha, mostrarVolver = true 
             pressed && { opacity: 0.6 },
           ]}
         >
-          <MorphIcon icon="lucide-arrow-left" size={20} color={t.ink} />
+          <MorphIcon icon={ArrowLeft} size={20} color={t.ink} />
         </Pressable>
       )}
       <View style={[estilos.pillTitulo, { backgroundColor: t.card, borderColor: t.borderMuted ?? 'transparent' }]}>

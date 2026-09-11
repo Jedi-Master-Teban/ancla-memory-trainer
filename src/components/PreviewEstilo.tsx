@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MorphIcon } from 'morphicons/react-native';
+import { BarChart3, Home, Pencil, Settings } from 'lucide';
 import type { TemaId } from '../tema/colores';
 import { coloresDelTema } from '../tema/colores';
 import { tipografiaDelTema } from '../tema/tipografia';
@@ -74,10 +75,10 @@ export function PreviewEstilo({ temaAVista, etiqueta, descripcion, activa, onPre
 
       {/* Preview: tab bar reducida (igual estilo que TabBarInferior) */}
       <View style={[estilos.previewTabBar, { borderTopColor: t.borderMuted ?? t.inkMuted }]}>
-        <MorphIcon icon="lucide-house" size={14} color={t.accent1} />
-        <MorphIcon icon="lucide-pencil" size={14} color={t.inkMuted} />
-        <MorphIcon icon="lucide-bar-chart-3" size={14} color={t.inkMuted} />
-        <MorphIcon icon="lucide-settings" size={14} color={t.inkMuted} />
+        <MorphIcon icon={Home} size={14} color={t.accent1} />
+        <MorphIcon icon={Pencil} size={14} color={t.inkMuted} />
+        <MorphIcon icon={BarChart3} size={14} color={t.inkMuted} />
+        <MorphIcon icon={Settings} size={14} color={t.inkMuted} />
       </View>
     </Pressable>
   );

@@ -3,6 +3,7 @@ import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-nati
 import type { FilaDiaPractica } from '../db/tipos';
 import { diaAnterior, fechaLocal } from '../domain/racha/calculo';
 import { useTema } from '../stores/tema';
+import { recetaForma } from '../tema/colores';
 
 interface Props {
   dias: FilaDiaPractica[];
@@ -44,6 +45,11 @@ function formatearFechaTooltip(fecha: string): string {
  *
  * Tocar una celda alterna un tooltip con la fecha y el conteo; tocar otra
  * mientras hay uno abierto lo mueve.
+ *
+ * Fase 8 v2 (DESIGN.md §5.8): un día CONGELADO se pinta verde LLENO, no con un
+ * marco verde sobre celda vacía. Un congelador salvó ese día, así que el día
+ * cuenta; pintarlo hueco lo hacía leer como un hueco en la racha, que es
+ * justo lo contrario de lo que pasó.
  */
 export function Heatmap90({ dias, ahora }: Props) {
   const [seleccionada, setSeleccionada] = useState<string | null>(null);
@@ -51,7 +57,7 @@ export function Heatmap90({ dias, ahora }: Props) {
   const { tema, colores: t } = useTema();
   const porFecha = new Map(dias.map((d) => [d.fecha_local, d]));
   const fechas = ultimosNoventaDias(ahora);
-  const radioCelda = tema === 'arcade' ? 4 : 1;
+  const radioCelda = recetaForma(tema).rCell;
 
   const ladoCelda = anchoGrid > 0 ? (anchoGrid - SEPARACION * (COLUMNAS - 1)) / COLUMNAS : 0;
 
@@ -67,14 +73,20 @@ export function Heatmap90({ dias, ahora }: Props) {
           fechas.map((fecha) => {
             const dia = porFecha.get(fecha);
             const activa = seleccionada === fecha;
+            const congelado = dia?.congelador_usado === 1;
             return (
               <View key={fecha} style={{ width: ladoCelda, height: ladoCelda }}>
                 <Pressable
                   onPress={() => setSeleccionada(activa ? null : fecha)}
+                  accessibilityLabel={`${formatearFechaTooltip(fecha)}: ${dia?.tarjetas_revisadas ?? 0} tarjetas${congelado ? ', congelado' : ''}`}
                   style={[
                     estilos.celda,
-                    { backgroundColor: colorPorIntensidad(dia?.tarjetas_revisadas ?? 0, t.celdaEscala), borderRadius: radioCelda },
-                    dia?.congelador_usado === 1 && { borderWidth: tema === 'arcade' ? 2 : 1.5, borderColor: t.accent3 },
+                    {
+                      backgroundColor: congelado
+                        ? t.accent3
+                        : colorPorIntensidad(dia?.tarjetas_revisadas ?? 0, t.celdaEscala),
+                      borderRadius: radioCelda,
+                    },
                   ]}
                 />
                 {activa ? (
@@ -82,7 +94,7 @@ export function Heatmap90({ dias, ahora }: Props) {
                     <Text style={[estilos.tooltipFecha, { color: t.ink }]}>{formatearFechaTooltip(fecha)}</Text>
                     <Text style={[estilos.tooltipDetalle, { color: t.inkMuted }]}>
                       {dia?.tarjetas_revisadas ?? 0} tarjeta{(dia?.tarjetas_revisadas ?? 0) === 1 ? '' : 's'}
-                      {dia?.congelador_usado === 1 ? ' · congelado' : ''}
+                      {congelado ? ' · congelado' : ''}
                     </Text>
                   </View>
                 ) : null}
@@ -105,7 +117,7 @@ export function Heatmap90({ dias, ahora }: Props) {
           style={[
             estilos.leyendaCelda,
             estilos.leyendaCongelada,
-            { backgroundColor: t.celdaEscala[0], borderColor: t.accent3, borderRadius: radioCelda },
+            { backgroundColor: t.accent3, borderRadius: radioCelda },
           ]}
         />
         <Text style={[estilos.leyendaTexto, { color: t.inkMuted }]}>Congelado</Text>
@@ -133,5 +145,5 @@ const estilos = StyleSheet.create({
   leyenda: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 },
   leyendaTexto: { fontSize: 11 },
   leyendaCelda: { width: 11, height: 11 },
-  leyendaCongelada: { borderWidth: 1.5, marginLeft: 6 },
+  leyendaCongelada: { marginLeft: 6 },
 });

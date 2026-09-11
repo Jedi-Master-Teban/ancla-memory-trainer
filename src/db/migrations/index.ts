@@ -6,13 +6,14 @@ import * as m004 from './004_listas_numeros';
 import * as m005 from './005_racha';
 import * as m006 from './006_preferencias';
 import * as m007 from './007_tipografia';
+import * as m008 from './008_tema_soft';
 
 interface Migracion {
   version: number;
   aplicar(db: ConexionBD, ahora: Date): Promise<void>;
 }
 
-const MIGRACIONES: Migracion[] = [m001, m002, m003, m004, m005, m006, m007];
+const MIGRACIONES: Migracion[] = [m001, m002, m003, m004, m005, m006, m007, m008];
 
 /**
  * Corredor de migraciones (MODELO-DATOS.md §3). Idempotente: cada migración solo

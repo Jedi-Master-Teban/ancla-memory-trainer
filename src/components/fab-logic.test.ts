@@ -1,4 +1,4 @@
-import { categoriaDeRuta, rutaCrear } from './fab-logic';
+import { categoriaDeRuta, debeMostrarFab, esRutaDeSesion, rutaCrear } from './fab-logic';
 
 describe('categoriaDeRuta', () => {
   describe('pantallas de categoría', () => {
@@ -86,5 +86,79 @@ describe('rutaCrear', () => {
 
   it('numero → /crear/numero', () => {
     expect(rutaCrear('numero')).toBe('/crear/numero');
+  });
+});
+
+describe('esRutaDeSesion', () => {
+  it.each([
+    '/colgadero/flash',
+    '/colgadero/reverso',
+    '/colgadero/velocidad',
+    '/naipes/flash',
+    '/naipes/reverso',
+    '/naipes/velocidad',
+    '/naipes/baraja-completa',
+    '/listas/estudiar',
+    '/numeros/repasar',
+    '/practicar',
+    '/practica-libre',
+    '/resumen-sesion',
+  ])('%s es sesión', (ruta) => {
+    expect(esRutaDeSesion(ruta)).toBe(true);
+  });
+
+  it.each(['/', '/colgadero', '/naipes', '/listas', '/numeros', '/editar'])(
+    '%s no es sesión',
+    (ruta) => {
+      expect(esRutaDeSesion(ruta)).toBe(false);
+    },
+  );
+
+  it('ignora la query string', () => {
+    expect(esRutaDeSesion('/colgadero/flash?id=3')).toBe(true);
+  });
+
+  it('undefined no es sesión', () => {
+    expect(esRutaDeSesion(undefined)).toBe(false);
+  });
+});
+
+describe('debeMostrarFab', () => {
+  describe('lo esconde donde no se puede crear nada', () => {
+    it('en Inicio', () => {
+      expect(debeMostrarFab('/')).toBe(false);
+      expect(debeMostrarFab('/index')).toBe(false);
+    });
+
+    it.each(['/estadisticas', '/ajustes', '/racha', '/historial-sesiones'])(
+      'en %s — son de consulta, no se crea nada',
+      (ruta) => {
+        expect(debeMostrarFab(ruta)).toBe(false);
+      },
+    );
+
+    it('durante una sesión de estudio — competía con los botones de calificar', () => {
+      expect(debeMostrarFab('/colgadero/flash')).toBe(false);
+      expect(debeMostrarFab('/naipes/reverso')).toBe(false);
+      expect(debeMostrarFab('/practicar')).toBe(false);
+      expect(debeMostrarFab('/listas/estudiar')).toBe(false);
+      expect(debeMostrarFab('/resumen-sesion')).toBe(false);
+    });
+
+    it('sin pathname', () => {
+      expect(debeMostrarFab(undefined)).toBe(false);
+    });
+  });
+
+  describe('lo muestra donde sí se crea', () => {
+    it.each(['/colgadero', '/naipes', '/listas', '/numeros', '/listas/7'])('en %s', (ruta) => {
+      expect(debeMostrarFab(ruta)).toBe(true);
+    });
+
+    it('en Editar y en las pantallas de creación', () => {
+      expect(debeMostrarFab('/editar')).toBe(true);
+      expect(debeMostrarFab('/crear/colgadero')).toBe(true);
+      expect(debeMostrarFab('/numeros/nuevo')).toBe(true);
+    });
   });
 });

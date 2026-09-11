@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
+import { HeaderFlotante } from '../src/components/HeaderFlotante';
 import { Heatmap90 } from '../src/components/Heatmap90';
 import { IndicadorRacha } from '../src/components/IndicadorRacha';
 import { obtenerBD } from '../src/db/client';
@@ -109,6 +110,7 @@ export default function Racha() {
       keyboardShouldPersistTaps="handled"
       automaticallyAdjustKeyboardInsets
     >
+      <HeaderFlotante titulo="Tu racha" volverA="/" />
       <View
         style={[
           estilos.hero,

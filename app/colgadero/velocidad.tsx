@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { HeaderFlotante } from '../../src/components/HeaderFlotante';
 import { Flashcard } from '../../src/components/Flashcard';
@@ -13,6 +13,8 @@ import {
 } from '../../src/db/repository';
 import type { ConexionBD } from '../../src/db/tipos';
 import { useSesionStore } from '../../src/stores/sesion';
+import { useTema } from '../../src/stores/tema';
+import type { TokensColor } from '../../src/tema/colores';
 
 /**
  * Modo Velocidad: serie cronometrada, sin pausa de visualización. Autoevalúa
@@ -20,6 +22,8 @@ import { useSesionStore } from '../../src/stores/sesion';
  * (modulos/02-colgadero.md §2, regla explícita — no cambiar sin ADR).
  */
 export default function ColgaderoVelocidad() {
+  const { colores: t } = useTema();
+  const estilos = useMemo(() => crearEstilos(t), [t]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [db, setDb] = useState<ConexionBD | null>(null);
@@ -83,7 +87,7 @@ export default function ColgaderoVelocidad() {
   if (cargando) {
     return (
       <View style={estilos.centro}>
-        <ActivityIndicator color="#ffffff" />
+        <ActivityIndicator color={t.ink} />
       </View>
     );
   }
@@ -157,25 +161,25 @@ export default function ColgaderoVelocidad() {
   );
 }
 
-const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#1e1e2e', justifyContent: 'center', gap: 16 },
-  centro: { flex: 1, backgroundColor: '#1e1e2e', alignItems: 'center', justifyContent: 'center', gap: 12 },
-  cronometro: { color: '#f9e2af', textAlign: 'center', fontSize: 20, fontWeight: '600' },
-  progreso: { color: '#a6adc8', textAlign: 'center' },
-  titulo: { color: '#ffffff', fontSize: 20, fontWeight: '600' },
-  texto: { color: '#a6adc8' },
-  error: { color: '#f38ba8', padding: 24, textAlign: 'center' },
-  enlace: { color: '#89b4fa', marginTop: 12 },
+const crearEstilos = (t: TokensColor) => StyleSheet.create({
+  contenedor: { flex: 1, backgroundColor: t.bg, justifyContent: 'center', gap: 16 },
+  centro: { flex: 1, backgroundColor: t.bg, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  cronometro: { color: t.dificil, textAlign: 'center', fontSize: 20, fontWeight: '600' },
+  progreso: { color: t.inkMuted, textAlign: 'center' },
+  titulo: { color: t.ink, fontSize: 20, fontWeight: '600' },
+  texto: { color: t.inkMuted },
+  error: { color: t.otraVez, padding: 24, textAlign: 'center' },
+  enlace: { color: t.accent1, marginTop: 12 },
   botonRevelar: {
     alignSelf: 'center',
-    backgroundColor: '#89b4fa',
+    backgroundColor: t.accent1,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
   filaAutoeval: { flexDirection: 'row', gap: 8, paddingHorizontal: 16 },
   botonAutoeval: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
-  fallo: { backgroundColor: '#f38ba8' },
-  acierto: { backgroundColor: '#a6e3a1' },
-  textoRevelar: { color: '#1e1e2e', fontWeight: '600' },
+  fallo: { backgroundColor: t.otraVez },
+  acierto: { backgroundColor: t.bien },
+  textoRevelar: { color: t.inkOnAccent, fontWeight: '600' },
 });

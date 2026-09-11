@@ -1,10 +1,14 @@
 import type { ViewStyle } from 'react-native';
 
 /**
- * Tokens de color de las 2 direcciones visuales (Fase 8, ADR-026). Valores
+ * Tokens de color de las 3 direcciones visuales (Fase 8, ADR-026). Valores
  * convertidos a mano de oklch→hex desde agent_docs/prototipos/pantallas/*.html
  * (RN 0.81.5 no soporta oklch() — ver ADR-026), renderizando cada color en un
  * navegador real y leyendo el resultado, nunca calculado de memoria.
+ *
+ * Fase 8 v2 (DESIGN.md §1): 8 tokens nuevos por tema. La regla que sostiene
+ * todo el rediseño es que ninguna pantalla inventa un color: si un valor no
+ * está aquí, es un bug del token, no una excepción de la pantalla.
  */
 
 export type TemaId = 'arcade' | 'soft' | 'papel';
@@ -32,6 +36,24 @@ export interface TokensColor {
   borderMuted?: string;
   /** Solo Arcade — hairline luminoso para cards translúcidas (V2). */
   borderHairline?: string;
+
+  // ── Fase 8 v2 ────────────────────────────────────────────────────────────
+  /** Superficies "hundidas": segmentado, stepper, botón fantasma. */
+  cardAlt: string;
+  /** Riel de barras de progreso. También es la celda 0 del heatmap. */
+  track: string;
+  /** Relleno de la pastilla de la pestaña activa en la isla. */
+  pill: string;
+  /** Tinte de la isla de navegación, por debajo del BlurView. */
+  glass: string;
+  /** Hairline superior de la isla — es lo que la hace ver de vidrio. */
+  glassBorder: string;
+  /** Color del halo de sombra del CTA principal. */
+  ctaGlow: string;
+  /** Fondo suave de la píldora de racha y del halo de la llama. */
+  flameSoft: string;
+  /** Fondo suave para insignias de retención en verde. */
+  bienSoft: string;
 }
 
 const ARCADE: TokensColor = {
@@ -53,8 +75,16 @@ const ARCADE: TokensColor = {
   flameInner: '#ffe46e',
   flameGlow: '#ff821d',
   celdaEscala: ['#25273c', '#25467d', '#007fbc', '#00d0ec'],
-  /** Solo Arcade — border hairline luminoso para cards translúcidas. */
   borderHairline: 'rgba(255,255,255,0.07)',
+
+  cardAlt: 'rgba(255,255,255,0.07)',
+  track: 'rgba(255,255,255,0.10)',
+  pill: 'rgba(0,208,236,0.16)',
+  glass: 'rgba(28,29,62,0.72)',
+  glassBorder: 'rgba(255,255,255,0.10)',
+  ctaGlow: 'rgba(0,208,236,0.55)',
+  flameSoft: 'rgba(255,130,29,0.20)',
+  bienSoft: 'rgba(122,225,99,0.16)',
 };
 
 const PAPEL: TokensColor = {
@@ -77,6 +107,15 @@ const PAPEL: TokensColor = {
   flameGlow: '',
   celdaEscala: ['#362c24', '#5d402d', '#93573b', '#cd6e4c'],
   borderMuted: '#42352b',
+
+  cardAlt: 'rgba(255,255,255,0.04)',
+  track: '#362c24',
+  pill: 'rgba(205,110,76,0.16)',
+  glass: 'rgba(45,33,24,0.86)',
+  glassBorder: '#42352b',
+  ctaGlow: 'rgba(205,110,76,0.40)',
+  flameSoft: 'rgba(205,110,76,0.16)',
+  bienSoft: 'rgba(116,144,101,0.18)',
 };
 
 const SOFT: TokensColor = {
@@ -95,19 +134,32 @@ const SOFT: TokensColor = {
   dificil: '#F59E0B',
   bien: '#10B981',
   facil: '#3B82F6',
-  // Flama — naranja saturado al centro (contraste con bg claro)
   flameOuterStart: '#FFB84D',
   flameOuterEnd: '#FF6B35',
   flameInner: '#FFD66E',
   flameGlow: '#FF6B35',
   celdaEscala: ['#E8E5DF', '#F5C9A8', '#FFB399', '#FF6B35'],
   borderMuted: '#E8E5DF',
+
+  cardAlt: 'rgba(45,42,38,0.035)',
+  track: '#E8E5DF',
+  pill: 'rgba(255,107,53,0.13)',
+  glass: 'rgba(250,249,247,0.66)',
+  glassBorder: 'rgba(255,255,255,0.70)',
+  ctaGlow: 'rgba(255,107,53,0.75)',
+  flameSoft: 'rgba(255,107,53,0.13)',
+  bienSoft: 'rgba(16,185,129,0.13)',
 };
 
 const PALETAS: Record<TemaId, TokensColor> = { arcade: ARCADE, soft: SOFT, papel: PAPEL };
 
 export function coloresDelTema(tema: TemaId): TokensColor {
   return PALETAS[tema];
+}
+
+/** Los dos temas oscuros. Lo usa BlurView para elegir su `tint`. */
+export function esTemaOscuro(tema: TemaId): boolean {
+  return tema === 'arcade' || tema === 'papel';
 }
 
 export interface RecetaBoton {
@@ -147,7 +199,6 @@ export function recetaBotonCalificacion(tema: TemaId, colorAcento: string): Rece
     };
   }
   if (tema === 'soft') {
-    // Soft UI: píldora con relleno + sombra neumorphic suave.
     return {
       contenedor: {
         borderRadius: 18,
@@ -185,3 +236,100 @@ export function cardStyle(tema: TemaId): ViewStyle {
   } as const;
 }
 
+/**
+ * Receta de FORMA por tema (DESIGN.md §2). Hermana de
+ * `recetaBotonCalificacion`, pero para radios y sombras genéricos: así una
+ * pantalla nueva no tiene que decidir si un radio es 20 o 2 según el tema.
+ *
+ * Papel y Tinta es plano por definición: radios de 1–2 px y cero sombra.
+ * Arcade usa sombra dura (shadowRadius 0) porque su lenguaje es el relieve
+ * de arcade, no el desenfoque.
+ */
+export interface RecetaForma {
+  /** Tarjeta grande. */
+  rCard: number;
+  /** Fila de lista. */
+  rRow: number;
+  /** Botón. */
+  rBtn: number;
+  /** Caja de ícono. */
+  rIcon: number;
+  /** Píldora. */
+  rPill: number;
+  /** Celda de heatmap. */
+  rCell: number;
+  /** Radio de la isla de navegación y de la pastilla de su pestaña activa. */
+  rIsla: number;
+  rIslaPestana: number;
+  sombraCard: ViewStyle;
+  /** Necesita el acento porque en Soft la sombra del CTA es de su propio color. */
+  sombraCta: (t: TokensColor) => ViewStyle;
+}
+
+const FORMA: Record<TemaId, RecetaForma> = {
+  soft: {
+    rCard: 20,
+    rRow: 16,
+    rBtn: 18,
+    rIcon: 12,
+    rPill: 999,
+    rCell: 4,
+    rIsla: 26,
+    rIslaPestana: 15,
+    sombraCard: {
+      shadowColor: '#2D2A26',
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.07,
+      shadowRadius: 26,
+      elevation: 3,
+    },
+    sombraCta: (t) => ({
+      shadowColor: t.accent1,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.45,
+      shadowRadius: 18,
+      elevation: 6,
+    }),
+  },
+  arcade: {
+    rCard: 24,
+    rRow: 18,
+    rBtn: 16,
+    rIcon: 12,
+    rPill: 999,
+    rCell: 4,
+    rIsla: 24,
+    rIslaPestana: 19,
+    sombraCard: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.32,
+      shadowRadius: 20,
+      elevation: 4,
+    },
+    // Sombra dura "3D" del mockup Arcade.
+    sombraCta: () => ({
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 5 },
+      shadowOpacity: 0.35,
+      shadowRadius: 0,
+      elevation: 0,
+    }),
+  },
+  papel: {
+    rCard: 2,
+    rRow: 2,
+    rBtn: 2,
+    rIcon: 2,
+    rPill: 2,
+    rCell: 1,
+    rIsla: 2,
+    rIslaPestana: 2,
+    sombraCard: {},
+    sombraCta: () => ({}),
+  },
+};
+
+export function recetaForma(tema: TemaId): RecetaForma {
+  return FORMA[tema];
+}

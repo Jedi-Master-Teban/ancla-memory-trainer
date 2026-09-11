@@ -8,7 +8,8 @@
     "ios": "expo start --ios",
     "test": "jest",
     "typecheck": "tsc --noEmit",
-    "build:pwa": "expo export --platform web && python3 pwa/patch_dist.py"
+    "build:pwa": "expo export --platform web && python3 pwa/patch_dist.py",
+    "lint": "expo lint"
   },
   "dependencies": {
     "@expo-google-fonts/fredoka": "^0.4.1",
@@ -28,6 +29,7 @@
     "expo-splash-screen": "~31.0.13",
     "expo-sqlite": "~16.0.10",
     "expo-status-bar": "~3.0.9",
+    "lucide": "^1.44.0",
     "lucide-react-native": "^1.34.0",
     "morphicons": "^1.7.0",
     "react": "19.1.0",
@@ -44,6 +46,8 @@
   "devDependencies": {
     "@types/jest": "^29.5.14",
     "@types/react": "~19.1.10",
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "~10.0.0",
     "jest-expo": "~54.0.17",
     "typescript": "~5.9.2"
   },

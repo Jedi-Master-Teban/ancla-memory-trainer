@@ -72,6 +72,7 @@ export default function NumeroNuevo() {
 
   return (
     <ScrollView style={estilos.contenedor} contentContainerStyle={estilos.contenido}>
+      <HeaderFlotante titulo="Número nuevo" volverA="/numeros" />
       <Text style={estilos.etiquetaCampo}>Etiqueta</Text>
       <TextInput
         value={etiqueta}

@@ -2,10 +2,20 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FormularioGenerico } from '../../src/components/FormularioGenerico';
+import { HeaderFlotante } from '../../src/components/HeaderFlotante';
 import { obtenerBD } from '../../src/db/client';
 import { ARCHIVAR_CATEGORIA, GUARDAR_CATEGORIA, obtenerTarjeta } from '../../src/db/repository';
 import type { ConexionBD, FilaTarjeta } from '../../src/db/tipos';
 import { esCategoriaValida, REGISTRO } from '../../src/domain/categorias/registro';
+import type { Categoria } from '../../src/db/tipos';
+
+/** A dónde vuelve el header de cada categoría. */
+const RUTA_CATEGORIA: Record<Categoria, string> = {
+  colgadero: '/colgadero',
+  naipe: '/naipes',
+  lista_item: '/listas',
+  numero: '/numeros',
+};
 
 /**
  * Ruta genérica de creación/edición (§8.6). `/crear/colgadero`,
@@ -106,9 +116,14 @@ export default function Crear() {
 
   return (
     <ScrollView style={estilos.contenedor} contentContainerStyle={estilos.contenido}>
-      <Text style={estilos.titulo}>
-        {id ? `Editar ${REGISTRO[categoria].etiquetaSingular}` : `${REGISTRO[categoria].etiquetaSingular} nuevo`}
-      </Text>
+      <HeaderFlotante
+        titulo={
+          id
+            ? `Editar ${REGISTRO[categoria].etiquetaSingular}`
+            : `${REGISTRO[categoria].etiquetaSingular} nuevo`
+        }
+        volverA={RUTA_CATEGORIA[categoria]}
+      />
       <FormularioGenerico categoria={categoria} tarjetaExistente={tarjeta ?? undefined} onGuardar={guardar} />
       {puedeEliminar ? (
         <Pressable onPress={confirmarEliminar} style={estilos.botonEliminar}>

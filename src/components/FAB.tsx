@@ -9,9 +9,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import { router, usePathname } from 'expo-router';
 import { MorphIcon } from 'morphicons/react-native';
+import type { IconNode } from 'morphicons/react-native';
+import { Hash, Link, List, Plus, Spade } from 'lucide';
 import type { Categoria } from '../db/tipos';
 import { useTema } from '../stores/tema';
-import { categoriaDeRuta, rutaCrear } from './fab-logic';
+import { categoriaDeRuta, debeMostrarFab, rutaCrear } from './fab-logic';
 
 /**
  * FAB polimórfico global (estilo iOS 17+):
@@ -31,13 +33,13 @@ import { categoriaDeRuta, rutaCrear } from './fab-logic';
 const OPCIONES_RADIAL: Array<{
   id: Categoria;
   etiqueta: string;
-  icono: string;
+  icono: IconNode;
   ruta: string;
 }> = [
-  { id: 'colgadero', etiqueta: 'Colgadero', icono: 'lucide-link', ruta: rutaCrear('colgadero') },
-  { id: 'naipe', etiqueta: 'Naipes', icono: 'lucide-spade', ruta: rutaCrear('naipe') },
-  { id: 'lista_item', etiqueta: 'Listas', icono: 'lucide-list', ruta: rutaCrear('lista_item') },
-  { id: 'numero', etiqueta: 'Números', icono: 'lucide-hash', ruta: rutaCrear('numero') },
+  { id: 'colgadero', etiqueta: 'Colgadero', icono: Link, ruta: rutaCrear('colgadero') },
+  { id: 'naipe', etiqueta: 'Naipes', icono: Spade, ruta: rutaCrear('naipe') },
+  { id: 'lista_item', etiqueta: 'Listas', icono: List, ruta: rutaCrear('lista_item') },
+  { id: 'numero', etiqueta: 'Números', icono: Hash, ruta: rutaCrear('numero') },
 ];
 
 export function FAB() {
@@ -47,15 +49,9 @@ export function FAB() {
   const escalaFab = useSharedValue(1);
   const opacidadMenu = useSharedValue(0);
   const translateMenu = useSharedValue(20);
-  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressDisparadoRef = useRef(false);
 
   const categoriaActual = categoriaDeRuta(pathname);
-
-// No mostrar FAB en la pantalla de inicio
-  if (pathname === '/' || pathname === '/index') {
-    return null;
-  }
 
   const onPressIn = useCallback(() => {
     escalaFab.value = withSpring(0.9, { damping: 18, stiffness: 280 });
@@ -130,6 +126,20 @@ export function FAB() {
     router.push(ruta as never);
   }, [cerrarMenu]);
 
+  // Qué rutas esconden el FAB vive en `debeMostrarFab` (fab-logic.ts), que es
+  // pura y está cubierta por tests.
+  //
+  // Este return va DESPUÉS de todos los hooks, y ahí está lo importante: el FAB
+  // se monta en app/_layout.tsx, FUERA del <Stack>, así que no se desmonta al
+  // navegar. Cuando el return estaba arriba (antes de los 10 useCallback y los
+  // 2 useAnimatedStyle), el conteo de hooks saltaba de 8 a 18 en cada
+  // transición Inicio ↔ cualquier ruta y React lanzaba el error #310
+  // ("Rendered more hooks than during the previous render"), desmontando el
+  // árbol entero: toda pantalla que no fuera Inicio quedaba en blanco.
+  if (!debeMostrarFab(pathname)) {
+    return null;
+  }
+
   return (
     <>
       {menuAbierto && (
@@ -183,7 +193,7 @@ export function FAB() {
           hitSlop={8}
           style={estilos.fabToque}
         >
-          <MorphIcon icon="lucide-plus" size={28} color={t.inkOnAccent} />
+          <MorphIcon icon={Plus} size={28} color={t.inkOnAccent} />
         </Pressable>
       </Animated.View>
     </>
