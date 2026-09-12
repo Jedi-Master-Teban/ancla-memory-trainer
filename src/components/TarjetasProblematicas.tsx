@@ -1,7 +1,10 @@
+import { useMemo } from 'react';
 import { Link } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import type { Categoria, FilaTarjeta, MetadataListaItem } from '../db/tipos';
 import type { TarjetaProblematica } from '../domain/estadisticas/retencion';
+import { useTema } from '../stores/tema';
+import type { TokensColor } from '../tema/colores';
 
 interface Props {
   tarjetas: TarjetaProblematica[];
@@ -42,6 +45,8 @@ export function rutaEditar(
 
 /** Peor primero (agent_docs/modulos/08-panel-retencion.md §4) — el orden ya viene decidido por calcularPanelRetencion. */
 export function TarjetasProblematicas({ tarjetas }: Props) {
+  const { colores: t } = useTema();
+  const estilos = useMemo(() => crearEstilos(t), [t]);
   return (
     <View style={estilos.contenedor}>
       <Text style={estilos.titulo}>Tarjetas problemáticas</Text>
@@ -65,12 +70,12 @@ export function TarjetasProblematicas({ tarjetas }: Props) {
   );
 }
 
-const estilos = StyleSheet.create({
+const crearEstilos = (t: TokensColor) => StyleSheet.create({
   contenedor: { gap: 8 },
-  titulo: { color: '#ffffff', fontSize: 16, fontWeight: '600' },
-  vacio: { color: '#a6adc8' },
-  fila: { backgroundColor: '#313244', borderRadius: 10, padding: 12, gap: 2 },
-  insignia: { color: '#f9e2af', fontSize: 11, fontWeight: '600', letterSpacing: 1 },
-  texto: { color: '#ffffff', fontSize: 15 },
-  detalle: { color: '#f38ba8', fontSize: 12 },
+  titulo: { color: t.ink, fontSize: 16, fontWeight: '600' },
+  vacio: { color: t.inkMuted },
+  fila: { backgroundColor: t.card, borderRadius: 10, padding: 12, gap: 2 },
+  insignia: { color: t.dificil, fontSize: 11, fontWeight: '600', letterSpacing: 1 },
+  texto: { color: t.ink, fontSize: 15 },
+  detalle: { color: t.otraVez, fontSize: 12 },
 });

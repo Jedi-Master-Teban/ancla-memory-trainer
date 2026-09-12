@@ -17,13 +17,15 @@ import {
   obtenerConfigRacha,
   obtenerDiaPractica,
 } from '../src/db/repository';
-import type { Categoria, ConexionBD, MetadataNaipe } from '../src/db/tipos';
+import type { Categoria, ConexionBD, FilaTarjeta, MetadataNaipe } from '../src/db/tipos';
 import { fechaLocal } from '../src/domain/racha/calculo';
 import { intervalosPrevistos } from '../src/domain/fsrs/preview';
 import { filaTarjetaACardInput, type Calificacion } from '../src/domain/fsrs/scheduler';
 import { useSesionStore } from '../src/stores/sesion';
 import { useTema } from '../src/stores/tema';
 import type { TokensColor } from '../src/tema/colores';
+import { explicar } from '../src/domain/fonetica/decodificador';
+import { explicarNaipe } from '../src/domain/fonetica/naipes';
 
 const ETIQUETA_CATEGORIA: Record<Categoria, string> = {
   colgadero: 'Colgadero',
@@ -39,6 +41,26 @@ const ETIQUETA_CATEGORIA: Record<Categoria, string> = {
  * Insignia de categoría porque, a diferencia de cada pantalla de una sola
  * categoría, aquí sí hace falta saber en qué "mundo" está cada tarjeta.
  */
+/**
+ * La lógica mnemotécnica de la tarjeta actual, cuando la hay.
+ *
+ * Depende de la categoría porque cada una codifica distinto: colgadero
+ * decodifica la palabra entera, y un naipe decodifica solo lo que va después
+ * del marcador de palo. Listas y números no tienen nada que explicar aquí.
+ */
+function explicacionDe(tarjeta: FilaTarjeta): string | undefined {
+  if (tarjeta.categoria === 'colgadero') return explicar(tarjeta.contenido_reverso);
+  if (tarjeta.categoria === 'naipe') {
+    try {
+      const carta = JSON.parse(tarjeta.metadata_categoria) as MetadataNaipe;
+      return explicarNaipe(carta, tarjeta.contenido_reverso) ?? undefined;
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
+}
+
 export default function Practicar() {
   const { colores: t } = useTema();
   const estilos = useMemo(() => crearEstilos(t), [t]);
@@ -179,7 +201,12 @@ export default function Practicar() {
             />
           </View>
         ) : (
-          <Flashcard frente={actual.contenido_frente} reverso={actual.contenido_reverso} revelada={revelada} />
+          <Flashcard
+          frente={actual.contenido_frente}
+          reverso={actual.contenido_reverso}
+          revelada={revelada}
+          explicacion={revelada ? explicacionDe(actual) : undefined}
+        />
         )}
         {!revelada ? (
           <PausaVisualizacion clave={actual.id}>

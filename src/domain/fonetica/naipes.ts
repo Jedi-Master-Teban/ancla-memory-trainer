@@ -59,7 +59,10 @@ const SONIDOS_DE_DIGITO: Record<number, string[]> = {
   5: ['l', 'll'],
   6: ['s', 'z'],
   7: ['f', 'j'],
-  8: ['ch'],
+  // 'g' ante a/o/u también vale 8 — agent_docs/decodificacion-fonetica.md:21
+  // ("Ch, G(ga,go,gu)") y decodificador.ts:86-87, que ya lo implementa. Esta
+  // tabla solo alimenta el texto de ayuda de Hojear; no valida palabras.
+  8: ['ch', 'g'],
   9: ['v', 'b', 'p'],
   0: ['r', 'rr'],
 };

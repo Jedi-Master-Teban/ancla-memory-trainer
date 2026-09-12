@@ -10,6 +10,7 @@ import {
   type PuntoLinea,
 } from './line-chart-logic';
 import { useTema } from '../stores/tema';
+import { esTemaOscuro } from '../tema/colores';
 
 interface Props {
   puntos: PuntoLinea[];
@@ -49,7 +50,7 @@ export function LineChart({
   periodoActivo,
   onCambiarPeriodo,
 }: Props) {
-  const { colores: t } = useTema();
+  const { colores: t, tema } = useTema();
   const puntosAgrupados = useMemo(() => {
     if (!periodoActivo) return puntos;
     return agruparPorPeriodo(puntos, periodoActivo);
@@ -61,7 +62,10 @@ export function LineChart({
   );
   const mejor = useMemo(() => mejorPunto(puntosAgrupados), [puntosAgrupados]);
 
-  const colorEjes = t.bg === '#1f160f' || t.bg === '#141433' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  // Se pregunta por el tema, no por el valor del color de fondo: comparar
+  // contra dos hex concretos se rompía en silencio en cuanto la paleta
+  // cambiara un dígito.
+  const colorEjes = esTemaOscuro(tema) ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
 
   // Para la línea meta
   const metaYPos = metaY !== undefined && geom.ejeY.max > 0

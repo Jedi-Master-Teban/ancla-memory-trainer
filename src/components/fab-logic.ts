@@ -45,6 +45,13 @@ const MODOS_DE_ESTUDIO = [
 /** Sesiones que no cuelgan de ninguna categoría. */
 const SESIONES_SUELTAS = ['/practicar', '/practica-libre', '/resumen-sesion'];
 
+/**
+ * Prefijos de rutas inmersivas a pantalla completa (Fase 9): Hojear ocupa todo
+ * el alto, oculta la isla y se cierra con la ✕ de su encabezado. Un FAB
+ * flotando ahí taparía el riel de posición.
+ */
+const INMERSIVAS = ['/hojear'];
+
 /** Pantallas de consulta: se miran, no se editan. */
 const SOLO_LECTURA = ['/estadisticas', '/ajustes', '/racha', '/historial-sesiones'];
 
@@ -65,6 +72,7 @@ export function esRutaDeSesion(pathname: string | undefined): boolean {
  *     crea nada, y el botón tapaba parte del heatmap y de las gráficas.
  *   - Cualquier sesión de estudio, donde competía por el pulgar con los botones
  *     de calificar y tapaba la esquina de la tarjeta.
+ *   - Hojear, que es lectura a pantalla completa.
  *
  * Antes solo se escondía en Inicio, así que aparecía flotando sobre las
  * estadísticas y en mitad de un repaso.
@@ -74,5 +82,6 @@ export function debeMostrarFab(pathname: string | undefined): boolean {
   const ruta = pathname.split('?')[0];
   if (ruta === '/' || ruta === '/index') return false;
   if (SOLO_LECTURA.includes(ruta)) return false;
+  if (INMERSIVAS.some((p) => ruta.startsWith(p))) return false;
   return !esRutaDeSesion(ruta);
 }

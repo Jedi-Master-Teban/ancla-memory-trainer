@@ -7,8 +7,12 @@ import { crearNumeroImportante, listarTarjetasPorMazo, obtenerMazoPorCategoria }
 import type { ConexionBD } from '../../src/db/tipos';
 import { descomponerConDecimal } from '../../src/domain/numeros/descomposicion';
 import { sanitizarDigitosConDecimal } from '../../src/domain/numeros/entrada';
+import { useTema } from '../../src/stores/tema';
+import type { TokensColor } from '../../src/tema/colores';
 
 export default function NumeroNuevo() {
+  const { colores: t } = useTema();
+  const estilos = useMemo(() => crearEstilos(t), [t]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [db, setDb] = useState<ConexionBD | null>(null);
@@ -57,7 +61,7 @@ export default function NumeroNuevo() {
   if (cargando) {
     return (
       <View  style={estilos.centro}>
-        <ActivityIndicator color="#ffffff" />
+        <ActivityIndicator color={t.ink} />
       </View>
     );
   }
@@ -78,7 +82,7 @@ export default function NumeroNuevo() {
         value={etiqueta}
         onChangeText={setEtiqueta}
         placeholder="Ej. Clave de la caja fuerte"
-        placeholderTextColor="#6c7086"
+        placeholderTextColor={t.inkMuted}
         style={estilos.input}
       />
 
@@ -87,7 +91,7 @@ export default function NumeroNuevo() {
         value={digitos}
         onChangeText={(texto) => setDigitos(sanitizarDigitosConDecimal(texto))}
         placeholder="Ej. 3.14159 (o solo 0453)"
-        placeholderTextColor="#6c7086"
+        placeholderTextColor={t.inkMuted}
         keyboardType="decimal-pad"
         style={estilos.input}
       />
@@ -129,25 +133,25 @@ export default function NumeroNuevo() {
   );
 }
 
-const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#1e1e2e' },
+const crearEstilos = (t: TokensColor) => StyleSheet.create({
+  contenedor: { flex: 1, backgroundColor: t.bg },
   contenido: { padding: 24, gap: 8 },
-  centro: { flex: 1, backgroundColor: '#1e1e2e', alignItems: 'center', justifyContent: 'center' },
-  error: { color: '#f38ba8', padding: 24, textAlign: 'center' },
-  etiquetaCampo: { color: '#a6adc8', marginTop: 12 },
+  centro: { flex: 1, backgroundColor: t.bg, alignItems: 'center', justifyContent: 'center' },
+  error: { color: t.otraVez, padding: 24, textAlign: 'center' },
+  etiquetaCampo: { color: t.inkMuted, marginTop: 12 },
   input: {
-    backgroundColor: '#313244',
-    color: '#ffffff',
+    backgroundColor: t.card,
+    color: t.ink,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
   },
-  bloquePreview: { backgroundColor: '#313244', borderRadius: 12, padding: 16, marginTop: 16, gap: 4 },
-  tituloPreview: { color: '#ffffff', fontWeight: '600', marginBottom: 4 },
-  seccionPreview: { color: '#89b4fa', fontSize: 12, fontWeight: '600', marginTop: 6, marginBottom: 2 },
-  filaTrozo: { color: '#a6e3a1', fontSize: 15 },
-  botonGuardar: { backgroundColor: '#89b4fa', borderRadius: 8, paddingVertical: 14, alignItems: 'center', marginTop: 24 },
+  bloquePreview: { backgroundColor: t.card, borderRadius: 12, padding: 16, marginTop: 16, gap: 4 },
+  tituloPreview: { color: t.ink, fontWeight: '600', marginBottom: 4 },
+  seccionPreview: { color: t.accent1, fontSize: 12, fontWeight: '600', marginTop: 6, marginBottom: 2 },
+  filaTrozo: { color: t.bien, fontSize: 15 },
+  botonGuardar: { backgroundColor: t.accent1, borderRadius: 8, paddingVertical: 14, alignItems: 'center', marginTop: 24 },
   deshabilitado: { opacity: 0.4 },
-  textoBoton: { color: '#1e1e2e', fontWeight: '700' },
+  textoBoton: { color: t.inkOnAccent, fontWeight: '700' },
 });

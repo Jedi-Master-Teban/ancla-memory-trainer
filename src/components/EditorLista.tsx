@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useTema } from '../stores/tema';
+import type { TokensColor } from '../tema/colores';
 
 export interface ObjetoEditable {
   id?: string;
@@ -18,6 +20,8 @@ interface Props {
  * verificada en este proyecto.
  */
 export function EditorLista({ objetos, onGuardar }: Props) {
+  const { colores: t } = useTema();
+  const estilos = useMemo(() => crearEstilos(t), [t]);
   const [filas, setFilas] = useState<ObjetoEditable[]>(objetos.length > 0 ? objetos : [{ texto: '' }]);
 
   function actualizarTexto(indice: number, texto: string) {
@@ -57,7 +61,7 @@ export function EditorLista({ objetos, onGuardar }: Props) {
             onChangeText={(texto) => actualizarTexto(indice, texto)}
             style={estilos.input}
             placeholder="Objeto..."
-            placeholderTextColor="#6c7086"
+            placeholderTextColor={t.inkMuted}
           />
           <Pressable onPress={() => moverFila(indice, -1)} disabled={indice === 0} style={estilos.botonChico}>
             <Text style={[estilos.textoBotonChico, indice === 0 && estilos.deshabilitado]}>↑</Text>
@@ -86,25 +90,25 @@ export function EditorLista({ objetos, onGuardar }: Props) {
   );
 }
 
-const estilos = StyleSheet.create({
+const crearEstilos = (t: TokensColor) => StyleSheet.create({
   contenedor: { gap: 8 },
   fila: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  numero: { color: '#a6adc8', width: 20, textAlign: 'right' },
+  numero: { color: t.inkMuted, width: 20, textAlign: 'right' },
   input: {
     flex: 1,
-    backgroundColor: '#313244',
-    color: '#ffffff',
+    backgroundColor: t.card,
+    color: t.ink,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 15,
   },
   botonChico: { paddingHorizontal: 8, paddingVertical: 8 },
-  textoBotonChico: { color: '#89b4fa', fontSize: 16 },
-  deshabilitado: { color: '#45475a' },
-  textoEliminar: { color: '#f38ba8', fontSize: 16 },
+  textoBotonChico: { color: t.accent1, fontSize: 16 },
+  deshabilitado: { color: t.inkMuted },
+  textoEliminar: { color: t.otraVez, fontSize: 16 },
   botonAgregar: { paddingVertical: 10, alignItems: 'center' },
-  textoBotonAgregar: { color: '#89b4fa', fontWeight: '600' },
-  botonGuardar: { backgroundColor: '#89b4fa', borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
-  textoBotonGuardar: { color: '#1e1e2e', fontWeight: '600' },
+  textoBotonAgregar: { color: t.accent1, fontWeight: '600' },
+  botonGuardar: { backgroundColor: t.accent1, borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
+  textoBotonGuardar: { color: t.inkOnAccent, fontWeight: '600' },
 });

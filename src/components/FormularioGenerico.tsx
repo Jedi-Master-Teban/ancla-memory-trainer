@@ -3,6 +3,8 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { Categoria, FilaTarjeta } from '../db/tipos';
 import { REGISTRO } from '../domain/categorias/registro';
 import { sanitizarDigitosConDecimal } from '../domain/numeros/entrada';
+import { useTema } from '../stores/tema';
+import type { TokensColor } from '../tema/colores';
 
 interface Props {
   categoria: Categoria;
@@ -18,6 +20,8 @@ interface Props {
  * persiste una categoría, solo cómo se ven sus campos.
  */
 export function FormularioGenerico({ categoria, tarjetaExistente, onGuardar }: Props) {
+  const { colores: t } = useTema();
+  const estilos = useMemo(() => crearEstilos(t), [t]);
   const definicion = REGISTRO[categoria];
   const [valores, setValores] = useState<Record<string, string>>(() =>
     tarjetaExistente ? (definicion.cargarValores?.(tarjetaExistente) ?? {}) : {}
@@ -86,7 +90,7 @@ export function FormularioGenerico({ categoria, tarjetaExistente, onGuardar }: P
                 }
               }}
               placeholder={campo.etiqueta}
-              placeholderTextColor="#6c7086"
+              placeholderTextColor={t.inkMuted}
               keyboardType={campo.tipo === 'numero' ? 'number-pad' : campo.tipo === 'decimal' ? 'decimal-pad' : 'default'}
               style={estilos.input}
             />
@@ -113,26 +117,26 @@ export function FormularioGenerico({ categoria, tarjetaExistente, onGuardar }: P
   );
 }
 
-const estilos = StyleSheet.create({
+const crearEstilos = (t: TokensColor) => StyleSheet.create({
   contenedor: { gap: 8, padding: 16 },
-  actual: { color: '#a6adc8', fontSize: 14, marginBottom: 8 },
-  etiquetaCampo: { color: '#a6adc8', marginTop: 12 },
+  actual: { color: t.inkMuted, fontSize: 14, marginBottom: 8 },
+  etiquetaCampo: { color: t.inkMuted, marginTop: 12 },
   input: {
-    backgroundColor: '#313244',
-    color: '#ffffff',
+    backgroundColor: t.card,
+    color: t.ink,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
   },
   filaOpciones: { flexDirection: 'row', gap: 8, marginTop: 4 },
-  chip: { flex: 1, backgroundColor: '#313244', borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
-  chipActivo: { backgroundColor: '#89b4fa' },
-  textoChip: { color: '#a6adc8', fontSize: 14 },
-  textoChipActivo: { color: '#1e1e2e', fontWeight: '600' },
-  advertencia: { color: '#f9e2af', fontSize: 13, marginTop: 8 },
-  error: { color: '#f38ba8', fontSize: 13, marginTop: 8 },
-  boton: { backgroundColor: '#89b4fa', borderRadius: 8, paddingVertical: 14, alignItems: 'center', marginTop: 24 },
+  chip: { flex: 1, backgroundColor: t.card, borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
+  chipActivo: { backgroundColor: t.accent1 },
+  textoChip: { color: t.inkMuted, fontSize: 14 },
+  textoChipActivo: { color: t.inkOnAccent, fontWeight: '600' },
+  advertencia: { color: t.dificil, fontSize: 13, marginTop: 8 },
+  error: { color: t.otraVez, fontSize: 13, marginTop: 8 },
+  boton: { backgroundColor: t.accent1, borderRadius: 8, paddingVertical: 14, alignItems: 'center', marginTop: 24 },
   deshabilitado: { opacity: 0.4 },
-  textoBoton: { color: '#1e1e2e', fontWeight: '700' },
+  textoBoton: { color: t.inkOnAccent, fontWeight: '700' },
 });

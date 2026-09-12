@@ -3,6 +3,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { HeaderFlotante } from '../../src/components/HeaderFlotante';
 import { Flashcard } from '../../src/components/Flashcard';
+import { explicar } from '../../src/domain/fonetica/decodificador';
 import { obtenerBD } from '../../src/db/client';
 import {
   armarSesionDeMazo,
@@ -141,7 +142,12 @@ export default function ColgaderoVelocidad() {
         <Text style={estilos.progreso}>
           {indice + 1} / {tarjetas.length}
         </Text>
-        <Flashcard frente={actual.contenido_frente} reverso={actual.contenido_reverso} revelada={revelada} />
+        <Flashcard
+          frente={actual.contenido_frente}
+          reverso={actual.contenido_reverso}
+          revelada={revelada}
+          explicacion={revelada ? explicar(actual.contenido_reverso) : undefined}
+        />
         {!revelada ? (
           <Pressable onPress={revelar} style={estilos.botonRevelar}>
             <Text style={estilos.textoRevelar}>Ver respuesta</Text>

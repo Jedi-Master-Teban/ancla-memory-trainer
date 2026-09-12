@@ -15,6 +15,9 @@ import { TOPE_POR_DEFECTO } from '../src/domain/sesion/motor';
 import { useSesionStore } from '../src/stores/sesion';
 import { useTema } from '../src/stores/tema';
 import type { TokensColor } from '../src/tema/colores';
+import { explicar } from '../src/domain/fonetica/decodificador';
+import { explicarNaipe } from '../src/domain/fonetica/naipes';
+import type { FilaTarjeta, MetadataNaipe } from '../src/db/tipos';
 
 /**
  * "Todo al día" (09-dashboard.md §4): repaso sin impacto en el scheduling
@@ -23,6 +26,26 @@ import type { TokensColor } from '../src/tema/colores';
  * `onCalificar` solo toca el store local, nunca el repositorio de tarjetas
  * — así ni fsrs_state ni la racha se mueven un milímetro.
  */
+/**
+ * La lógica mnemotécnica de la tarjeta actual, cuando la hay.
+ *
+ * Depende de la categoría porque cada una codifica distinto: colgadero
+ * decodifica la palabra entera, y un naipe decodifica solo lo que va después
+ * del marcador de palo. Listas y números no tienen nada que explicar aquí.
+ */
+function explicacionDe(tarjeta: FilaTarjeta): string | undefined {
+  if (tarjeta.categoria === 'colgadero') return explicar(tarjeta.contenido_reverso);
+  if (tarjeta.categoria === 'naipe') {
+    try {
+      const carta = JSON.parse(tarjeta.metadata_categoria) as MetadataNaipe;
+      return explicarNaipe(carta, tarjeta.contenido_reverso) ?? undefined;
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
+}
+
 export default function PracticaLibre() {
   const { colores: t } = useTema();
   const estilos = useMemo(() => crearEstilos(t), [t]);
@@ -131,7 +154,12 @@ export default function PracticaLibre() {
       </View>
       <View style={estilos.contenedor}>
         <Text style={estilos.aviso}>práctica libre — no afecta tu racha ni tus repasos</Text>
-        <Flashcard frente={actual.contenido_frente} reverso={actual.contenido_reverso} revelada={revelada} />
+        <Flashcard
+          frente={actual.contenido_frente}
+          reverso={actual.contenido_reverso}
+          revelada={revelada}
+          explicacion={revelada ? explicacionDe(actual) : undefined}
+        />
         {!revelada ? (
           <PausaVisualizacion clave={actual.id}>
             <Pressable onPress={revelar} style={estilos.botonRevelar}>

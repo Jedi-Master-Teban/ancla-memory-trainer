@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FormularioGenerico } from '../../src/components/FormularioGenerico';
 import { HeaderFlotante } from '../../src/components/HeaderFlotante';
@@ -8,6 +8,8 @@ import { ARCHIVAR_CATEGORIA, GUARDAR_CATEGORIA, obtenerTarjeta } from '../../src
 import type { ConexionBD, FilaTarjeta } from '../../src/db/tipos';
 import { esCategoriaValida, REGISTRO } from '../../src/domain/categorias/registro';
 import type { Categoria } from '../../src/db/tipos';
+import { useTema } from '../../src/stores/tema';
+import type { TokensColor } from '../../src/tema/colores';
 
 /** A dónde vuelve el header de cada categoría. */
 const RUTA_CATEGORIA: Record<Categoria, string> = {
@@ -26,6 +28,8 @@ const RUTA_CATEGORIA: Record<Categoria, string> = {
  * ahí el guard explícito con `esCategoriaValida`.
  */
 export default function Crear() {
+  const { colores: t } = useTema();
+  const estilos = useMemo(() => crearEstilos(t), [t]);
   const { categoria: categoriaParam, id, listaId } = useLocalSearchParams<{
     categoria: string;
     id?: string;
@@ -99,7 +103,7 @@ export default function Crear() {
   if (cargando) {
     return (
       <View style={estilos.centro}>
-        <ActivityIndicator color="#ffffff" />
+        <ActivityIndicator color={t.ink} />
       </View>
     );
   }
@@ -134,12 +138,12 @@ export default function Crear() {
   );
 }
 
-const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#1e1e2e' },
+const crearEstilos = (t: TokensColor) => StyleSheet.create({
+  contenedor: { flex: 1, backgroundColor: t.bg },
   contenido: { padding: 24 },
-  centro: { flex: 1, backgroundColor: '#1e1e2e', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  error: { color: '#f38ba8', textAlign: 'center' },
-  titulo: { color: '#ffffff', fontSize: 20, fontWeight: '700' },
+  centro: { flex: 1, backgroundColor: t.bg, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  error: { color: t.otraVez, textAlign: 'center' },
+  titulo: { color: t.ink, fontSize: 20, fontWeight: '700' },
   botonEliminar: { alignItems: 'center', marginTop: 16, paddingVertical: 8 },
-  textoEliminar: { color: '#f38ba8', fontWeight: '600' },
+  textoEliminar: { color: t.otraVez, fontWeight: '600' },
 });

@@ -221,7 +221,13 @@ export function recetaBotonCalificacion(tema: TemaId, colorAcento: string): Rece
  * V2 — Estilo de card para Arcade Neón: translúcido + borde hairline.
  * No es un hook de React (puro, sin efectos), solo pereza de shape.
  */
-export function cardStyle(tema: TemaId): ViewStyle {
+/**
+ * El tipo de retorno se estrecha a las tres propiedades que de verdad devuelve.
+ * `ViewStyle` a secas no se puede pasar a un `<Link>` de expo-router (espera
+ * `TextStyle`, que EXTIENDE a ViewStyle, así que el supertipo no encaja); estas
+ * tres sí son válidas en ambos.
+ */
+export function cardStyle(tema: TemaId): Pick<ViewStyle, 'backgroundColor' | 'borderWidth' | 'borderColor'> {
   const t = coloresDelTema(tema);
   if (tema === 'arcade') {
     return {

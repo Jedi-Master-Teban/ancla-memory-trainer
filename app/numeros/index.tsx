@@ -13,8 +13,13 @@ import {
 import type { ConexionBD, FilaNumeroImportante } from '../../src/db/tipos';
 import { descomponerConDecimal, type Trozo } from '../../src/domain/numeros/descomposicion';
 import { sanitizarDigitosConDecimal } from '../../src/domain/numeros/entrada';
+import { useTema } from '../../src/stores/tema';
+import type { TokensColor } from '../../src/tema/colores';
+import { ResumenCategoria } from '../../src/components/ResumenCategoria';
 
 export default function NumerosIndex() {
+  const { colores: t } = useTema();
+  const estilos = useMemo(() => crearEstilos(t), [t]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [db, setDb] = useState<ConexionBD | null>(null);
@@ -96,7 +101,7 @@ export default function NumerosIndex() {
   if (cargando) {
     return (
       <View  style={estilos.centro}>
-        <ActivityIndicator color="#ffffff" />
+        <ActivityIndicator color={t.ink} />
       </View>
     );
   }
@@ -113,6 +118,8 @@ export default function NumerosIndex() {
     <>
       <HeaderFlotante titulo="Números" volverA="/" />
       <ScrollView style={estilos.contenedor} contentContainerStyle={estilos.contenido}>
+        <ResumenCategoria categoria="numero" unidad="números" />
+
         <View style={estilos.filaBotones}>
           {numeros.length > 0 ? (
             <Link href="/numeros/repasar" style={[estilos.boton, estilos.botonRepasar]}>
@@ -131,14 +138,14 @@ export default function NumerosIndex() {
                   value={etiquetaEdit}
                   onChangeText={setEtiquetaEdit}
                   placeholder="Etiqueta..."
-                  placeholderTextColor="#6c7086"
+                  placeholderTextColor={t.inkMuted}
                   style={estilos.input}
                 />
                 <TextInput
                   value={digitosEdit}
                   onChangeText={(texto) => setDigitosEdit(sanitizarDigitosConDecimal(texto))}
                   placeholder="Dígitos (ej. 3.14159… o solo 0453)"
-                  placeholderTextColor="#6c7086"
+                  placeholderTextColor={t.inkMuted}
                   keyboardType="decimal-pad"
                   style={estilos.input}
                 />
@@ -189,39 +196,39 @@ export default function NumerosIndex() {
   );
 }
 
-const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#1e1e2e' },
+const crearEstilos = (t: TokensColor) => StyleSheet.create({
+  contenedor: { flex: 1, backgroundColor: t.bg },
   contenido: { padding: 24, gap: 12 },
-  centro: { flex: 1, backgroundColor: '#1e1e2e', alignItems: 'center', justifyContent: 'center' },
-  error: { color: '#f38ba8', padding: 24, textAlign: 'center' },
-  aviso: { color: '#f9e2af' },
+  centro: { flex: 1, backgroundColor: t.bg, alignItems: 'center', justifyContent: 'center' },
+  error: { color: t.otraVez, padding: 24, textAlign: 'center' },
+  aviso: { color: t.dificil },
   filaBotones: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  boton: { flex: 1, backgroundColor: '#89b4fa', borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
-  botonRepasar: { backgroundColor: '#a6e3a1' },
-  textoBoton: { color: '#1e1e2e', fontWeight: '600' },
+  boton: { flex: 1, backgroundColor: t.accent1, borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
+  botonRepasar: { backgroundColor: t.bien },
+  textoBoton: { color: t.inkOnAccent, fontWeight: '600' },
   filaNumero: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#313244',
+    backgroundColor: t.card,
     borderRadius: 12,
     padding: 16,
   },
-  etiquetaNumero: { color: '#ffffff', fontSize: 16, fontWeight: '600' },
-  digitosNumero: { color: '#a6adc8', fontSize: 14, marginTop: 4 },
-  textoEliminar: { color: '#f38ba8', fontSize: 16 },
-  filaEdicion: { backgroundColor: '#313244', borderRadius: 12, padding: 16, gap: 8 },
+  etiquetaNumero: { color: t.ink, fontSize: 16, fontWeight: '600' },
+  digitosNumero: { color: t.inkMuted, fontSize: 14, marginTop: 4 },
+  textoEliminar: { color: t.otraVez, fontSize: 16 },
+  filaEdicion: { backgroundColor: t.card, borderRadius: 12, padding: 16, gap: 8 },
   input: {
-    backgroundColor: '#1e1e2e',
-    color: '#ffffff',
+    backgroundColor: t.bg,
+    color: t.ink,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 15,
   },
-  botonGuardar: { backgroundColor: '#89b4fa', borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
-  bloquePreview: { backgroundColor: '#1e1e2e', borderRadius: 8, padding: 12, gap: 4 },
-  tituloPreview: { color: '#ffffff', fontWeight: '600', marginBottom: 2 },
-  seccionPreview: { color: '#89b4fa', fontSize: 12, fontWeight: '600', marginTop: 6, marginBottom: 2 },
-  filaTrozo: { color: '#a6e3a1', fontSize: 14 },
+  botonGuardar: { backgroundColor: t.accent1, borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
+  bloquePreview: { backgroundColor: t.bg, borderRadius: 8, padding: 12, gap: 4 },
+  tituloPreview: { color: t.ink, fontWeight: '600', marginBottom: 2 },
+  seccionPreview: { color: t.accent1, fontSize: 12, fontWeight: '600', marginTop: 6, marginBottom: 2 },
+  filaTrozo: { color: t.bien, fontSize: 14 },
 });

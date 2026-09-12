@@ -1,5 +1,5 @@
 import { Link, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { HeaderFlotante } from '../../src/components/HeaderFlotante';
 import { EditorLista, type ObjetoEditable } from '../../src/components/EditorLista';
@@ -12,8 +12,12 @@ import {
   obtenerLista,
 } from '../../src/db/repository';
 import type { ConexionBD, FilaLista, FilaListaObjeto } from '../../src/db/tipos';
+import { useTema } from '../../src/stores/tema';
+import type { TokensColor } from '../../src/tema/colores';
 
 export default function ListaDetalle() {
+  const { colores: t } = useTema();
+  const estilos = useMemo(() => crearEstilos(t), [t]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,7 +89,7 @@ export default function ListaDetalle() {
   if (cargando) {
     return (
       <View  style={estilos.centro}>
-        <ActivityIndicator color="#ffffff" />
+        <ActivityIndicator color={t.ink} />
       </View>
     );
   }
@@ -143,41 +147,41 @@ export default function ListaDetalle() {
   );
 }
 
-const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#1e1e2e' },
+const crearEstilos = (t: TokensColor) => StyleSheet.create({
+  contenedor: { flex: 1, backgroundColor: t.bg },
   contenido: { padding: 24, gap: 16 },
-  centro: { flex: 1, backgroundColor: '#1e1e2e', alignItems: 'center', justifyContent: 'center' },
-  error: { color: '#f38ba8', padding: 24, textAlign: 'center' },
-  aviso: { color: '#f9e2af' },
-  titulo: { color: '#ffffff', fontSize: 22, fontWeight: '700' },
+  centro: { flex: 1, backgroundColor: t.bg, alignItems: 'center', justifyContent: 'center' },
+  error: { color: t.otraVez, padding: 24, textAlign: 'center' },
+  aviso: { color: t.dificil },
+  titulo: { color: t.ink, fontSize: 22, fontWeight: '700' },
   filaSegundos: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  etiquetaSegundos: { color: '#a6adc8' },
+  etiquetaSegundos: { color: t.inkMuted },
   inputSegundos: {
-    backgroundColor: '#313244',
-    color: '#ffffff',
+    backgroundColor: t.card,
+    color: t.ink,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
     width: 70,
   },
-  botonEstudiar: { backgroundColor: '#a6e3a1', borderRadius: 8, padding: 14, alignItems: 'center' },
-  textoBotonEstudiar: { color: '#1e1e2e', fontWeight: '700' },
+  botonEstudiar: { backgroundColor: t.bien, borderRadius: 8, padding: 14, alignItems: 'center' },
+  textoBotonEstudiar: { color: t.inkOnAccent, fontWeight: '700' },
   botonEstudiarDeshabilitado: {
-    backgroundColor: '#313244',
+    backgroundColor: t.card,
     borderRadius: 8,
     padding: 14,
     alignItems: 'center',
   },
-  textoBotonEstudiarDeshabilitado: { color: '#6c7086', fontWeight: '600' },
+  textoBotonEstudiarDeshabilitado: { color: t.inkMuted, fontWeight: '600' },
   botonAgregarObjeto: {
     borderWidth: 1,
-    borderColor: '#45475a',
+    borderColor: t.borderMuted ?? t.inkMuted,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
     marginTop: 8,
   },
-  textoBotonAgregarObjeto: { color: '#89b4fa', fontWeight: '600', fontSize: 14 },
+  textoBotonAgregarObjeto: { color: t.accent1, fontWeight: '600', fontSize: 14 },
   botonEliminar: { padding: 12, alignItems: 'center', marginTop: 8 },
-  textoBotonEliminar: { color: '#f38ba8' },
+  textoBotonEliminar: { color: t.otraVez },
 });

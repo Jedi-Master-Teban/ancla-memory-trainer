@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useTema } from '../stores/tema';
+import type { TokensColor } from '../tema/colores';
 
 interface Props {
   segundos: number;
@@ -13,6 +15,8 @@ interface Props {
  * acumular desfase — mismo criterio de tiempo real que baraja-completa.tsx.
  */
 export function TemporizadorEstudio({ segundos, onTerminar }: Props) {
+  const { colores: t } = useTema();
+  const estilos = useMemo(() => crearEstilos(t), [t]);
   const [restante, setRestante] = useState(segundos);
 
   useEffect(() => {
@@ -41,7 +45,7 @@ export function TemporizadorEstudio({ segundos, onTerminar }: Props) {
   );
 }
 
-const estilos = StyleSheet.create({
+const crearEstilos = (t: TokensColor) => StyleSheet.create({
   contenedor: { alignItems: 'center', paddingVertical: 8 },
-  texto: { color: '#f9e2af', fontSize: 20, fontWeight: '600' },
+  texto: { color: t.dificil, fontSize: 20, fontWeight: '600' },
 });

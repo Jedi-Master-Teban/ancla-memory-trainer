@@ -156,6 +156,7 @@ export default function RootLayout() {
         <Stack.Screen name="crear/[categoria]" options={{ title: 'Crear' }} />
         <Stack.Screen name="ajustes" options={{ title: 'Ajustes' }} />
         <Stack.Screen name="resumen-sesion" options={{ title: 'Resumen' }} />
+        <Stack.Screen name="hojear/[categoria]" options={{ title: 'Hojear' }} />
       </Stack>
       {!tabBarOculta && tabActiva !== null && (
         <TabBarInferior activa={tabActiva} onChange={cambiarTab} onRepaso={irARepaso} />

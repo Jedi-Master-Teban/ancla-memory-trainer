@@ -50,7 +50,7 @@ export function HeaderFlotante({ titulo, volverA, derecha, mostrarVolver = true 
           <MorphIcon icon={ArrowLeft} size={20} color={t.ink} />
         </Pressable>
       )}
-      <View style={[estilos.pillTitulo, { backgroundColor: t.card, borderColor: t.borderMuted ?? 'transparent' }]}>
+      <View style={estilos.zonaTitulo}>
         <Text style={[estilos.titulo, { color: t.ink }]} numberOfLines={1}>
           {titulo}
         </Text>
@@ -82,22 +82,18 @@ const estilos = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  pillTitulo: {
+  // El título va suelto sobre el fondo, sin pastilla ni borde: enmarcarlo
+  // creaba una segunda barra por encima del contenido y la pantalla parecía
+  // un navegador, no una app.
+  zonaTitulo: {
     flex: 1,
     height: 38,
-    borderRadius: 19,
-    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    paddingHorizontal: 8,
   },
   titulo: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '700',
   },
   derecha: {

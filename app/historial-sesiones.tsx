@@ -1,10 +1,12 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { HeaderFlotante } from '../src/components/HeaderFlotante';
 import { obtenerBD } from '../src/db/client';
 import { listarRevisionesDeSesion, listarSesionesEstudio } from '../src/db/repository';
 import type { ConexionBD, FilaRevision, FilaSesionEstudio } from '../src/db/tipos';
+import { useTema } from '../src/stores/tema';
+import type { TokensColor } from '../src/tema/colores';
 
 /**
  * Historial de sesiones (§8.8 modulos/08-panel-retencion.md §3), pantalla
@@ -14,6 +16,8 @@ import type { ConexionBD, FilaRevision, FilaSesionEstudio } from '../src/db/tipo
  * desplazarse muchísimo y seguía alargando la pantalla al abrirla.
  */
 export default function HistorialSesiones() {
+  const { colores: t } = useTema();
+  const estilos = useMemo(() => crearEstilos(t), [t]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [db, setDb] = useState<ConexionBD | null>(null);
@@ -59,7 +63,7 @@ export default function HistorialSesiones() {
   if (cargando) {
     return (
       <View  style={estilos.centro}>
-        <ActivityIndicator color="#ffffff" />
+        <ActivityIndicator color={t.ink} />
       </View>
     );
   }
@@ -109,15 +113,15 @@ export default function HistorialSesiones() {
   );
 }
 
-const estilos = StyleSheet.create({
-  contenedorScroll: { flex: 1, backgroundColor: '#1e1e2e' },
+const crearEstilos = (t: TokensColor) => StyleSheet.create({
+  contenedorScroll: { flex: 1, backgroundColor: t.bg },
   contenido: { padding: 24, gap: 8 },
-  centro: { flex: 1, backgroundColor: '#1e1e2e', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  error: { color: '#f38ba8', textAlign: 'center' },
-  vacio: { color: '#a6adc8' },
-  filaSesion: { backgroundColor: '#313244', borderRadius: 8, padding: 12 },
-  textoSesion: { color: '#ffffff', fontSize: 14 },
-  detalleSesion: { color: '#a6adc8', fontSize: 12, marginTop: 2 },
+  centro: { flex: 1, backgroundColor: t.bg, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  error: { color: t.otraVez, textAlign: 'center' },
+  vacio: { color: t.inkMuted },
+  filaSesion: { backgroundColor: t.card, borderRadius: 8, padding: 12 },
+  textoSesion: { color: t.ink, fontSize: 14 },
+  detalleSesion: { color: t.inkMuted, fontSize: 12, marginTop: 2 },
   detalleRevisiones: { paddingLeft: 16, paddingVertical: 4, gap: 2 },
-  filaRevision: { color: '#a6adc8', fontSize: 12 },
+  filaRevision: { color: t.inkMuted, fontSize: 12 },
 });

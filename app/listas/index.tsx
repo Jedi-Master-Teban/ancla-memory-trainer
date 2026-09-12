@@ -1,14 +1,19 @@
 import { Link, router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { HeaderFlotante } from '../../src/components/HeaderFlotante';
 import { obtenerBD } from '../../src/db/client';
 import { crearLista, listarListas, listarObjetosDeLista } from '../../src/db/repository';
 import type { ConexionBD, FilaLista } from '../../src/db/tipos';
+import { useTema } from '../../src/stores/tema';
+import type { TokensColor } from '../../src/tema/colores';
+import { ResumenCategoria } from '../../src/components/ResumenCategoria';
 
 const SEGUNDOS_ESTUDIO_DEFECTO = 30;
 
 export default function ListasIndex() {
+  const { colores: t } = useTema();
+  const estilos = useMemo(() => crearEstilos(t), [t]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [db, setDb] = useState<ConexionBD | null>(null);
@@ -57,7 +62,7 @@ export default function ListasIndex() {
   if (cargando) {
     return (
       <View  style={estilos.centro}>
-        <ActivityIndicator color="#ffffff" />
+        <ActivityIndicator color={t.ink} />
       </View>
     );
   }
@@ -74,12 +79,14 @@ export default function ListasIndex() {
     <>
       <HeaderFlotante titulo="Listas" volverA="/" />
       <ScrollView style={estilos.contenedor} contentContainerStyle={estilos.contenido}>
+        <ResumenCategoria categoria="lista_item" unidad="listas" />
+
         <View style={estilos.filaCrear}>
           <TextInput
             value={nombreNueva}
             onChangeText={setNombreNueva}
             placeholder="Nombre de la lista nueva..."
-            placeholderTextColor="#6c7086"
+            placeholderTextColor={t.inkMuted}
             style={estilos.input}
           />
           <Pressable onPress={crear} style={estilos.botonCrear}>
@@ -104,25 +111,25 @@ export default function ListasIndex() {
   );
 }
 
-const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#1e1e2e' },
+const crearEstilos = (t: TokensColor) => StyleSheet.create({
+  contenedor: { flex: 1, backgroundColor: t.bg },
   contenido: { padding: 24, gap: 12 },
-  centro: { flex: 1, backgroundColor: '#1e1e2e', alignItems: 'center', justifyContent: 'center' },
-  error: { color: '#f38ba8', padding: 24, textAlign: 'center' },
-  aviso: { color: '#f9e2af' },
+  centro: { flex: 1, backgroundColor: t.bg, alignItems: 'center', justifyContent: 'center' },
+  error: { color: t.otraVez, padding: 24, textAlign: 'center' },
+  aviso: { color: t.dificil },
   filaCrear: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   input: {
     flex: 1,
-    backgroundColor: '#313244',
-    color: '#ffffff',
+    backgroundColor: t.card,
+    color: t.ink,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,
   },
-  botonCrear: { backgroundColor: '#89b4fa', borderRadius: 8, paddingHorizontal: 16, justifyContent: 'center' },
-  textoBotonCrear: { color: '#1e1e2e', fontWeight: '600' },
-  filaLista: { backgroundColor: '#313244', borderRadius: 12, padding: 16 },
-  nombreLista: { color: '#ffffff', fontSize: 18, fontWeight: '600' },
-  detalleLista: { color: '#a6adc8', fontSize: 13, marginTop: 8 },
+  botonCrear: { backgroundColor: t.accent1, borderRadius: 8, paddingHorizontal: 16, justifyContent: 'center' },
+  textoBotonCrear: { color: t.inkOnAccent, fontWeight: '600' },
+  filaLista: { backgroundColor: t.card, borderRadius: 12, padding: 16 },
+  nombreLista: { color: t.ink, fontSize: 18, fontWeight: '600' },
+  detalleLista: { color: t.inkMuted, fontSize: 13, marginTop: 8 },
 });

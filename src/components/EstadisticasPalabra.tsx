@@ -1,5 +1,8 @@
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { ResumenTarjeta } from '../db/repository';
+import { useTema } from '../stores/tema';
+import type { TokensColor } from '../tema/colores';
 
 const ETIQUETA_ESTADO: Record<ResumenTarjeta['estadoVisual'], string> = {
   nueva: 'Nueva',
@@ -9,6 +12,8 @@ const ETIQUETA_ESTADO: Record<ResumenTarjeta['estadoVisual'], string> = {
 };
 
 export function EstadisticasPalabra({ vecesRevisada, tasaAciertos, proximaFecha, estadoVisual }: ResumenTarjeta) {
+  const { colores: t } = useTema();
+  const estilos = useMemo(() => crearEstilos(t), [t]);
   return (
     <View style={estilos.contenedor}>
       <Text style={estilos.linea}>Veces revisada: {vecesRevisada}</Text>
@@ -21,7 +26,7 @@ export function EstadisticasPalabra({ vecesRevisada, tasaAciertos, proximaFecha,
   );
 }
 
-const estilos = StyleSheet.create({
+const crearEstilos = (t: TokensColor) => StyleSheet.create({
   contenedor: { gap: 4, padding: 12 },
-  linea: { color: '#a6adc8', fontSize: 13 },
+  linea: { color: t.inkMuted, fontSize: 13 },
 });
