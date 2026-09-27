@@ -34,11 +34,12 @@ const ALTO_CONTENIDO_ACCION = 166;
 /**
  * Margen bajo la acción, antes del indicador de inicio.
  *
- * 50 y no 20, a pedido del operador: pegados al borde, el botón del lado
- * opuesto a la mano dominante quedaba al final del arco del pulgar. Unos 30 px
- * más arriba caen dentro de su radio natural y se alcanzan sin estirar el dedo.
+ * 100 y no 20, ajustado por el operador probándolo en su iPhone (primero +30,
+ * luego +50): pegados al borde, el botón del lado opuesto a la mano dominante
+ * quedaba al final del arco del pulgar. A esta altura cae dentro de su radio
+ * natural y se alcanza sin estirar el dedo.
  */
-const MARGEN_INFERIOR = 50;
+const MARGEN_INFERIOR = 100;
 
 export function EscenaRepaso({ tarjeta, accion }: Props) {
   // En la PWA vale 0: iOS ya deja la app por encima del indicador de inicio.
