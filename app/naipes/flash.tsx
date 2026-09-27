@@ -23,6 +23,7 @@ import { intervalosPrevistos } from '../../src/domain/fsrs/preview';
 import { filaTarjetaACardInput, type Calificacion } from '../../src/domain/fsrs/scheduler';
 import { useSesionStore } from '../../src/stores/sesion';
 import { useTema } from '../../src/stores/tema';
+import { BotonRevelar, EscenaRepaso } from '../../src/components/EscenaRepaso';
 
 /** Carta → palabra. Reusa el mismo motor de sesión y componentes de Fase 2. */
 export default function NaipesFlash() {
@@ -155,20 +156,20 @@ export default function NaipesFlash() {
       <View style={estilos.tramos}>
         <TramosProgreso total={tarjetas.length} indice={indice} />
       </View>
-      <View style={[estilos.contenedor, { backgroundColor: t.bg }]}>
-        <View style={estilos.centroCarta}>
+      <EscenaRepaso
+        tarjeta={
           <CartaVisual key={actual.id} carta={{ palo, valor }} palabra={actual.contenido_reverso} revelada={revelada} />
-        </View>
-        {!revelada ? (
-          <PausaVisualizacion clave={actual.id}>
-            <Pressable onPress={revelar} style={[estilos.botonRevelar, { backgroundColor: t.accent1 }]}>
-              <Text style={[estilos.textoRevelar, { color: t.inkOnAccent }]}>Ver respuesta</Text>
-            </Pressable>
-          </PausaVisualizacion>
-        ) : (
-          <BotonesCalificacion onCalificar={onCalificar} intervalos={intervalos} />
-        )}
-      </View>
+        }
+        accion={
+          !revelada ? (
+            <PausaVisualizacion clave={actual.id}>
+              <BotonRevelar onPress={revelar} />
+            </PausaVisualizacion>
+          ) : (
+            <BotonesCalificacion onCalificar={onCalificar} intervalos={intervalos} />
+          )
+        }
+      />
     </>
   );
 }
@@ -176,20 +177,11 @@ export default function NaipesFlash() {
 const estilos = StyleSheet.create({
   // Los tramos van pegados al header, fuera del contenedor centrado.
   tramos: { paddingHorizontal: 16, paddingTop: 2, paddingBottom: 10 },
-  contenedor: { flex: 1, justifyContent: 'center', gap: 24 },
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  centroCarta: { alignItems: 'center' },
   progreso: { textAlign: 'center' },
   progresoChico: { fontSize: 12, fontWeight: '600' },
   titulo: { fontSize: 20, fontWeight: '600' },
   texto: {},
   error: { padding: 24, textAlign: 'center' },
   enlace: { marginTop: 12 },
-  botonRevelar: {
-    alignSelf: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  textoRevelar: { fontWeight: '600' },
 });

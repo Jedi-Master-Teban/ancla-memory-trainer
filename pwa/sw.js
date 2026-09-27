@@ -2,7 +2,7 @@
  * Estrategia: precache del app shell + cache-first para assets estáticos,
  * network-first para navegación (para que las actualizaciones lleguen).
  */
-const CACHE = 'ancla-v6';
+const CACHE = 'ancla-v7';
 const PRECACHE = ['./', './index.html'];
 
 /**

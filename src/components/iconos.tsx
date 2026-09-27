@@ -76,19 +76,6 @@ export function IconoChevron({ color, tamano = 20, trazo = TRAZO }: PropsIcono) 
   );
 }
 
-/** Ancla — identidad de la app. Cabecera, ícono de la app y botón de repaso. */
-export function IconoAncla({ color, tamano = 24, trazo = TRAZO }: PropsIcono) {
-  return (
-    <Svg width={tamano} height={tamano} viewBox="0 0 24 24" fill="none">
-      <Circle cx={12} cy={4.5} r={2.5} stroke={color} strokeWidth={trazo} />
-      <Path d="M12 7v14" stroke={color} strokeWidth={trazo} strokeLinecap="round" />
-      <Path d="M8 11h8" stroke={color} strokeWidth={trazo} strokeLinecap="round" />
-      <Path d="M12 21c-4 0-7-3-7-7" stroke={color} strokeWidth={trazo} strokeLinecap="round" />
-      <Path d="M12 21c4 0 7-3 7-7" stroke={color} strokeWidth={trazo} strokeLinecap="round" />
-    </Svg>
-  );
-}
-
 /** Barras horizontales — conmutador de Stats cuando está el radar. */
 export function IconoBarras({ color, tamano = 19, trazo = 2.1 }: PropsIcono) {
   return (

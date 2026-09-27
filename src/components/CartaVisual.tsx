@@ -1,8 +1,9 @@
 import { memo, useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
-import { explicarNaipe, simboloDePalo, type Carta, type Palo } from '../domain/fonetica/naipes';
+import { explicarNaipe, segmentarPalabraNaipe, simboloDePalo, type Carta, type Palo } from '../domain/fonetica/naipes';
 import { useTema } from '../stores/tema';
 import { IconoChevron } from './iconos';
+import { PalabraCodificada } from './PalabraCodificada';
 
 const NEGRO_CARTA = '#1a1a1a';
 const ROJO_CARTA = '#c0392b';
@@ -81,14 +82,24 @@ export function CartaVisual({ carta, palabra, revelada, disenoAlFrente = true }:
   }, [revelada, aparecer]);
 
   const explicacion = explicarNaipe(carta, palabra);
+  // La palabra con su código a la vista (palo + dígitos), pero SOLO al revelar:
+  // en Reverso la palabra es la pregunta y a la vista desde el principio, y su
+  // código sería la respuesta. Si no se puede segmentar, queda el texto plano.
+  const segmentos = revelada ? segmentarPalabraNaipe(palabra, carta) : null;
 
   const ladoPalabra = (
     <View style={[estilos.cajaPalabra, { backgroundColor: t.card }]}>
       <Text style={[estilos.etiquetaCarta, { color: t.inkMuted, fontFamily: tipografia.display }]}>
         {carta.valor} {simboloDePalo(carta.palo)}
       </Text>
-      <Text style={[estilos.textoPalabra, { color: t.ink, fontFamily: tipografia.display }]}>{palabra}</Text>
-      {explicacion ? <Text style={[estilos.textoExplicacion, { color: t.inkMuted }]}>{explicacion}</Text> : null}
+      {segmentos ? (
+        <PalabraCodificada segmentos={segmentos} tamano={24} />
+      ) : (
+        <>
+          <Text style={[estilos.textoPalabra, { color: t.ink, fontFamily: tipografia.display }]}>{palabra}</Text>
+          {explicacion ? <Text style={[estilos.textoExplicacion, { color: t.inkMuted }]}>{explicacion}</Text> : null}
+        </>
+      )}
     </View>
   );
 

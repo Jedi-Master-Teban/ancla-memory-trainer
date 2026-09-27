@@ -26,6 +26,7 @@ import { useTema } from '../src/stores/tema';
 import type { TokensColor } from '../src/tema/colores';
 import { explicar } from '../src/domain/fonetica/decodificador';
 import { explicarNaipe } from '../src/domain/fonetica/naipes';
+import { BotonRevelar, EscenaRepaso } from '../src/components/EscenaRepaso';
 
 const ETIQUETA_CATEGORIA: Record<Categoria, string> = {
   colgadero: 'Colgadero',
@@ -189,35 +190,40 @@ export default function Practicar() {
       <View style={estilos.tramos}>
         <TramosProgreso total={tarjetas.length} indice={indice} />
       </View>
-      <View style={estilos.contenedor}>
-        <Text style={estilos.insignia}>{ETIQUETA_CATEGORIA[actual.categoria]}</Text>
-        {actual.categoria === 'naipe' ? (
-          <View style={estilos.centroCarta}>
-            <CartaVisual
-              key={actual.id}
-              carta={JSON.parse(actual.metadata_categoria) as MetadataNaipe}
-              palabra={actual.contenido_reverso}
-              revelada={revelada}
-            />
-          </View>
-        ) : (
-          <Flashcard
-          frente={actual.contenido_frente}
-          reverso={actual.contenido_reverso}
-          revelada={revelada}
-          explicacion={revelada ? explicacionDe(actual) : undefined}
-        />
-        )}
-        {!revelada ? (
-          <PausaVisualizacion clave={actual.id}>
-            <Pressable onPress={revelar} style={estilos.botonRevelar}>
-              <Text style={estilos.textoRevelar}>Ver respuesta</Text>
-            </Pressable>
-          </PausaVisualizacion>
-        ) : (
-          <BotonesCalificacion onCalificar={onCalificar} intervalos={intervalos} />
-        )}
-      </View>
+      <EscenaRepaso
+        tarjeta={
+          <>
+            <Text style={estilos.insignia}>{ETIQUETA_CATEGORIA[actual.categoria]}</Text>
+            {actual.categoria === 'naipe' ? (
+              <View style={estilos.centroCarta}>
+                <CartaVisual
+                  key={actual.id}
+                  carta={JSON.parse(actual.metadata_categoria) as MetadataNaipe}
+                  palabra={actual.contenido_reverso}
+                  revelada={revelada}
+                />
+              </View>
+            ) : (
+              <Flashcard
+                frente={actual.contenido_frente}
+                reverso={actual.contenido_reverso}
+                revelada={revelada}
+                caraCodificada={actual.categoria === 'colgadero' ? 'reverso' : undefined}
+                explicacion={revelada ? explicacionDe(actual) : undefined}
+              />
+            )}
+          </>
+        }
+        accion={
+          !revelada ? (
+            <PausaVisualizacion clave={actual.id}>
+              <BotonRevelar onPress={revelar} />
+            </PausaVisualizacion>
+          ) : (
+            <BotonesCalificacion onCalificar={onCalificar} intervalos={intervalos} />
+          )
+        }
+      />
     </>
   );
 }
@@ -225,7 +231,6 @@ export default function Practicar() {
 const crearEstilos = (t: TokensColor) => StyleSheet.create({
   // Los tramos van pegados al header, fuera del contenedor centrado.
   tramos: { paddingHorizontal: 16, paddingTop: 2, paddingBottom: 10 },
-  contenedor: { flex: 1, backgroundColor: t.bg, justifyContent: 'center', gap: 12 },
   centroCarta: { alignItems: 'center' },
   centro: { flex: 1, backgroundColor: t.bg, alignItems: 'center', justifyContent: 'center', gap: 12 },
   progreso: { color: t.inkMuted, textAlign: 'center' },
@@ -235,12 +240,4 @@ const crearEstilos = (t: TokensColor) => StyleSheet.create({
   texto: { color: t.inkMuted },
   error: { color: t.otraVez, padding: 24, textAlign: 'center' },
   enlace: { color: t.accent1, marginTop: 12 },
-  botonRevelar: {
-    alignSelf: 'center',
-    backgroundColor: t.accent1,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  textoRevelar: { color: t.inkOnAccent, fontWeight: '600' },
 });

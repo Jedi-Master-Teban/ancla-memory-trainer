@@ -11,7 +11,7 @@ import { MorphIcon } from 'morphicons/react-native';
 import type { IconNode } from 'morphicons/react-native';
 import { useTema } from '../stores/tema';
 import { esTemaOscuro, recetaForma } from '../tema/colores';
-import { IconoAncla } from './iconos';
+import { IconoApp } from './IconoApp';
 import { TABS, type TabId } from './tabs';
 
 export type { TabId };
@@ -203,7 +203,9 @@ export function TabBarInferior({ activa, onChange, onRepaso, pendientes, zIndex 
             pressed && estilos.repasoPresionado,
           ]}
         >
-          <IconoAncla color={t.inkOnAccent} tamano={22} trazo={2.3} />
+          {/* El mismo glifo que el ícono de la app: la marca se ve igual dentro
+              y fuera. `fondo` es el naranja del botón, para que el corte enlace. */}
+          <IconoApp size={26} conFondo={false} glifo={t.inkOnAccent} fondo={t.accent1} />
         </Pressable>
 
         {derecha.map((tab) => (

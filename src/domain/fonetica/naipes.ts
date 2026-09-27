@@ -3,7 +3,7 @@
  * estándar de 52 cartas, J/Q/K (ADR-016 — no baraja española). Reglas y su
  * razonamiento completo en agent_docs/seeds/naipes-52.md.
  */
-import { decodificar, explicar, normalizar } from './decodificador';
+import { decodificar, explicar, normalizar, segmentarPalabra, type Segmento } from './decodificador';
 
 export type Palo = 'espadas' | 'diamantes' | 'palos' | 'corazones';
 export type Valor = 'A' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | 'J' | 'Q' | 'K';
@@ -238,4 +238,36 @@ export function cartaDesdePalabra(palabra: string, palabrasAsignadas: Map<string
   if (!valor) return null;
 
   return { palo, valor };
+}
+
+export interface SegmentoNaipe extends Segmento {
+  /** Solo en el primer tramo: la letra que marca el palo, no un dígito. */
+  palo?: Palo;
+}
+
+/**
+ * Como `segmentarPalabra`, pero separando la letra del palo, que no codifica
+ * ningún dígito: marca a qué palo pertenece la carta (Regla 1). Se decodifica
+ * solo lo que sigue, igual que en `explicarNaipe`.
+ *
+ * Una figura no tiene sonido que decodificar (ADR-017): marcador y el resto sin
+ * resaltar. Corazones + "ch" devuelve `null` por la misma ambigüedad que
+ * rechaza `validarPalabraNaipe`: no se sabe si la "c" es el palo o parte del 8.
+ */
+export function segmentarPalabraNaipe(palabra: string, carta: Carta): SegmentoNaipe[] | null {
+  const normalizada = normalizar(palabra);
+  const marcador = inicialDePalo(carta.palo);
+  if (!normalizada.startsWith(marcador)) return null;
+  if (carta.palo === 'corazones' && normalizada.startsWith('ch')) return null;
+
+  const primera = palabra.search(/[^\s-]/);
+  if (primera < 0) return null;
+  const cabeza: SegmentoNaipe = { texto: palabra.slice(0, primera + 1), digito: null, palo: carta.palo };
+
+  const resto = palabra.slice(primera + 1);
+  if (resto.length === 0) return [cabeza];
+  if (esFigura(carta.valor)) return [cabeza, { texto: resto, digito: null }];
+
+  const tramos = segmentarPalabra(resto);
+  return tramos ? [cabeza, ...tramos] : null;
 }

@@ -3,17 +3,35 @@
 
 Uso: python3 pwa/patch_dist.py   (correr después de `npx expo export --platform web`)
 """
+import json
+import re
 import shutil
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
 PWA = ROOT / "pwa"
 
+
+def fondo_del_tema(nombre: str) -> str:
+    """Valor de `bg` del tema `nombre` en src/tema/colores.ts (única fuente)."""
+    fuente = (ROOT / "src/tema/colores.ts").read_text()
+    m = re.search(r"const " + nombre + r": TokensColor = \{.*?\n\s*bg: '(#[0-9A-Fa-f]{6})'", fuente, re.S)
+    if not m:
+        sys.exit(f"patch_dist: no encontré `bg` del tema {nombre} en src/tema/colores.ts")
+    return m.group(1)
+
+
 assert (DIST / "index.html").exists(), "dist/index.html no existe; corre `npx expo export --platform web` primero"
 
 # 1. Copiar manifest, sw.js, íconos y .nojekyll (evita que Jekyll ignore _expo/)
-shutil.copy(PWA / "manifest.json", DIST / "manifest.json")
+#
+#    Los colores del manifest (pantalla de arranque y tinte del sistema) salen
+#    del mismo token que el fondo del documento — ver 2a.
+manifest = json.loads((PWA / "manifest.json").read_text())
+manifest["background_color"] = manifest["theme_color"] = fondo_del_tema("SOFT")
+(DIST / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
 shutil.copy(PWA / "sw.js", DIST / "sw.js")
 (DIST / ".nojekyll").touch()
 icons = DIST / "icons"
@@ -24,21 +42,36 @@ for size in (192, 512):
 # 2. Inyectar en index.html (idempotente)
 html = (DIST / "index.html").read_text()
 
-# 2a. Fondo del body con el azul de la app: elimina la franja blanca de la
-#     zona del status bar en iOS standalone (la app tarda ~1s en montar y
-#     el body sin fondo deja ver el blanco del sistema).
-BODY_BG = '<style id="ancla-body-bg">html,body{background:#101029}</style>\n'
+# 2a. Fondo del documento = fondo del tema por defecto.
+#
+#     iOS pinta con el fondo de html/body todo lo que queda FUERA del área
+#     segura: la franja bajo el reloj y la del indicador de inicio. También se
+#     ve durante el ~1 s que tarda la app en montar.
+#
+#     Se LEE de src/tema/colores.ts en vez de escribirse aquí. Antes era un
+#     `#101029` copiado a mano del fondo de Arcade Neón; cuando Soft UI pasó a
+#     ser el tema por defecto nadie lo actualizó, y la app quedó con una franja
+#     azul casi negra encima de un fondo crema. Una copia de un token siempre
+#     termina desincronizándose — por eso no hay copia.
+FONDO = fondo_del_tema("SOFT")
+BODY_BG = f'<style id="ancla-body-bg">html,body{{background:{FONDO}}}</style>\n'
 if "ancla-body-bg" not in html:
     html = html.replace("</style>", "</style>\n" + BODY_BG, 1)
-    print("body bg #101029 aplicado (fix franja blanca iOS)")
+    print(f"body bg {FONDO} aplicado (leído de src/tema/colores.ts)")
 
 if "manifest.json" not in html:
     inject = (
         '<link rel="manifest" href="manifest.json"/>\n'
-        '  <meta name="theme-color" content="#101029"/>\n'
+        f'  <meta name="theme-color" content="{FONDO}"/>\n'
         '  <link rel="apple-touch-icon" href="icons/icon-192.png"/>\n'
+        # Pestaña y marcadores de Safari: el mismo ícono que la pantalla de
+        # inicio. Sin esto el build no llevaba favicon y salía uno genérico.
+        '  <link rel="icon" type="image/png" href="icons/icon-192.png"/>\n'
         '  <meta name="apple-mobile-web-app-capable" content="yes"/>\n'
-        '  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>\n'
+        # `default` = reloj y batería en OSCURO. `black-translucent` los pinta
+        # siempre en blanco, que sobre el crema de Soft UI no se ve. iOS lee
+        # este valor solo al abrir la app: no puede seguir al tema en vivo.
+        '  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>\n'
         '  <meta name="apple-mobile-web-app-title" content="Ancla"/>\n'
         '  <script>if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js"));</script>\n'
     )

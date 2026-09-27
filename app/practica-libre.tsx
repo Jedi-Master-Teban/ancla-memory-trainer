@@ -8,7 +8,7 @@ import { PausaVisualizacion } from '../src/components/PausaVisualizacion';
 import { TramosProgreso } from '../src/components/TramosProgreso';
 import { obtenerBD } from '../src/db/client';
 import { cerrarSesion, crearSesion, listarMazos, listarTarjetasPorMazo } from '../src/db/repository';
-import type { ConexionBD } from '../src/db/tipos';
+import type { ConexionBD, FilaTarjeta, MetadataNaipe } from '../src/db/tipos';
 import { barajar } from '../src/domain/aleatorio';
 import type { Calificacion } from '../src/domain/fsrs/scheduler';
 import { TOPE_POR_DEFECTO } from '../src/domain/sesion/motor';
@@ -17,7 +17,7 @@ import { useTema } from '../src/stores/tema';
 import type { TokensColor } from '../src/tema/colores';
 import { explicar } from '../src/domain/fonetica/decodificador';
 import { explicarNaipe } from '../src/domain/fonetica/naipes';
-import type { FilaTarjeta, MetadataNaipe } from '../src/db/tipos';
+import { BotonRevelar, EscenaRepaso } from '../src/components/EscenaRepaso';
 
 /**
  * "Todo al día" (09-dashboard.md §4): repaso sin impacto en el scheduling
@@ -152,28 +152,29 @@ export default function PracticaLibre() {
       <View style={estilos.tramos}>
         <TramosProgreso total={tarjetas.length} indice={indice} />
       </View>
-      <View style={estilos.contenedor}>
-        <Text style={estilos.aviso}>práctica libre — no afecta tu racha ni tus repasos</Text>
-        <Flashcard
-          frente={actual.contenido_frente}
-          reverso={actual.contenido_reverso}
-          revelada={revelada}
-          explicacion={revelada ? explicacionDe(actual) : undefined}
-        />
-        {!revelada ? (
-          <PausaVisualizacion clave={actual.id}>
-            <Pressable onPress={revelar} style={estilos.botonRevelar}>
-              <Text style={estilos.textoRevelar}>Ver respuesta</Text>
-            </Pressable>
-          </PausaVisualizacion>
-        ) : (
-          // Sin `intervalos` a propósito: esta pantalla no reprograma la
-          // tarjeta (ver comentario del componente arriba) — mostrar un
-          // intervalo FSRS real que luego no se aplica sería mentirle al
-          // usuario sobre lo que su calificación va a hacer.
-          <BotonesCalificacion onCalificar={onCalificar} />
-        )}
-      </View>
+      <EscenaRepaso
+        tarjeta={
+          <>
+            <Text style={estilos.aviso}>práctica libre — no afecta tu racha ni tus repasos</Text>
+            <Flashcard
+              frente={actual.contenido_frente}
+              reverso={actual.contenido_reverso}
+              revelada={revelada}
+              caraCodificada={actual.categoria === 'colgadero' ? 'reverso' : undefined}
+              explicacion={revelada ? explicacionDe(actual) : undefined}
+            />
+          </>
+        }
+        accion={
+          !revelada ? (
+            <PausaVisualizacion clave={actual.id}>
+              <BotonRevelar onPress={revelar} />
+            </PausaVisualizacion>
+          ) : (
+            <BotonesCalificacion onCalificar={onCalificar} />
+          )
+        }
+      />
     </>
   );
 }
@@ -181,7 +182,6 @@ export default function PracticaLibre() {
 const crearEstilos = (t: TokensColor) => StyleSheet.create({
   // Los tramos van pegados al header, fuera del contenedor centrado.
   tramos: { paddingHorizontal: 16, paddingTop: 2, paddingBottom: 10 },
-  contenedor: { flex: 1, backgroundColor: t.bg, justifyContent: 'center', gap: 12 },
   centro: { flex: 1, backgroundColor: t.bg, alignItems: 'center', justifyContent: 'center', gap: 12 },
   progreso: { color: t.inkMuted, textAlign: 'center' },
   progresoChico: { color: t.inkMuted, fontSize: 12, fontWeight: '600' },
@@ -190,12 +190,4 @@ const crearEstilos = (t: TokensColor) => StyleSheet.create({
   texto: { color: t.inkMuted, textAlign: 'center', paddingHorizontal: 24 },
   error: { color: t.otraVez, padding: 24, textAlign: 'center' },
   enlace: { color: t.accent1, marginTop: 12 },
-  botonRevelar: {
-    alignSelf: 'center',
-    backgroundColor: t.accent1,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  textoRevelar: { color: t.inkOnAccent, fontWeight: '600' },
 });

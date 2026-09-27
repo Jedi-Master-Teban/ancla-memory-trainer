@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AnilloMeta } from '../src/components/AnilloMeta';
 import { StreakPill } from '../src/components/StreakPill';
-import { IconoAncla, IconoChevron, IconoColgadero, IconoLista, IconoNaipe, IconoNumero } from '../src/components/iconos';
+import { IconoChevron, IconoColgadero, IconoLista, IconoNaipe, IconoNumero } from '../src/components/iconos';
 import { obtenerBD } from '../src/db/client';
 import {
   calcularRachaActual,
@@ -20,6 +20,7 @@ import { useRachaStore } from '../src/stores/racha';
 import { useTema } from '../src/stores/tema';
 import { recetaForma } from '../src/tema/colores';
 import type { TokensColor } from '../src/tema/colores';
+import { IconoApp } from '../src/components/IconoApp';
 
 const RUTA_POR_CATEGORIA: Record<Categoria, '/colgadero' | '/naipes' | '/listas' | '/numeros'> = {
   colgadero: '/colgadero',
@@ -184,7 +185,7 @@ export default function Index() {
     >
       <View style={estilos.encabezado}>
         <View style={estilos.marca}>
-          <IconoAncla color={t.accent1} tamano={21} />
+          <IconoApp size={26} conFondo={false} glifo={t.accent1} fondo={t.bg} />
           <Text style={[estilos.nombreApp, { color: t.ink, fontFamily: tipografia.display }]}>Ancla</Text>
         </View>
         <StreakPill

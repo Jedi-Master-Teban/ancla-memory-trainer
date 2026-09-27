@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { Stack, usePathname, useRouter } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
@@ -107,6 +108,19 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [fontsListas, errorFuentes, temaListo]);
+
+  // En la PWA, el fondo del documento es lo que iOS pinta fuera del área
+  // segura (la franja del indicador de inicio) y `theme-color` tiñe la barra
+  // del sistema. El build los fija al fondo de Soft UI (pwa/patch_dist.py);
+  // aquí se sincronizan con el tema activo para que Arcade y Papel no queden
+  // con una franja crema debajo. El estilo del reloj (`status-bar-style`) no
+  // se puede cambiar en vivo: iOS solo lo lee al abrir la app.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    document.documentElement.style.background = t.bg;
+    document.body.style.background = t.bg;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', t.bg);
+  }, [t.bg]);
 
   if (!(fontsListas || errorFuentes) || !temaListo) {
     return null;

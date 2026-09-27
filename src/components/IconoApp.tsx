@@ -3,7 +3,12 @@ import Svg, { G, Rect } from 'react-native-svg';
 interface Props {
   /** Lado en px. 24, 44, 76 y 168 son los tamaños del mockup 2b. */
   size?: number;
-  /** Color del fondo del cuadro. Por defecto el naranja de marca. */
+  /**
+   * Color del fondo del cuadro. Por defecto el naranja de marca.
+   *
+   * Con `conFondo={false}` sigue siendo obligatorio que sea el color de LO QUE
+   * HAYA DETRÁS del glifo: el corte que entrelaza los eslabones se pinta con él.
+   */
   fondo?: string;
   /** Color del glifo. */
   glifo?: string;
@@ -44,7 +49,10 @@ export function IconoApp({ size = 76, fondo = NARANJA_MARCA, glifo = '#FFFFFF', 
       {conFondo ? <Rect x={0} y={0} width={100} height={100} rx={(r / size) * 100} fill={fondo} /> : null}
       <G rotation={-45} origin="50, 50">
         <Rect x={46} y={35} width={46} height={30} rx={15} stroke={glifo} strokeWidth={trazo} fill="none" />
-        <Rect x={8} y={35} width={46} height={30} rx={15} stroke={conFondo ? fondo : 'transparent'} strokeWidth={corte} fill="none" />
+        {/* El corte va SIEMPRE con el color de fondo, también sin cuadro. Antes
+            era transparente con `conFondo={false}`: no borraba nada, y en un
+            encabezado los eslabones salían superpuestos, sin enlazarse. */}
+        <Rect x={8} y={35} width={46} height={30} rx={15} stroke={fondo} strokeWidth={corte} fill="none" />
         <Rect x={8} y={35} width={46} height={30} rx={15} stroke={glifo} strokeWidth={trazo} fill="none" />
       </G>
     </Svg>

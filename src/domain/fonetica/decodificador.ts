@@ -154,3 +154,58 @@ export function explicar(palabra: string): string {
   const partes = fonemas.map((f) => `${f.sonido}(${f.digito})`);
   return `${partes.join(' + ')} → ${digitos.join('')}`;
 }
+
+/** Un tramo de la palabra ORIGINAL: o codifica un dígito, o no aporta nada. */
+export interface Segmento {
+  texto: string;
+  digito: number | null;
+}
+
+/**
+ * Parte la palabra TAL COMO LA VE EL OPERADOR en tramos: los sonidos que
+ * codifican un dígito y todo lo demás. Es lo que permite pintar «Tufo» con la
+ * T y la F resaltadas y su 1 y su 7 debajo, en vez de narrarlo en una fórmula.
+ *
+ * El trabajo real es traducir posiciones: `decodificar()` cuenta sobre la
+ * palabra normalizada, y `normalizar()` quita espacios y guiones. En «Mar Azul»
+ * la z está en la posición 4 de "marazul" pero en la 5 del texto original. El
+ * resto de la normalización (minúsculas, tildes) no cambia el largo, así que
+ * basta con saltar esos dos caracteres.
+ *
+ * Devuelve `null` si no hay forma fiable de hacerlo (palabra vacía, un
+ * carácter que el decodificador no reconoce). Quien la use debe caer entonces
+ * al texto plano, nunca pintar un resaltado a medias.
+ */
+export function segmentarPalabra(palabra: string): Segmento[] | null {
+  if (palabra.length === 0) return null;
+
+  const mapa: number[] = [];
+  for (let i = 0; i < palabra.length; i++) {
+    if (!/[\s-]/.test(palabra[i])) mapa.push(i);
+  }
+  // Si normalizar() hiciera algo más que quitar espacios y guiones (un
+  // carácter que cambia de largo al pasar a minúscula), el mapeo no sirve.
+  if (mapa.length !== normalizar(palabra).length) return null;
+
+  let fonemas: Fonema[];
+  try {
+    fonemas = decodificar(palabra).fonemas;
+  } catch {
+    return null;
+  }
+
+  const segmentos: Segmento[] = [];
+  let cursor = 0;
+  const sinValorHasta = (hasta: number) => {
+    if (hasta > cursor) segmentos.push({ texto: palabra.slice(cursor, hasta), digito: null });
+  };
+  for (const f of fonemas) {
+    const inicio = mapa[f.indice];
+    const fin = mapa[f.indice + f.sonido.length - 1] + 1;
+    sinValorHasta(inicio);
+    segmentos.push({ texto: palabra.slice(inicio, fin), digito: f.digito });
+    cursor = fin;
+  }
+  sinValorHasta(palabra.length);
+  return segmentos;
+}

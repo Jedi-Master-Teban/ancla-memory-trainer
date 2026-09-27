@@ -25,6 +25,7 @@ import { filaTarjetaACardInput, type Calificacion } from '../../src/domain/fsrs/
 import { useSesionStore } from '../../src/stores/sesion';
 import { useTema } from '../../src/stores/tema';
 import type { TokensColor } from '../../src/tema/colores';
+import { BotonRevelar, EscenaRepaso } from '../../src/components/EscenaRepaso';
 
 export default function ColgaderoFlash() {
   const { colores: t } = useTema();
@@ -156,23 +157,26 @@ export default function ColgaderoFlash() {
       <View style={estilos.tramos}>
         <TramosProgreso total={tarjetas.length} indice={indice} />
       </View>
-      <View style={estilos.contenedor}>
-        <Flashcard
-          frente={actual.contenido_frente}
-          reverso={actual.contenido_reverso}
-          revelada={revelada}
-          explicacion={revelada ? explicar(actual.contenido_reverso) : undefined}
-        />
-        {!revelada ? (
-          <PausaVisualizacion clave={actual.id}>
-            <Pressable onPress={revelar} style={estilos.botonRevelar}>
-              <Text style={estilos.textoRevelar}>Ver respuesta</Text>
-            </Pressable>
-          </PausaVisualizacion>
-        ) : (
-          <BotonesCalificacion onCalificar={onCalificar} intervalos={intervalos} />
-        )}
-      </View>
+      <EscenaRepaso
+        tarjeta={
+          <Flashcard
+            frente={actual.contenido_frente}
+            reverso={actual.contenido_reverso}
+            revelada={revelada}
+            caraCodificada="reverso"
+            explicacion={revelada ? explicar(actual.contenido_reverso) : undefined}
+          />
+        }
+        accion={
+          !revelada ? (
+            <PausaVisualizacion clave={actual.id}>
+              <BotonRevelar onPress={revelar} />
+            </PausaVisualizacion>
+          ) : (
+            <BotonesCalificacion onCalificar={onCalificar} intervalos={intervalos} />
+          )
+        }
+      />
     </>
   );
 }
@@ -180,7 +184,6 @@ export default function ColgaderoFlash() {
 const crearEstilos = (t: TokensColor) => StyleSheet.create({
   // Los tramos van pegados al header, fuera del contenedor centrado.
   tramos: { paddingHorizontal: 16, paddingTop: 2, paddingBottom: 10 },
-  contenedor: { flex: 1, backgroundColor: t.bg, justifyContent: 'center', gap: 24 },
   centro: { flex: 1, backgroundColor: t.bg, alignItems: 'center', justifyContent: 'center', gap: 12 },
   progreso: { color: t.inkMuted, textAlign: 'center' },
   progresoChico: { color: t.inkMuted, fontSize: 12, fontWeight: '600' },
@@ -188,12 +191,4 @@ const crearEstilos = (t: TokensColor) => StyleSheet.create({
   texto: { color: t.inkMuted },
   error: { color: t.otraVez, padding: 24, textAlign: 'center' },
   enlace: { color: t.accent1, marginTop: 12 },
-  botonRevelar: {
-    alignSelf: 'center',
-    backgroundColor: t.accent1,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  textoRevelar: { color: t.inkOnAccent, fontWeight: '600' },
 });
