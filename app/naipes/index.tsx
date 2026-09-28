@@ -178,7 +178,7 @@ const crearEstilos = (t: TokensColor) => StyleSheet.create({
   error: { color: t.otraVez, padding: 24, textAlign: 'center' },
   tarjetaModo: { backgroundColor: t.card, borderRadius: 12, padding: 16 },
   etiqueta: { color: t.ink, fontSize: 18, fontWeight: '600' },
-  descripcion: { color: t.inkMuted, fontSize: 13, marginTop: 8 },
+  descripcion: { color: t.inkMuted, fontSize: 13, marginTop: 8, marginLeft: 8 },
   filaCarta: {
     flexDirection: 'row',
     justifyContent: 'space-between',

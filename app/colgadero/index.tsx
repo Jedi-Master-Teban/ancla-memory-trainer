@@ -155,7 +155,7 @@ const estilos = StyleSheet.create({
   seccion: { gap: 12 },
   tarjetaModo: { borderWidth: 1, padding: 16 },
   etiqueta: { fontSize: 18, fontWeight: '700' },
-  descripcion: { fontSize: 13, marginTop: 8 },
+  descripcion: { fontSize: 13, marginTop: 8, marginLeft: 8 },
   subtitulo: { fontSize: 18, fontWeight: '700', marginTop: 4 },
   filaPalabra: {
     flexDirection: 'row',
