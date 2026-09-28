@@ -20,11 +20,36 @@ import { recetaForma } from '../tema/colores';
  * tarjeta (pausa → «Ver respuesta» → calificar) y la tarjeta saltaba con ella.
  * Así la tarjeta no se mueve, y «Ver respuesta» y los botones de calificar caen
  * en el mismo sitio: el pulgar no tiene que buscar.
+ *
+ * Hojear usa el mismo escenario aunque no califica: así su tarjeta queda a la
+ * misma altura y con el mismo alto que al repasar, y cualquier ajuste de aquí
+ * (como `MARGEN_INFERIOR`) le llega sin tocarlo.
  */
 interface Props {
   tarjeta: ReactNode;
   accion: ReactNode;
+  /**
+   * La zona de la tarjeta sin margen lateral. Para el carrusel de Hojear, que
+   * necesita todo el ancho de la pantalla para que se asomen las vecinas.
+   */
+  aLoAncho?: boolean;
+  /**
+   * Alto que le corresponde a la tarjeta, ya acotado igual que `Flashcard`.
+   * Para quien no puede crecer con flex: las tarjetas de un carrusel
+   * horizontal necesitan un alto explícito.
+   */
+  onAltoTarjeta?: (alto: number) => void;
 }
+
+/**
+ * Límites del alto de la tarjeta: crece hasta llenar la zona, pero en un
+ * teléfono alto no pasa de 460 (un rectángulo gigante con un número pequeño)
+ * ni baja de 260 en uno bajo. Los usan `Flashcard` y el carrusel de Hojear,
+ * para que la misma tarjeta tenga el mismo tamaño al repasar y al hojear.
+ */
+export const ALTO_MIN_TARJETA = 260;
+export const ALTO_MAX_TARJETA = 460;
+const RELLENO_VERTICAL = 12;
 
 /**
  * Alto del estado más grande de la acción: la pausa de visualización (anillo 58
@@ -41,13 +66,25 @@ const ALTO_CONTENIDO_ACCION = 166;
  */
 const MARGEN_INFERIOR = 100;
 
-export function EscenaRepaso({ tarjeta, accion }: Props) {
+export function EscenaRepaso({ tarjeta, accion, aLoAncho = false, onAltoTarjeta }: Props) {
   // En la PWA vale 0: iOS ya deja la app por encima del indicador de inicio.
   // En nativo es el margen real del indicador.
   const insets = useSafeAreaInsets();
   return (
     <View style={estilos.escena}>
-      <View style={estilos.zonaTarjeta}>{tarjeta}</View>
+      <View
+        style={[estilos.zonaTarjeta, aLoAncho && estilos.zonaALoAncho]}
+        onLayout={
+          onAltoTarjeta
+            ? (e) => {
+                const libre = e.nativeEvent.layout.height - RELLENO_VERTICAL * 2;
+                onAltoTarjeta(Math.min(ALTO_MAX_TARJETA, Math.max(ALTO_MIN_TARJETA, libre)));
+              }
+            : undefined
+        }
+      >
+        {tarjeta}
+      </View>
       {/* minHeight incluye el relleno (el alto es de caja completa), así que la
           reserva lleva el margen sumado: sin eso la zona crecía durante la pausa
           y la tarjeta subía unos píxeles al terminar. */}
@@ -100,8 +137,9 @@ const estilos = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: RELLENO_VERTICAL,
   },
+  zonaALoAncho: { paddingHorizontal: 0, alignItems: 'stretch' },
   zonaAccion: { justifyContent: 'flex-end' },
   revelar: {
     marginHorizontal: 16,

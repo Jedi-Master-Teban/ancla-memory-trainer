@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { segmentarPalabra } from '../domain/fonetica/decodificador';
 import { useTema } from '../stores/tema';
 import { cardStyle, recetaForma, type TokensColor } from '../tema/colores';
+import { ALTO_MAX_TARJETA, ALTO_MIN_TARJETA } from './EscenaRepaso';
 import { PalabraCodificada } from './PalabraCodificada';
 
 interface Props {
@@ -78,8 +79,8 @@ const crearEstilos = (t: TokensColor) =>
     tarjeta: {
       alignSelf: 'stretch',
       flex: 1,
-      maxHeight: 460,
-      minHeight: 260,
+      maxHeight: ALTO_MAX_TARJETA,
+      minHeight: ALTO_MIN_TARJETA,
       alignItems: 'center',
       justifyContent: 'center',
       gap: 18,

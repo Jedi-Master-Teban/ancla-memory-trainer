@@ -64,20 +64,11 @@ export function ordenarParaHojear(tarjetas: FilaTarjeta[], categoria: Categoria)
 /** Etiquetas de los dos extremos del riel inferior ("1" … "100", "A♦" … "K♣"). */
 export function extremosDeRiel(tarjetas: FilaTarjeta[], categoria: Categoria): { inicio: string; fin: string } {
   if (tarjetas.length === 0) return { inicio: '', fin: '' };
-  const primera = tarjetas[0];
-  const ultima = tarjetas[tarjetas.length - 1];
-  if (categoria === 'colgadero') {
-    return { inicio: String(numeroDeColgadero(primera) ?? 1), fin: String(numeroDeColgadero(ultima) ?? tarjetas.length) };
-  }
-  if (categoria === 'naipe') {
-    const ca = cartaDeTarjeta(primera);
-    const cb = cartaDeTarjeta(ultima);
-    return {
-      inicio: ca ? `${ca.valor}${simboloDePalo(ca.palo)}` : '',
-      fin: cb ? `${cb.valor}${simboloDePalo(cb.palo)}` : '',
-    };
-  }
-  return { inicio: '1', fin: String(tarjetas.length) };
+  const ultima = tarjetas.length - 1;
+  return {
+    inicio: etiquetaDeTarjeta(tarjetas[0], categoria, 0),
+    fin: etiquetaDeTarjeta(tarjetas[ultima], categoria, ultima),
+  };
 }
 
 /**
@@ -108,6 +99,36 @@ export function indicesDePalo(tarjetas: FilaTarjeta[]): Record<Palo, number> {
     if (carta && mapa[carta.palo] === -1) mapa[carta.palo] = i;
   });
   return mapa;
+}
+
+/**
+ * Qué tarjeta está centrada, según cuánto se ha desplazado el carrusel.
+ *
+ * Se calcula en cada evento de scroll y no al terminar el impulso
+ * (`onMomentumScrollEnd`): react-native-web no emite ese evento, así que en la
+ * PWA el contador, el riel y la etiqueta se quedaban en la primera tarjeta.
+ * `x` puede salirse de la lista con el rebote de iOS; se acota a [0, total-1].
+ */
+export function indiceDeDesplazamiento(x: number, paso: number, total: number): number {
+  if (paso <= 0 || total <= 0) return 0;
+  return Math.min(total - 1, Math.max(0, Math.round(x / paso)));
+}
+
+/**
+ * Cómo se nombra una tarjeta bajo el riel: su número en colgadero («37»),
+ * valor y palo en naipes («8♦»). Si la metadata no lo dice, o en categorías
+ * sin nombre propio, su posición en la lista (contada desde 1).
+ */
+export function etiquetaDeTarjeta(tarjeta: FilaTarjeta | undefined, categoria: Categoria, posicion: number): string {
+  if (!tarjeta) return '';
+  if (categoria === 'colgadero') {
+    const numero = numeroDeColgadero(tarjeta);
+    if (numero !== null) return String(numero);
+  } else if (categoria === 'naipe') {
+    const carta = cartaDeTarjeta(tarjeta);
+    if (carta) return `${carta.valor}${simboloDePalo(carta.palo)}`;
+  }
+  return String(posicion + 1);
 }
 
 /** Índice desde el que arrancar: la posición guardada, saneada contra el total actual. */

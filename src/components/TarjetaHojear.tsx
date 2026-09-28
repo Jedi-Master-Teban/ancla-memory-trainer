@@ -5,14 +5,17 @@ import { cardStyle, recetaForma } from '../tema/colores';
 import { CaraFisica } from './CartaVisual';
 import { cartaDeTarjeta, numeroDeColgadero, restriccionDeNaipe } from './hojear-logic';
 
-/** Alto fijo de la tarjeta del carrusel. El ancho lo decide la pantalla. */
-export const ALTO_TARJETA = 360;
-
 interface Props {
   tarjeta: FilaTarjeta;
   categoria: Categoria;
   /** true = el reverso se sustituye por la caja «?» (toque sobre la tarjeta). */
   oculto: boolean;
+  /**
+   * Alto de la tarjeta. Lo da el escenario (`EscenaRepaso`), así que es el
+   * mismo que el de la tarjeta del repaso en esa pantalla. El ancho lo decide
+   * el carrusel.
+   */
+  alto: number;
 }
 
 /**
@@ -26,7 +29,7 @@ interface Props {
  *   numero    → etiqueta 13/800 uppercase muted · dígitos 34 display
  *   lista_item→ texto 24 display
  */
-export function TarjetaHojear({ tarjeta, categoria, oculto }: Props) {
+export function TarjetaHojear({ tarjeta, categoria, oculto, alto }: Props) {
   const { colores: t, tipografia, tema } = useTema();
   const forma = recetaForma(tema);
 
@@ -106,7 +109,7 @@ export function TarjetaHojear({ tarjeta, categoria, oculto }: Props) {
         estilos.tarjeta,
         cardStyle(tema),
         forma.sombraCard,
-        { borderRadius: forma.rCard, borderColor: t.borderMuted ?? 'transparent' },
+        { height: alto, borderRadius: forma.rCard, borderColor: t.borderMuted ?? 'transparent' },
       ]}
     >
       {contenido}
@@ -116,7 +119,6 @@ export function TarjetaHojear({ tarjeta, categoria, oculto }: Props) {
 
 const estilos = StyleSheet.create({
   tarjeta: {
-    height: ALTO_TARJETA,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 16,

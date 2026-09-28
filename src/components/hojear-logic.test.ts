@@ -1,6 +1,8 @@
 import type { FilaTarjeta } from '../db/tipos';
 import {
+  etiquetaDeTarjeta,
   extremosDeRiel,
+  indiceDeDesplazamiento,
   indiceInicial,
   indicesDePalo,
   ordenarParaHojear,
@@ -79,5 +81,60 @@ describe('hojear-logic', () => {
     expect(indiceInicial(120, 52)).toBe(0);
     expect(indiceInicial(36, 100)).toBe(36);
     expect(indiceInicial(undefined, 100)).toBe(0);
+  });
+
+  // El índice sale del desplazamiento y no de «onMomentumScrollEnd»: en la PWA
+  // ese evento no existe y el contador se quedaba en 1 aunque pasaras tarjetas.
+  describe('indiceDeDesplazamiento', () => {
+    const PASO = 331; // iPhone de 393 px: tarjeta de 321 + hueco de 10
+
+    it('cada múltiplo del paso es una tarjeta', () => {
+      expect(indiceDeDesplazamiento(0, PASO, 100)).toBe(0);
+      expect(indiceDeDesplazamiento(36 * PASO, PASO, 100)).toBe(36);
+    });
+
+    it('a medio camino cuenta la tarjeta más cercana al centro', () => {
+      expect(indiceDeDesplazamiento(3 * PASO + 120, PASO, 100)).toBe(3);
+      expect(indiceDeDesplazamiento(3 * PASO + 200, PASO, 100)).toBe(4);
+    });
+
+    it('el rebote de iOS en los bordes no se sale de la lista', () => {
+      expect(indiceDeDesplazamiento(-60, PASO, 100)).toBe(0);
+      expect(indiceDeDesplazamiento(99 * PASO + 90, PASO, 100)).toBe(99);
+    });
+
+    it('sin medidas o sin tarjetas se queda en la primera', () => {
+      expect(indiceDeDesplazamiento(500, 0, 100)).toBe(0);
+      expect(indiceDeDesplazamiento(500, PASO, 0)).toBe(0);
+    });
+  });
+
+  // El número bajo el riel, a la izquierda, dice qué tarjeta estás viendo.
+  describe('etiquetaDeTarjeta', () => {
+    it('colgadero usa el número de metadata, no la posición en la lista', () => {
+      expect(etiquetaDeTarjeta(colgadero(37), 'colgadero', 0)).toBe('37');
+    });
+
+    it('naipe usa valor y palo', () => {
+      expect(etiquetaDeTarjeta(naipe('diamantes', '8'), 'naipe', 7)).toBe('8♦');
+      expect(etiquetaDeTarjeta(naipe('palos', 'K'), 'naipe', 51)).toBe('K♣');
+    });
+
+    it('sin número ni carta en metadata cae a la posición', () => {
+      expect(etiquetaDeTarjeta(tarjeta({ metadata_categoria: '{}' }), 'colgadero', 4)).toBe('5');
+      expect(etiquetaDeTarjeta(tarjeta({ categoria: 'lista_item' }), 'lista_item', 2)).toBe('3');
+    });
+
+    it('fuera de la lista no inventa nada', () => {
+      expect(etiquetaDeTarjeta(undefined, 'colgadero', 0)).toBe('');
+    });
+
+    it('los extremos del riel usan la misma etiqueta', () => {
+      const cs = ordenarParaHojear([colgadero(1), colgadero(100)], 'colgadero');
+      expect(extremosDeRiel(cs, 'colgadero')).toEqual({
+        inicio: etiquetaDeTarjeta(cs[0], 'colgadero', 0),
+        fin: etiquetaDeTarjeta(cs[1], 'colgadero', 1),
+      });
+    });
   });
 });

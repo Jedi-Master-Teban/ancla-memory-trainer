@@ -1,8 +1,8 @@
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { MorphIcon } from 'morphicons/react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { ArrowLeft } from 'lucide';
 import { useTema } from '../stores/tema';
+import { BotonRedondo, DIAMETRO_BOTON_REDONDO } from './BotonRedondo';
 
 interface Props {
   titulo: string;
@@ -36,20 +36,7 @@ export function HeaderFlotante({ titulo, volverA, derecha, mostrarVolver = true 
   };
   return (
     <View style={estilos.contenedor}>
-      {mostrarVolver && volverA && (
-        <Pressable
-          onPress={handleVolver}
-          hitSlop={10}
-          accessibilityLabel="Volver"
-          style={({ pressed }) => [
-            estilos.botonVolver,
-            { backgroundColor: t.card, borderColor: t.borderMuted ?? 'transparent' },
-            pressed && { opacity: 0.6 },
-          ]}
-        >
-          <MorphIcon icon={ArrowLeft} size={20} color={t.ink} />
-        </Pressable>
-      )}
+      {mostrarVolver && volverA && <BotonRedondo icono={ArrowLeft} etiqueta="Volver" onPress={handleVolver} />}
       <View style={estilos.zonaTitulo}>
         <Text style={[estilos.titulo, { color: t.ink }]} numberOfLines={1}>
           {titulo}
@@ -69,25 +56,12 @@ const estilos = StyleSheet.create({
     paddingBottom: 12,
     gap: 10,
   },
-  botonVolver: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    borderWidth: StyleSheet.hairlineWidth,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
   // El título va suelto sobre el fondo, sin pastilla ni borde: enmarcarlo
   // creaba una segunda barra por encima del contenido y la pantalla parecía
   // un navegador, no una app.
   zonaTitulo: {
     flex: 1,
-    height: 38,
+    height: DIAMETRO_BOTON_REDONDO,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 8,
@@ -97,7 +71,7 @@ const estilos = StyleSheet.create({
     fontWeight: '700',
   },
   derecha: {
-    minWidth: 38,
+    minWidth: DIAMETRO_BOTON_REDONDO,
     alignItems: 'flex-end',
   },
 });
