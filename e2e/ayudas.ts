@@ -3,7 +3,7 @@ import { expect } from './fixtures';
 import { cpSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-export const PUERTO = 4173;
+export const PUERTO = Number(process.env.ANCLA_E2E_PUERTO ?? 4173); // el mismo de playwright.config.ts
 const ORIGEN = `http://localhost:${PUERTO}`;
 
 /** La app está lista cuando la pantalla de arranque se retira (recibió `lista`). */
@@ -28,6 +28,25 @@ export async function crearLista(page: Page, nombre: string): Promise<void> {
   await page.getByPlaceholder('Nombre de la lista nueva...').fill(nombre);
   await page.getByText('Crear', { exact: true }).click();
   await expect(page).toHaveURL(/\/listas\/[^/]+$/);
+}
+
+/** Meta de una tarjeta: la sesión mixta trae entonces una sola, y la cumple. */
+export async function metaDeUnaTarjeta(page: Page): Promise<void> {
+  await abrir(page, 'ajustes');
+  await page.getByLabel('Meta diaria').fill('1');
+  await page.getByText('Guardar configuración').click();
+  // Navegación dentro de la app: recargar podría cortar la escritura en curso.
+  // Las consultas de Inicio van a la cola del mismo worker, detrás del UPDATE.
+  await page.getByRole('tab', { name: 'Inicio' }).click();
+  await expect(page.getByText('de 1', { exact: true })).toBeVisible(); // el anillo de la meta
+}
+
+/** Desde Inicio, una sesión de una tarjeta calificada «Bien», hasta su resumen. */
+export async function repasarUnaTarjeta(page: Page): Promise<void> {
+  await page.getByText('Practicar ahora').filter({ visible: true }).click();
+  await page.getByRole('button', { name: 'Ver respuesta' }).click({ timeout: 15_000 });
+  await page.getByRole('button', { name: /^Bien/ }).click();
+  await expect(page).toHaveURL(/\/resumen-sesion/);
 }
 
 /** Cuántas copias automáticas hay en IndexedDB (sin crear la base si no existe). */

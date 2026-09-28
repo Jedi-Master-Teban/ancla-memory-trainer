@@ -7,8 +7,12 @@ import { defineConfig, devices } from '@playwright/test';
  *
  *   npm run test:e2e        construye la PWA y corre las pruebas
  *   npx playwright test     solo las pruebas, sobre el dist/ que ya haya
+ *
+ * Si otro checkout (un worktree) ya tiene su servidor en el 4173, Playwright lo
+ * reutiliza y prueba el dist/ de ESE checkout. Para correr en paralelo, otro
+ * puerto: `ANCLA_E2E_PUERTO=4174 npm run test:e2e`.
  */
-const PUERTO = 4173;
+const PUERTO = Number(process.env.ANCLA_E2E_PUERTO ?? 4173);
 
 export default defineConfig({
   testDir: 'e2e',

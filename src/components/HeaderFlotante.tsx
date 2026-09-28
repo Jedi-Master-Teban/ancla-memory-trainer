@@ -26,12 +26,17 @@ interface Props {
  * En su lugar, recibe una ruta explícita `volverA` que define a dónde
  * ir: típicamente la pantalla padre (categoría) o '/' (inicio).
  * En la pantalla de inicio se oculta con `mostrarVolver={false}`.
+ *
+ * Va con `router.dismissTo` (ADR-035), no con `push`: si `volverA` ya está
+ * en la pila, vuelve a ESA pantalla y quita las de encima; si no, reemplaza
+ * la actual. `push` apilaba otra copia —un segundo Inicio montado debajo— y
+ * dejaba viva la pantalla que se abandonaba, sesión incluida.
  */
 export function HeaderFlotante({ titulo, volverA, derecha, mostrarVolver = true }: Props) {
   const { colores: t } = useTema();
   const handleVolver = () => {
     if (volverA) {
-      router.push(volverA as never);
+      router.dismissTo(volverA as never);
     }
   };
   return (

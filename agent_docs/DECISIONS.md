@@ -391,6 +391,7 @@ retiran de la tabla de pendientes.
 | P-4 | ¿`expo-notifications` dispara notificaciones locales en Expo Go con el SDK que se fije en Fase 0? | Agente (spike) | Fase 8 |
 | P-5 | Simulador de iOS sin runtime descargado (`xcrun simctl list runtimes` vacío). Xcode está instalado pero falta la plataforma iOS, una descarga de varios GB que normalmente pide contraseña de administrador. No bloquea ninguna fase (el objetivo real es Expo Go en el iPhone físico), pero impide usar el simulador como verificación intermedia. | Operador | Ninguna fase (solo conveniencia) |
 | P-6 | El proyecto quedó fijado en SDK 54 por ADR-012, no en "la última" a propósito. Antes de subir de SDK en cualquier fase futura, verificar primero contra `apps.apple.com/us/app/expo-go/id982107779` (o preguntar al operador qué ve en Expo Go) que la nueva versión ya está disponible en el App Store — nunca asumir que "más nueva" significa "usable". | Agente | Cualquier fase futura que toque versión de Expo SDK |
+| P-7 | La isla (`cambiarTab` en `app/_layout.tsx`) hace `push` en cada toque, también en la pestaña activa: tocar «Inicio» apila otro Inicio, y Editar, Stats y Ajustes otra copia de sí mismas. ¿Las pestañas vuelven con `dismissTo` (ADR-035) o se quedan así? Es navegación lateral: decisión de diseño. | Operador | Ninguna fase; que la pila no crezca al cambiar de pestaña |
 
 ## ADR-014 · 2026-08-12 · Aceptada
 **Decisión:** `src/db/tipos.ts` define una interfaz propia `ConexionBD`
@@ -1079,3 +1080,44 @@ debajo de la isla (80), el FAB (90) y los diálogos (1000), para que sus velos
 la oscurezcan. En una pestaña del navegador no existe el difuminado y no se
 reserva nada. `e2e/franja-superior.spec.ts` comprueba la condición en el DOM;
 el efecto en sí solo se puede ver en un iPhone.
+
+## ADR-035 · 2026-09-28 · Aceptada
+
+**Decisión:** para volver a una pantalla que puede estar ya en la pila se usa
+`router.dismissTo(ruta)`, no `push`, `replace` ni `navigate`. Aplica a los dos
+botones del resumen de sesión («Volver al inicio» y «Ver mi racha») y a la
+flecha ← de `HeaderFlotante`.
+
+**Por qué:** «Volver al inicio» hacía `router.replace('/')`: cambiaba el
+resumen por un Inicio NUEVO y el de antes seguía montado debajo. Tras N sesiones
+había N+1 Inicios (la E2E de Memo encontraba dos «Practicar ahora»). La flecha ←
+hacía `router.push(volverA)`: otra copia encima, y la pantalla que se abandonaba
+—incluso una sesión a medias— quedaba viva debajo, al alcance del gesto de volver.
+
+**Verificado contra el paquete instalado** (expo-router 6.0.24,
+`@react-navigation/routers` 7.6.4):
+- `dismissTo(href)` (`build/imperative-api.d.ts`) despacha `POP_TO`
+  (`build/global-state/routing.js`). El Stack de expo-router no lo intercepta
+  (`isStackAction` en `build/layouts/StackClient.js`) y lo resuelve el
+  `StackRouter` de React Navigation: busca hacia abajo la ruta con ese nombre;
+  si la encuentra, quita las de encima; si no, reemplaza la actual, como `replace`.
+- `navigate(href)` NO vuelve: en v6 empuja una copia salvo que la ruta sea la
+  que está arriba.
+- `dismissAll()` vuelve a la primera de la pila, que no siempre es Inicio: una
+  ruta abierta directamente no trae Inicio debajo.
+- En la web, cuando la pila se acorta, `fork/useLinking.js` retrocede el
+  historial del navegador hasta la entrada de esa ruta. La sesión ya se había
+  reemplazado por el resumen, así que el gesto de volver no la reabre.
+
+**Consecuencia:** la pantalla a la que se vuelve no se crea de nuevo, se
+reutiliza: tiene que recargar sus datos en `useFocusEffect`. Todos los destinos
+actuales lo hacen (Inicio, Racha, las cuatro categorías, Estadísticas); la Guía
+no lee datos.
+
+**Pruebas:** `e2e/navegacion.spec.ts` — dos sesiones seguidas dejan un solo
+«Practicar ahora» en el DOM, con el anillo al día, y «Ver mi racha» + ← vuelve
+al mismo Inicio. Si otro checkout tiene su servidor E2E en el 4173, Playwright lo
+reutiliza y prueba el `dist/` de ESE checkout; para correr en paralelo:
+`ANCLA_E2E_PUERTO=4174 npm run test:e2e`.
+
+**Queda fuera:** la isla sigue con `push` (P-7).

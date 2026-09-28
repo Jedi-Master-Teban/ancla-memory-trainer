@@ -33,9 +33,9 @@ export const test = base.extend<{ context: BrowserContext; page: Page }>({
     await contexto.close();
     rmSync(carpeta, { recursive: true, force: true });
   },
-  page: async ({ context }, use) => {
+  page: async ({ context, baseURL }, use) => {
     const pagina = context.pages()[0] ?? (await context.newPage());
-    await limpiarOrigen(pagina);
+    await limpiarOrigen(pagina, new URL(baseURL!).origin);
     await use(pagina);
   },
 });
@@ -47,8 +47,8 @@ export const test = base.extend<{ context: BrowserContext; page: Page }>({
  * las listas de las anteriores), así que no basta con abrir un perfil nuevo.
  * Se hace desde la raíz del servidor, fuera de la app: nadie tiene la base abierta.
  */
-async function limpiarOrigen(pagina: Page): Promise<void> {
-  await pagina.goto('http://localhost:4173/');
+async function limpiarOrigen(pagina: Page, origen: string): Promise<void> {
+  await pagina.goto(`${origen}/`);
   await pagina.evaluate(async () => {
     const raiz = await navigator.storage.getDirectory();
     const nombres: string[] = [];

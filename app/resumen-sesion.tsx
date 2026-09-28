@@ -52,6 +52,13 @@ import { recetaForma } from '../src/tema/colores';
  * simplemente no se pinta. Registrar la sesión en BD es responsabilidad de
  * quien navega hasta aquí — esta pantalla no escribe nada.
  *
+ * Se sale con `router.dismissTo` (ADR-035): vuelve a la pantalla que ya está
+ * en la pila —Inicio sigue montado debajo— y quita el resumen; si no está,
+ * reemplaza el resumen, como hacía `replace`. Con `router.replace('/')` cada
+ * sesión apilaba un Inicio nuevo encima del de antes, y `navigate` tampoco
+ * sirve: en expo-router 6 empuja si la ruta no es la actual. La sesión ya no
+ * está en la pila, así que el gesto de volver tampoco la reabre.
+ *
  * Recuerda poner `tabBarOculta` en true mientras está montada (useUIStore):
  * es el cierre de un flujo, no un destino de la navegación.
  */
@@ -219,7 +226,7 @@ export default function ResumenSesion() {
 
       <View style={estilos.acciones}>
         <Pressable
-          onPress={() => router.replace('/racha')}
+          onPress={() => router.dismissTo('/racha')}
           style={({ pressed }) => [
             estilos.cta,
             forma.sombraCta(t),
@@ -232,7 +239,7 @@ export default function ResumenSesion() {
           </Text>
         </Pressable>
         <Pressable
-          onPress={() => router.replace('/')}
+          onPress={() => router.dismissTo('/')}
           style={({ pressed }) => [estilos.secundario, pressed && { opacity: 0.6 }]}
         >
           <Text style={[estilos.secundarioTexto, { color: t.inkMuted, fontFamily: tipografia.body }]}>
