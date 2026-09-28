@@ -118,6 +118,8 @@ export default function Practicar() {
             aciertos: String(aciertos),
             fallos: String(fallos),
             metaCumplida: (dia?.tarjetas_revisadas ?? 0) >= (configRacha.meta_diaria ?? 20) ? '1' : '0',
+            tarjetasHoy: String(dia?.tarjetas_revisadas ?? 0),
+            meta: String(configRacha.meta_diaria ?? 20),
           },
         });
       })();

@@ -4,8 +4,22 @@
     {
       "name": "ancla-web",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["expo", "start", "--web", "--port", "8081"],
+      "runtimeArgs": [
+        "expo",
+        "start",
+        "--web",
+        "--port",
+        "8081"
+      ],
       "port": 8081
+    },
+    {
+      "name": "ancla-pwa",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "e2e/servidor.mjs"
+      ],
+      "port": 4173
     }
   ]
 }

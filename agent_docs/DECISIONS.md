@@ -1014,3 +1014,40 @@ añade al stack de pruebas; Jest sigue siendo el de la lógica.
   pruebas lo sustituyen (`simularMenuCompartir`) y prueban aparte la descarga.
 - La prueba sin conexión se omite en WebKit: Playwright no deja que el service
   worker atienda la navegación con la red cortada.
+
+## ADR-033 · 2026-09-28 · Aceptada
+
+**Decisión:** Memo es la mascota de Ancla (elección del operador). Un elefante
+—el que nunca olvida— con astas de venado en el naranja de Ancla, para que sea
+una criatura propia de la app y no un elefante cualquiera. Reemplaza a «ancla»
+en la pantalla de arranque (`pwa/arranque/config.json`) y entra en la app.
+
+**Dónde aparece, y dónde no:**
+- Inicio: en miniatura (40 pt) en lugar del ancla pequeña junto al nombre —dos
+  marcas juntas competían—. Despierto mientras haya racha (parpadea y da un
+  brinco doble al llegar y cada 14 s), dormido sin racha (ojos cerrados y
+  zetas).
+- Final de sesión (resumen y práctica libre): a la izquierda de la llama, que
+  sigue centrada y sigue siendo la recompensa principal. Solo CELEBRA la sesión
+  que cruza la meta del día —la que empieza la racha (primero despierta) o la
+  alarga—; cualquier otra sesión solo refleja la racha. Una celebración que sale
+  siempre dejaría de significar algo.
+- Nunca durante un repaso ni al hojear: ahí la atención es de la tarjeta.
+- Arranque: camina en su sitio; en error se sobresalta, con la trompa en alto,
+  los ojos muy abiertos y una «!».
+
+**Regla única** (`src/domain/mascota/memo.ts`, con pruebas): despierto ⇔ racha
+> 0, así Memo nunca contradice a la llama ni al número de días. La sesión cruzó
+la meta si `tarjetasHoy ≥ meta` y `tarjetasHoy − calificadasEnSesion < meta`;
+por eso los seis finales de sesión mandan `tarjetasHoy` y `meta` al resumen.
+
+**Dibujo:** un solo origen, `pwa/arranque/generar_mascotas.py`, que escribe
+`mascotas.json` (arranque) y `src/domain/mascota/sprites.ts` (app); una prueba
+comprueba que coinciden. Cinco cuadros: quieto, parpadeo y error (arranque) y
+dormido y feliz (app). En la web se dibuja con `shape-rendering: crispEdges` y
+se mueve por píxeles enteros: con suavizado, cada fila dejaba una raya del fondo
+al brincar. `Animated.loop` sobre un `timing` con driver nativo corre una sola
+vuelta en react-native-web; Memo pide el driver nativo solo fuera de la web.
+
+**Lumi** (la búho) se conserva tal cual en el generador y en `mascotas.json`,
+como opción para cuando el usuario pueda elegir mascota. **Ancla** también.

@@ -2,6 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AnilloMeta } from '../src/components/AnilloMeta';
+import { MemoInicio } from '../src/components/Memo';
 import { StreakPill } from '../src/components/StreakPill';
 import { IconoChevron, IconoColgadero, IconoGuia, IconoLista, IconoNaipe, IconoNumero } from '../src/components/iconos';
 import { obtenerBD } from '../src/db/client';
@@ -15,12 +16,12 @@ import {
   obtenerDiaPractica,
 } from '../src/db/repository';
 import type { Categoria, FilaMazo } from '../src/db/tipos';
+import { estadoDeMemo } from '../src/domain/mascota/memo';
 import { fechaLocal } from '../src/domain/racha/calculo';
 import { useRachaStore } from '../src/stores/racha';
 import { useTema } from '../src/stores/tema';
 import { recetaForma } from '../src/tema/colores';
 import type { TokensColor } from '../src/tema/colores';
-import { IconoApp } from '../src/components/IconoApp';
 
 const RUTA_POR_CATEGORIA: Record<Categoria, '/colgadero' | '/naipes' | '/listas' | '/numeros'> = {
   colgadero: '/colgadero',
@@ -185,7 +186,8 @@ export default function Index() {
     >
       <View style={estilos.encabezado}>
         <View style={estilos.marca}>
-          <IconoApp size={26} conFondo={false} glifo={t.accent1} fondo={t.bg} />
+          {/* Memo en lugar del ancla pequeña: dos marcas juntas competían (ADR-033). */}
+          <MemoInicio despierto={estadoDeMemo(racha.diasConsecutivos) === 'despierto'} />
           <Text style={[estilos.nombreApp, { color: t.ink, fontFamily: tipografia.display }]}>Ancla</Text>
         </View>
         <StreakPill
@@ -366,7 +368,7 @@ const estilos = StyleSheet.create({
     paddingHorizontal: 4,
     paddingTop: 6,
   },
-  marca: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  marca: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   nombreApp: { fontSize: 19, fontWeight: '700', letterSpacing: -0.2 },
 
   hero: { borderWidth: 1, padding: 22, gap: 20 },

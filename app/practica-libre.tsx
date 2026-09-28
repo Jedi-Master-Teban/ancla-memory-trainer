@@ -7,7 +7,7 @@ import { Flashcard } from '../src/components/Flashcard';
 import { PausaVisualizacion } from '../src/components/PausaVisualizacion';
 import { TramosProgreso } from '../src/components/TramosProgreso';
 import { obtenerBD } from '../src/db/client';
-import { cerrarSesion, crearSesion, listarMazos, listarTarjetasPorMazo } from '../src/db/repository';
+import { calcularRachaActual, cerrarSesion, crearSesion, listarMazos, listarTarjetasPorMazo } from '../src/db/repository';
 import type { ConexionBD, FilaTarjeta, MetadataNaipe } from '../src/db/tipos';
 import { barajar } from '../src/domain/aleatorio';
 import type { Calificacion } from '../src/domain/fsrs/scheduler';
@@ -18,6 +18,8 @@ import type { TokensColor } from '../src/tema/colores';
 import { explicar } from '../src/domain/fonetica/decodificador';
 import { explicarNaipe } from '../src/domain/fonetica/naipes';
 import { BotonRevelar, EscenaRepaso } from '../src/components/EscenaRepaso';
+import { MemoReaccion } from '../src/components/Memo';
+import { estadoDeMemo } from '../src/domain/mascota/memo';
 
 /**
  * "Todo al día" (09-dashboard.md §4): repaso sin impacto en el scheduling
@@ -55,6 +57,8 @@ export default function PracticaLibre() {
 
   const { tarjetas, sesionId, indice, revelada, aciertos, fallos, iniciar, revelar, avanzar, reiniciar } =
     useSesionStore();
+  // Para Memo al terminar. La práctica libre no mueve la racha: solo se lee.
+  const [racha, setRacha] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelado = false;
@@ -87,6 +91,9 @@ export default function PracticaLibre() {
   useEffect(() => {
     if (db && sesionId && tarjetas.length > 0 && indice >= tarjetas.length) {
       cerrarSesion(db, { sesionId, duracionSegundos: 0, aciertos, fallos }, new Date());
+      calcularRachaActual(db, new Date())
+        .then((r) => setRacha(r.diasConsecutivos))
+        .catch(() => {});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [indice]);
@@ -125,6 +132,7 @@ export default function PracticaLibre() {
   if (indice >= tarjetas.length) {
     return (
       <View style={estilos.centro}>
+        {racha !== null ? <MemoReaccion reaccion={estadoDeMemo(racha)} tamano={72} /> : null}
         <Text style={estilos.titulo}>Práctica libre completa</Text>
         <Text style={estilos.texto}>
           {aciertos} aciertos · {fallos} fallos — no afecta tu racha ni tus repasos programados

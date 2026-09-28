@@ -110,8 +110,9 @@ vía Expo Go. Nunca avanzar con la fase anterior en estado dudoso.
 
 **2026-09-28:** Ancla se usa como **PWA en GitHub Pages**, no en Expo Go. Datos
 resistentes a actualizaciones (ADR-029), pantalla de arranque con mascota
-(ADR-030), Guía de técnicas (ADR-031) y pruebas E2E (ADR-032). Lo de abajo es
-el estado de agosto y sigue siendo cierto sobre las Fases 0–8.
+(ADR-030), Guía de técnicas (ADR-031), pruebas E2E (ADR-032) y Memo, la
+mascota, en Inicio y al final de las sesiones (ADR-033). Lo de abajo es el
+estado de agosto y sigue siendo cierto sobre las Fases 0–8.
 
 **Proyecto detenido el 2026-08-22 por decisión del operador (ADR-028).** No es
 un bloqueo técnico: la única forma de instalar la app sin caducidad semanal es

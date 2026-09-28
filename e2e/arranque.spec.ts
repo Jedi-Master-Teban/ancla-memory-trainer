@@ -8,6 +8,7 @@ test.describe('pantalla de arranque', () => {
     const html = await (await request.get('')).text();
     expect(html).toContain('id="ancla-arranque"');
     expect(html).toContain('<html lang="es-CO">');
+    expect(html).toContain('data-mascota="memo"'); // ADR-033
 
     const errores = registrarErrores(page);
     await abrir(page, '');
@@ -24,6 +25,10 @@ test.describe('pantalla de arranque', () => {
     await expect(pantalla).toHaveAttribute('data-estado', 'error');
     await expect(pantalla.getByText('Algo no cargó bien')).toBeVisible();
     await expect(pantalla.getByText('Tus datos siguen guardados en este teléfono.', { exact: false })).toBeVisible();
+    // Memo, alarmado: el cuadro de la trompa en alto y la «!» encendida.
+    await expect(pantalla.locator('.aa-c-error')).toBeVisible();
+    await expect(pantalla.locator('.aa-c-quieto')).toBeHidden();
+    await expect(pantalla.locator('.aa-senal')).toHaveCSS('opacity', '1');
 
     await pantalla.getByRole('button', { name: 'Ver detalles' }).click();
     await expect(pantalla.locator('.aa-detalle-texto')).toContainText('entry-');

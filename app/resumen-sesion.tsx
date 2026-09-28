@@ -2,7 +2,9 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { AccessibilityInfo, Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Llama } from '../src/components/Llama';
+import { MemoReaccion } from '../src/components/Memo';
 import { Odometro } from '../src/components/Odometro';
+import { reaccionAlTerminar } from '../src/domain/mascota/memo';
 import { useTema } from '../src/stores/tema';
 import { useUIStore } from '../src/stores/ui';
 import { recetaForma } from '../src/tema/colores';
@@ -16,9 +18,15 @@ import { recetaForma } from '../src/tema/colores';
  * métricas y una razón para volver mañana.
  *
  * Deliberadamente NO lleva confeti, ni sonidos, ni medallas, ni XP con
- * niveles. La llama y el odómetro de la racha son la única recompensa de la
- * app, y siguen sintiéndose valiosos justamente porque no compiten con nada.
+ * niveles. La llama y el odómetro de la racha son la recompensa de la app, y
+ * siguen sintiéndose valiosos justamente porque no compiten con nada.
  * Añadir capas de premio a un hábito que ya funciona lo abarata.
+ *
+ * Memo (ADR-033) acompaña a la llama sin competir con ella: se queda a su
+ * lado, más pequeño, y solo CELEBRA cuando esta sesión cumplió la meta del
+ * día — la que empieza o alarga la racha. En cualquier otra sesión se limita
+ * a reflejar la racha (un saltito si la hay, dormido si no). Una celebración
+ * que sale siempre dejaría de significar algo.
  *
  * ── Contrato de navegación ─────────────────────────────────────────────────
  *
@@ -33,6 +41,8 @@ import { recetaForma } from '../src/tema/colores';
  *       minutos: '8',
  *       racha: '24',             // racha YA actualizada con el día de hoy
  *       metaCumplida: '1',
+ *       tarjetasHoy: '24',       // calificadas hoy, contando esta sesión
+ *       meta: '20',              // meta diaria vigente
  *       proximaCategoria: 'Naipes',
  *       proximaDetalle: '14 cartas vencen mañana. Es tu categoría con menor retención (74 %).',
  *     },
@@ -47,7 +57,7 @@ import { recetaForma } from '../src/tema/colores';
  */
 
 /** Pop con rebote — DESIGN.md §6, 580 ms, bezier(.2, 1.3, .4, 1). */
-function usePop() {
+function usePop(retraso = 0) {
   const valor = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     let vivo = true;
@@ -60,6 +70,7 @@ function usePop() {
       Animated.timing(valor, {
         toValue: 1,
         duration: 580,
+        delay: retraso,
         easing: Easing.bezier(0.2, 1.3, 0.4, 1),
         useNativeDriver: true,
       }).start();
@@ -67,7 +78,7 @@ function usePop() {
     return () => {
       vivo = false;
     };
-  }, [valor]);
+  }, [valor, retraso]);
   return {
     opacity: valor.interpolate({ inputRange: [0, 0.35, 1], outputRange: [0, 1, 1] }),
     transform: [{ scale: valor.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) }],
@@ -89,6 +100,8 @@ export default function ResumenSesion() {
   const { colores: t, tema, tipografia } = useTema();
   const forma = recetaForma(tema);
   const pop = usePop();
+  // Memo aparece un instante después de la llama: ella es lo primero.
+  const popMemo = usePop(140);
 
   // Cierre de un flujo, no un destino de navegación: la isla no aporta aquí.
   useEffect(() => {
@@ -104,6 +117,12 @@ export default function ResumenSesion() {
   const metaCumplida = params.metaCumplida === '1';
   const proximaCategoria = aTexto(params.proximaCategoria);
   const proximaDetalle = aTexto(params.proximaDetalle);
+  const reaccion = reaccionAlTerminar({
+    racha,
+    tarjetasHoy: aNumero(params.tarjetasHoy),
+    meta: aNumero(params.meta),
+    calificadasEnSesion: total,
+  });
 
   const tarjetaMetrica = [
     estilos.metrica,
@@ -112,9 +131,15 @@ export default function ResumenSesion() {
 
   return (
     <View style={[estilos.pantalla, { backgroundColor: t.bg }]}>
-      <Animated.View style={pop}>
-        <Llama tamano={80} estado="activa" />
-      </Animated.View>
+      <View>
+        <Animated.View style={pop}>
+          <Llama tamano={80} estado="activa" />
+        </Animated.View>
+        {/* A la izquierda de la llama y fuera del flujo: la llama sigue centrada. */}
+        <Animated.View style={[estilos.memo, popMemo]}>
+          <MemoReaccion reaccion={reaccion} tamano={72} />
+        </Animated.View>
+      </View>
 
       <View style={estilos.cabecera}>
         <Text style={[estilos.kicker, { color: t.flameOuterEnd, fontFamily: tipografia.display }]}>
@@ -227,6 +252,7 @@ const estilos = StyleSheet.create({
     paddingHorizontal: 22,
     gap: 22,
   },
+  memo: { position: 'absolute', right: '100%', marginRight: -10, bottom: 18 },
   cabecera: { alignItems: 'center', gap: 7 },
   kicker: { fontSize: 15, fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase' },
   titular: { fontSize: 30, fontWeight: '800', textAlign: 'center', lineHeight: 35 },

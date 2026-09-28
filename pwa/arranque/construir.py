@@ -46,9 +46,10 @@ def _paleta(d, m):
     return {**d["paleta"], "X": m["extra"]["color"]}
 
 
-def svg_sprite(filas, paleta, clase, ancho, alto):
+def svg_sprite(filas, paleta, clase, ancho, alto, estilo=""):
+    atributo = f' style="{estilo}"' if estilo else ""
     return (
-        f'<svg class="{clase}" viewBox="0 0 {ancho} {alto}" shape-rendering="crispEdges" '
+        f'<svg class="{clase}"{atributo} viewBox="0 0 {ancho} {alto}" shape-rendering="crispEdges" '
         f'aria-hidden="true" focusable="false">{_rects(filas, paleta)}</svg>'
     )
 
@@ -79,7 +80,10 @@ def html_pantalla(d, clave, id_raiz="ancla-arranque"):
     paleta = _paleta(d, m)
     extras = d["extras"]
     base = svg_sprite(m["base"], paleta, "aa-base", d["ancho"], d["alto"]) if "base" in m else ""
-    pregunta = svg_sprite(extras["pregunta"], paleta, "aa-pregunta", 5, 7)
+    # La señal que asoma en un error: «?» por defecto; Memo, alarmado, usa «!».
+    filas_senal = extras[m.get("senal_error", "pregunta")]
+    an, al = len(filas_senal[0]), len(filas_senal)
+    senal = svg_sprite(filas_senal, paleta, "aa-senal", an, al, f"--aa-senal-an:{an};--aa-senal-al:{al}")
     burbujas = ""
     if clave == "ancla":
         burbuja = svg_sprite(extras["burbuja"], paleta, "", 4, 4)
@@ -91,7 +95,7 @@ def html_pantalla(d, clave, id_raiz="ancla-arranque"):
     <div class="aa-mascota">
       {sombra}{base}
       <div class="aa-colgante">{cabo}{svg_mascota(d, clave)}</div>
-      {burbujas}{pregunta}
+      {burbujas}{senal}
     </div>
     <p class="aa-titulo">Ancla</p>
     <p class="aa-estado" role="status" aria-live="polite">Preparando tu memoria…</p>

@@ -173,6 +173,7 @@ export default function Ajustes() {
         <TextInput
           value={metaTexto}
           onChangeText={setMetaTexto}
+          accessibilityLabel="Meta diaria"
           keyboardType="number-pad"
           style={[estilos.inputConfig, { backgroundColor: t.card, color: t.ink }]}
         />
@@ -182,6 +183,7 @@ export default function Ajustes() {
         <TextInput
           value={horaTexto}
           onChangeText={setHoraTexto}
+          accessibilityLabel="Hora de recordatorio"
           placeholder="21:00"
           placeholderTextColor={t.inkMuted}
           style={[estilos.inputConfig, { backgroundColor: t.card, color: t.ink }]}
@@ -192,6 +194,7 @@ export default function Ajustes() {
         <TextInput
           value={congeladoresTexto}
           onChangeText={setCongeladoresTexto}
+          accessibilityLabel="Congeladores disponibles"
           keyboardType="number-pad"
           style={[estilos.inputConfig, { backgroundColor: t.card, color: t.ink }]}
         />
