@@ -1051,3 +1051,31 @@ vuelta en react-native-web; Memo pide el driver nativo solo fuera de la web.
 
 **Lumi** (la búho) se conserva tal cual en el generador y en `mascotas.json`,
 como opción para cuando el usuario pueda elegir mascota. **Ancla** también.
+
+## ADR-034 · 2026-09-28 · Aceptada
+
+**Decisión:** en la app instalada (display-mode standalone), una franja fija de
+12 px del color del fondo cubre el borde superior, y el contenido de cada
+pantalla empieza debajo (`src/components/BordeSuperior.tsx`,
+`RESERVA_SUPERIOR` en el contentStyle del Stack).
+
+**Por qué:** desde iOS 26, iOS dibuja sobre las apps web instaladas el «scroll
+edge effect» de Liquid Glass: un difuminado de unos 38 pt bajo la barra de
+estado, ENCIMA de la página. El operador vio a Memo y la racha lavados. No
+hay CSS ni meta que lo apague (tampoco `apple-mobile-web-app-status-bar-style`).
+WebKit lo omite cuando el borde superior lo cubre un contenedor fijo con color
+sólido, y pinta la franja del reloj con ese color. Condición leída en el
+código de WebKit el 2026-09-28: `LocalFrameView::fixedContainerEdges` mira 4 px
+bajo el borde, al centro, ignorando pointer-events; sube hasta el primer
+ancestro fixed o sticky, que debe cubrir al menos el 90 % del ancho y medir más
+de 10 px de alto, con un color de fondo plano; y WKWebView esconde el
+difuminado cuando hay esa extensión de color (`_shouldHideTopScrollPocket`).
+
+**Detalles:** la franja es un contenedor «normal» para WebKit (ancho de
+pantalla, poco alto), no uno del tamaño de la pantalla: con esos, WebKit
+conserva el primer color que vio y un cambio de tema dejaría la franja del
+reloj del color viejo. Va con zIndex 60, por encima de las pantallas y por
+debajo de la isla (80), el FAB (90) y los diálogos (1000), para que sus velos
+la oscurezcan. En una pestaña del navegador no existe el difuminado y no se
+reserva nada. `e2e/franja-superior.spec.ts` comprueba la condición en el DOM;
+el efecto en sí solo se puede ver en un iPhone.

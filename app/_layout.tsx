@@ -14,6 +14,7 @@ import { listarCopiasAutomaticas, recuperacionDescartadaHasta } from '../src/db/
 import { copiaParaRecuperar, type MetaCopia } from '../src/domain/respaldo/copias';
 import { senalarArranque, senalarErrorDeArranque } from '../src/arranque/senales';
 import { mensajeDeErrorDeDatos, type MensajeDeError } from '../src/arranque/mensajes';
+import { BordeSuperior, RESERVA_SUPERIOR } from '../src/components/BordeSuperior';
 import { DialogoHost } from '../src/components/DialogoHost';
 import { PantallaRecuperacion } from '../src/components/PantallaRecuperacion';
 import { useTema, useTemaStore } from '../src/stores/tema';
@@ -182,7 +183,9 @@ export default function RootLayout() {
           // La navegación hacia arriba la da HeaderFlotante con su `volverA`
           // explícito; la lateral, la isla.
           headerShown: false,
-          contentStyle: { backgroundColor: t.bg },
+          // En la app instalada, el contenido empieza bajo la franja que le
+          // quita a iOS el difuminado de arriba (src/components/BordeSuperior).
+          contentStyle: { backgroundColor: t.bg, paddingTop: RESERVA_SUPERIOR },
           // Eje Z: nada se desliza lateralmente. El repaso no es "la página
           // siguiente", es un lugar al que entras y del que sales.
           animation: 'fade',
@@ -218,6 +221,7 @@ export default function RootLayout() {
         <Stack.Screen name="guia/index" options={{ title: 'Guía' }} />
         <Stack.Screen name="guia/[capitulo]" options={{ title: 'Guía' }} />
       </Stack>
+      <BordeSuperior />
       {!tabBarOculta && tabActiva !== null && (
         <TabBarInferior activa={tabActiva} onChange={cambiarTab} onRepaso={irARepaso} />
       )}
