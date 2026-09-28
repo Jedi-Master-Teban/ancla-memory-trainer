@@ -17,7 +17,7 @@ cuando se contradigan, manda el brief.
 | Navegación | `expo-router` (file-based) |
 | Notificaciones | `expo-notifications` (locales) |
 | Estado | Zustand |
-| Tests | Jest |
+| Tests | Jest (lógica) · Playwright E2E en WebKit y Chromium (ADR-032) |
 
 ## Comandos
 
@@ -26,6 +26,7 @@ npx expo start          # arrancar; escanear el QR con Expo Go
 npm test                # Jest
 npm test -- --watch     # Jest en watch
 npx tsc --noEmit        # comprobar tipos
+npm run test:e2e        # construye la PWA y corre e2e/ (Playwright)
 ```
 
 ## Estructura (5 directorios de primer nivel)
@@ -106,6 +107,11 @@ Cada fase cierra con: tests pasando + commit + verificación manual real en el i
 vía Expo Go. Nunca avanzar con la fase anterior en estado dudoso.
 
 ## Estado actual
+
+**2026-09-28:** Ancla se usa como **PWA en GitHub Pages**, no en Expo Go. Datos
+resistentes a actualizaciones (ADR-029), pantalla de arranque con mascota
+(ADR-030), Guía de técnicas (ADR-031) y pruebas E2E (ADR-032). Lo de abajo es
+el estado de agosto y sigue siendo cierto sobre las Fases 0–8.
 
 **Proyecto detenido el 2026-08-22 por decisión del operador (ADR-028).** No es
 un bloqueo técnico: la única forma de instalar la app sin caducidad semanal es

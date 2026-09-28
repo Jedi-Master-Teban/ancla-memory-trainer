@@ -1,11 +1,10 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import * as Sharing from 'expo-sharing';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LineChart } from '../src/components/LineChart';
 import { RetencionPorCategoria as VistaRetencion, type VistaRetencion as ModoVista } from '../src/components/RetencionPorCategoria';
 import { TarjetasProblematicas } from '../src/components/TarjetasProblematicas';
-import { obtenerBD, rutaArchivoBD } from '../src/db/client';
+import { obtenerBD } from '../src/db/client';
 import { listarDiasPractica, obtenerPanelRetencion } from '../src/db/repository';
 import type { ConexionBD, FilaDiaPractica } from '../src/db/tipos';
 import type { Categoria } from '../src/db/tipos';
@@ -160,19 +159,6 @@ export default function Estadisticas() {
   }, [ventana]);
 
   useFocusEffect(cargar);
-
-  async function exportarBD() {
-    try {
-      const ruta = await rutaArchivoBD();
-      if (!(await Sharing.isAvailableAsync())) {
-        Alert.alert('No disponible', 'Compartir archivos no está disponible en este dispositivo.');
-        return;
-      }
-      await Sharing.shareAsync(`file://${ruta}`);
-    } catch (e) {
-      Alert.alert('Error al exportar', String(e));
-    }
-  }
 
   if (cargando) {
     return (
@@ -332,9 +318,11 @@ export default function Estadisticas() {
         <Text style={[estilos.horaCaptura, { color: t.inkMuted }]}>Calculado: {ahoraCarga.toISOString()}</Text>
       ) : null}
 
-      <Pressable onPress={exportarBD} style={estilos.botonExportar}>
-        <Text style={[estilos.textoExportar, { color: t.inkMuted }]}>Exportar BD (verificación)</Text>
-      </Pressable>
+      {/* La exportación de la base para verificarla vive ahora en Ajustes → Tus
+          datos: es el mismo archivo .db que el respaldo (ADR-029). */}
+      <Link href="/ajustes" style={[estilos.textoExportar, estilos.botonExportar, { color: t.inkMuted }]}>
+        Exportar la base: Ajustes → Tus datos
+      </Link>
     </ScrollView>
   );
 }

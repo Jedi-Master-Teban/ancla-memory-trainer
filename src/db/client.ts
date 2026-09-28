@@ -1,40 +1,59 @@
-import { openDatabaseAsync } from 'expo-sqlite';
+import { openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite';
 import type { ConexionBD } from './tipos';
+import { copiaDiariaSiToca, tomarCopia } from './instantaneas';
 import { ejecutarMigraciones } from './migrations';
+import { pedirProteccion } from './persistencia';
 
 const NOMBRE_BD = 'memory-trainer.db';
 
-let bdPromise: Promise<ConexionBD> | null = null;
-let rutaBD: string | null = null;
+let bdPromise: Promise<SQLiteDatabase> | null = null;
 
 /**
  * Única apertura de la BD real del dispositivo. Único punto del proyecto que
- * importa `expo-sqlite` (CLAUDE.md, convención 1). Aplica migraciones antes de
- * devolver la conexión, así que cualquier consumidor recibe siempre un esquema
- * al día.
+ * importa `expo-sqlite` para abrirla (CLAUDE.md, convención 1). Aplica
+ * migraciones antes de devolver la conexión, así que cualquier consumidor
+ * recibe siempre un esquema al día.
+ *
+ * Si abrir falla, la promesa NO se queda guardada: el siguiente intento vuelve
+ * a abrir. Antes, un fallo pasajero —en la PWA, OPFS todavía ocupado por la
+ * versión anterior justo después de una actualización— dejaba la app sin base
+ * hasta cerrarla del todo, y todas las pantallas aparecían vacías.
  */
 export function obtenerBD(): Promise<ConexionBD> {
+  return obtenerBDReal();
+}
+
+/**
+ * La conexión de expo-sqlite en sí, con `serializeAsync` y copia entre bases.
+ * Solo para `src/db/` (respaldo): el resto de la app habla con `ConexionBD`.
+ */
+export function obtenerBDReal(): Promise<SQLiteDatabase> {
   if (!bdPromise) {
-    bdPromise = openDatabaseAsync(NOMBRE_BD).then(async (db) => {
-      rutaBD = db.databasePath;
-      await ejecutarMigraciones(db);
-      return db;
+    bdPromise = abrir().catch((e) => {
+      bdPromise = null;
+      throw e;
     });
   }
   return bdPromise;
 }
 
-/**
- * Ruta real del archivo `.db` en el dispositivo — solo para la exportación de
- * verificación de la Fase 6 (§ agent_docs/consultas-verificacion.sql). No es
- * parte de `ConexionBD` a propósito (ADR-014): esa interfaz existe para que
- * los tests la satisfagan con un adaptador de `node:sqlite`, que no tiene
- * ningún archivo real que exportar. `db.databasePath` (expo-sqlite) es una
- * ruta de sistema de archivos sin esquema — `file://` se antepone en quien
- * la use con `expo-sharing`, no aquí.
- */
-export async function rutaArchivoBD(): Promise<string> {
-  await obtenerBD();
-  if (!rutaBD) throw new Error('BD no inicializada');
-  return rutaBD;
+async function abrir(): Promise<SQLiteDatabase> {
+  const db = await openDatabaseAsync(NOMBRE_BD);
+  await ejecutarMigraciones(db, new Date(), {
+    // Copia de la base antes de tocar su esquema (ADR-029). Si la copia falla
+    // (sin espacio, IndexedDB no disponible) se migra igual: cada migración es
+    // atómica, y una app que no abre tras actualizar deja al usuario sin forma
+    // ni de exportar lo suyo.
+    antesDeMigrar: async () => {
+      try {
+        await tomarCopia(db, 'antes-de-actualizar', new Date());
+      } catch (e) {
+        console.error('No se pudo copiar la base antes de migrar:', e);
+      }
+    },
+  });
+  // De fondo: no retrasan el arranque y, si fallan, no lo impiden.
+  pedirProteccion().catch(() => undefined);
+  copiaDiariaSiToca(db, new Date()).catch((e) => console.error('No se pudo hacer la copia diaria:', e));
+  return db;
 }

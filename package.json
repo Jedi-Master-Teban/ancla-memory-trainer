@@ -9,7 +9,8 @@
     "test": "jest",
     "typecheck": "tsc --noEmit",
     "build:pwa": "expo export --platform web && python3 pwa/patch_dist.py",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "test:e2e": "npm run build:pwa && playwright test"
   },
   "dependencies": {
     "@expo-google-fonts/fredoka": "^0.4.1",
@@ -44,6 +45,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/jest": "^29.5.14",
     "@types/react": "~19.1.10",
     "eslint": "^9.0.0",

@@ -2,6 +2,7 @@ import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { HeaderFlotante } from '../../src/components/HeaderFlotante';
+import { EnlaceGuia } from '../../src/components/guia/EnlaceGuia';
 import { PanelHojear } from '../../src/components/PanelHojear';
 import { SegmentedControl } from '../../src/components/SegmentedControl';
 import { ordenarParaHojear } from '../../src/components/hojear-logic';
@@ -88,7 +89,7 @@ export default function ColgaderoIndex() {
 
   return (
     <>
-      <HeaderFlotante titulo="Colgadero" volverA="/" />
+      <HeaderFlotante titulo="Colgadero" volverA="/" derecha={<EnlaceGuia capitulo="colgadero" nombre="Colgadero" />} />
       <ScrollView style={[estilos.contenedor, { backgroundColor: t.bg }]} contentContainerStyle={estilos.contenido}>
         <ResumenCategoria categoria="colgadero" unidad="palabras" />
 

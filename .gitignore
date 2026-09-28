@@ -43,3 +43,11 @@ yarn-error.*
 *.db-journal
 .ghpages-test/
 dist/
+
+# pruebas E2E (Playwright)
+e2e/.tmp/
+test-results/
+playwright-report/
+
+# caché de Python (pwa/arranque/construir.py lo importa el build)
+__pycache__/

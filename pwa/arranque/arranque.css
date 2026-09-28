@@ -1,0 +1,247 @@
+/* Pantalla de arranque de Ancla (ADR-030).
+   Tonos de Soft UI más el color extra de la mascota (--aa-extra, uno de los
+   botones de respuesta). Las medidas van en múltiplos de --aa-px: un píxel
+   del sprite, para que todo respete la misma rejilla. */
+.aa-raiz {
+  --aa-bg: #F0EEE9;
+  --aa-card: #FAF9F7;
+  --aa-tinta: #2D2A26;
+  --aa-suave: #7A756C;
+  --aa-pista: #E8E5DF;
+  --aa-naranja: #FF6B35;
+  --aa-px: 6px;
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: grid;
+  place-items: center;
+  padding: env(safe-area-inset-top, 0px) 16px env(safe-area-inset-bottom, 0px);
+  background: var(--aa-bg);
+  color: var(--aa-tinta);
+  font-family: ui-rounded, "SF Pro Rounded", Nunito, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: opacity .28s ease;
+}
+.aa-raiz.aa-saliendo { opacity: 0; pointer-events: none; }
+
+/* Aparece a los 250 ms: si la app ya está en caché y arranca antes, no hay destello. */
+.aa-escena {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  width: min(320px, 100%);
+  text-align: center;
+  opacity: 0;
+  animation: aa-aparecer .32s ease .25s forwards;
+}
+@keyframes aa-aparecer {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.aa-raiz[data-estado="error"] .aa-escena { opacity: 1; animation: none; }
+
+/* ── Mascota ─────────────────────────────────────────────────────────── */
+.aa-mascota { position: relative; width: calc(24 * var(--aa-px)); height: calc(24 * var(--aa-px)); }
+.aa-sprite, .aa-base { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.aa-colgante { position: absolute; inset: 0; }
+.aa-cuadro { visibility: hidden; }
+.aa-c-quieto { visibility: visible; }
+/* Parpadeo: el cuadro «parpadeo» asoma un instante cada 4 s. */
+.aa-raiz[data-estado="cargando"] .aa-c-quieto { animation: aa-ver-a 4.2s step-end infinite; }
+.aa-raiz[data-estado="cargando"] .aa-c-parpadeo { animation: aa-ver-b 4.2s step-end infinite; }
+@keyframes aa-ver-a { 0% { visibility: visible; } 92% { visibility: hidden; } 96% { visibility: visible; } }
+@keyframes aa-ver-b { 0% { visibility: hidden; } 92% { visibility: visible; } 96% { visibility: hidden; } }
+.aa-raiz[data-estado="error"] .aa-c-quieto,
+.aa-raiz[data-estado="error"] .aa-c-parpadeo { visibility: hidden; animation: none; }
+.aa-raiz[data-estado="error"] .aa-c-error { visibility: visible; }
+
+.aa-pregunta {
+  position: absolute;
+  right: calc(-1 * var(--aa-px));
+  top: calc(-3 * var(--aa-px));
+  width: calc(5 * var(--aa-px));
+  height: calc(7 * var(--aa-px));
+  opacity: 0;
+  transform: scale(.6);
+  transition: opacity .3s ease, transform .3s ease;
+}
+.aa-raiz[data-estado="error"] .aa-pregunta { opacity: 1; transform: none; animation: aa-flota 1.4s ease-in-out infinite alternate; }
+@keyframes aa-flota { to { translate: 0 calc(-1.5 * var(--aa-px)); } }
+
+/* Ancla: cuelga de su cabo y se mece; suben burbujas. En error, cae de lado. */
+.aa-raiz[data-mascota="ancla"] .aa-mascota { margin-top: calc(8 * var(--aa-px)); }
+.aa-raiz[data-mascota="ancla"] .aa-colgante {
+  transform-origin: 50% calc(-8 * var(--aa-px));
+  animation: aa-pendulo 2.8s ease-in-out infinite alternate;
+  transition: transform .8s cubic-bezier(.3, 1.35, .5, 1);
+}
+@keyframes aa-pendulo { from { transform: rotate(-6deg); } to { transform: rotate(6deg); } }
+.aa-cabo {
+  position: absolute;
+  left: calc(11 * var(--aa-px));
+  top: calc(-8 * var(--aa-px));
+  width: calc(2 * var(--aa-px));
+  height: calc(8 * var(--aa-px));
+  background: var(--aa-extra);
+  transition: opacity .2s ease;
+}
+.aa-burbujas span {
+  position: absolute;
+  bottom: 12%;
+  width: calc(4 * var(--aa-px));
+  height: calc(4 * var(--aa-px));
+  opacity: 0;
+  animation: aa-burbuja 3.3s ease-in infinite;
+}
+.aa-burbujas span:nth-child(1) { left: -22%; animation-delay: .2s; }
+.aa-burbujas span:nth-child(2) { right: -20%; animation-delay: 1.3s; }
+.aa-burbujas span:nth-child(3) { left: -8%; animation-delay: 2.4s; }
+.aa-burbujas svg, .aa-pregunta { display: block; }
+.aa-burbujas svg { width: 100%; height: 100%; }
+@keyframes aa-burbuja {
+  0% { transform: translateY(0); opacity: 0; }
+  15% { opacity: .9; }
+  100% { transform: translateY(calc(-18 * var(--aa-px))); opacity: 0; }
+}
+.aa-raiz[data-mascota="ancla"][data-estado="error"] .aa-colgante {
+  animation: none;
+  transform: translate(calc(-2 * var(--aa-px)), calc(4 * var(--aa-px))) rotate(78deg);
+}
+.aa-raiz[data-mascota="ancla"][data-estado="error"] .aa-cabo { opacity: 0; }
+.aa-raiz[data-estado="error"] .aa-burbujas { display: none; }
+
+/* Memo: camina en su sitio, un píxel arriba y abajo. En error, se sienta. */
+.aa-raiz[data-mascota="memo"] .aa-colgante { animation: aa-paso .7s step-end infinite; }
+@keyframes aa-paso { 0% { transform: none; } 50% { transform: translateY(calc(-1 * var(--aa-px))); } }
+.aa-sombra {
+  position: absolute;
+  left: 25%;
+  right: 25%;
+  bottom: calc(-.5 * var(--aa-px));
+  height: calc(1.5 * var(--aa-px));
+  border-radius: 50%;
+  background: var(--aa-pista);
+}
+.aa-raiz[data-mascota="memo"][data-estado="error"] .aa-colgante { animation: none; transform: translateY(var(--aa-px)); }
+
+/* Lumi: salta sobre su libro y ladea la cabeza. En error, se queda ladeada. */
+.aa-raiz[data-mascota="lumi"] .aa-colgante { transform-origin: 50% 85%; animation: aa-salto 3s ease-in-out infinite; }
+@keyframes aa-salto {
+  0%, 52%, 100% { transform: none; }
+  60% { transform: translateY(calc(-2 * var(--aa-px))); }
+  68% { transform: none; }
+  78% { transform: rotate(-8deg); }
+  90% { transform: rotate(4deg); }
+}
+.aa-raiz[data-mascota="lumi"][data-estado="error"] .aa-colgante { animation: none; transform: rotate(12deg); }
+
+/* ── Texto y barra ───────────────────────────────────────────────────── */
+.aa-titulo { margin: 10px 0 0; font-size: 26px; font-weight: 800; letter-spacing: .01em; }
+.aa-estado { margin: 0; min-height: 1.4em; font-size: 15px; color: var(--aa-suave); }
+.aa-barra { margin-top: 6px; }
+
+/* Ancla: una cadena cuyos eslabones se vuelven naranjas. */
+.aa-cadena { display: flex; align-items: center; }
+.aa-cadena i {
+  box-sizing: border-box;
+  width: 24px;
+  height: 16px;
+  margin-left: -6px;
+  border: 4px solid var(--aa-pista);
+  border-radius: 8px;
+  transition: border-color .25s ease;
+}
+.aa-cadena i:first-child { margin-left: 0; }
+.aa-cadena i:nth-child(even) { width: 20px; height: 10px; }
+.aa-cadena i.aa-lleno { border-color: var(--aa-naranja); }
+
+/* Memo: tarjetas que se voltean al verde de «Bien», con su marca. */
+.aa-tarjetas { display: flex; gap: 6px; }
+.aa-tarjetas i { position: relative; width: 18px; height: 24px; border-radius: 4px; background: var(--aa-pista); }
+.aa-tarjetas i.aa-lleno { background: var(--aa-extra); animation: aa-voltear .45s ease; }
+.aa-tarjetas i.aa-lleno::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 5px;
+  width: 4px;
+  height: 9px;
+  border: solid var(--aa-card);
+  border-width: 0 3px 3px 0;
+  transform: rotate(45deg);
+}
+@keyframes aa-voltear { 0% { transform: scaleX(1); } 50% { transform: scaleX(0); } 100% { transform: scaleX(1); } }
+
+/* Lumi: una cinta de marcapáginas en ámbar. */
+.aa-cinta { width: 204px; height: 14px; border-radius: 3px; background: var(--aa-pista); overflow: hidden; }
+.aa-cinta i {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--aa-extra);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 7px) 50%, 100% 100%, 0 100%);
+  transition: width .5s ease;
+}
+
+/* ── Error ───────────────────────────────────────────────────────────── */
+.aa-error { display: none; }
+.aa-raiz[data-estado="error"] .aa-error { display: grid; gap: 8px; justify-items: center; }
+.aa-raiz[data-estado="error"] .aa-titulo,
+.aa-raiz[data-estado="error"] .aa-estado,
+.aa-raiz[data-estado="error"] .aa-barra { display: none; }
+.aa-error-titulo { margin: 10px 0 0; font-size: 22px; font-weight: 800; }
+.aa-error-texto { margin: 0; font-size: 15px; line-height: 1.45; color: var(--aa-suave); }
+.aa-boton {
+  appearance: none;
+  min-height: 50px;
+  margin-top: 8px;
+  padding: 0 30px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--aa-naranja);
+  color: #fff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  box-shadow: 0 8px 20px -6px rgba(255, 107, 53, .6);
+  cursor: pointer;
+}
+.aa-boton:active { transform: scale(.98); }
+.aa-enlace {
+  appearance: none;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 0;
+  background: none;
+  color: var(--aa-suave);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.aa-boton:focus-visible, .aa-enlace:focus-visible { outline: 3px solid var(--aa-extra); outline-offset: 3px; }
+.aa-detalle { display: none; width: 100%; }
+.aa-raiz.aa-con-detalle .aa-detalle { display: grid; gap: 4px; justify-items: center; }
+.aa-detalle-texto {
+  box-sizing: border-box;
+  width: 100%;
+  max-height: 120px;
+  margin: 0;
+  padding: 10px;
+  overflow: auto;
+  border: 1px solid var(--aa-pista);
+  border-radius: 10px;
+  background: var(--aa-card);
+  color: var(--aa-tinta);
+  font: 12px/1.4 ui-monospace, Menlo, monospace;
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.aa-nota { margin: 0; font-size: 12.5px; color: var(--aa-suave); }
+
+@media (prefers-reduced-motion: reduce) {
+  .aa-raiz, .aa-raiz * { animation: none !important; transition: none !important; }
+  .aa-escena { opacity: 1; }
+}

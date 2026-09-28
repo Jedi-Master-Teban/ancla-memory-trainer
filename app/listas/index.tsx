@@ -2,6 +2,7 @@ import { Link, router, useFocusEffect } from 'expo-router';
 import { useCallback, useState, useMemo } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { HeaderFlotante } from '../../src/components/HeaderFlotante';
+import { EnlaceGuia } from '../../src/components/guia/EnlaceGuia';
 import { obtenerBD } from '../../src/db/client';
 import { crearLista, listarListas, listarObjetosDeLista } from '../../src/db/repository';
 import type { ConexionBD, FilaLista } from '../../src/db/tipos';
@@ -77,7 +78,7 @@ export default function ListasIndex() {
 
   return (
     <>
-      <HeaderFlotante titulo="Listas" volverA="/" />
+      <HeaderFlotante titulo="Listas" volverA="/" derecha={<EnlaceGuia capitulo="cadena" nombre="Listas encadenadas" />} />
       <ScrollView style={estilos.contenedor} contentContainerStyle={estilos.contenido}>
         <ResumenCategoria categoria="lista_item" unidad="listas" />
 

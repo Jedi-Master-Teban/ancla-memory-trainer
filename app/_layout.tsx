@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Platform } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Stack, usePathname, useRouter } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
@@ -9,7 +9,13 @@ import { Nunito_400Regular, Nunito_600SemiBold } from '@expo-google-fonts/nunito
 import { Lora_600SemiBold } from '@expo-google-fonts/lora/600SemiBold';
 import { Karla_400Regular } from '@expo-google-fonts/karla/400Regular';
 import { obtenerBD } from '../src/db/client';
-import { obtenerPreferencias } from '../src/db/repository';
+import { obtenerNacimientoBase, obtenerPreferencias, obtenerResumenDatos } from '../src/db/repository';
+import { listarCopiasAutomaticas, recuperacionDescartadaHasta } from '../src/db/respaldo';
+import { copiaParaRecuperar, type MetaCopia } from '../src/domain/respaldo/copias';
+import { senalarArranque, senalarErrorDeArranque } from '../src/arranque/senales';
+import { mensajeDeErrorDeDatos, type MensajeDeError } from '../src/arranque/mensajes';
+import { DialogoHost } from '../src/components/DialogoHost';
+import { PantallaRecuperacion } from '../src/components/PantallaRecuperacion';
 import { useTema, useTemaStore } from '../src/stores/tema';
 import { TabBarInferior } from '../src/components/TabBarInferior';
 import { pestanaActiva, RUTA_POR_TAB, type TabId } from '../src/components/tabs';
@@ -54,7 +60,9 @@ export default function RootLayout() {
     Lora_600SemiBold,
     Karla_400Regular,
   });
-  const [temaListo, setTemaListo] = useState(false);
+  const [estado, setEstado] = useState<'cargando' | 'recuperar' | 'lista' | 'error'>('cargando');
+  const [copiaARecuperar, setCopiaARecuperar] = useState<MetaCopia | null>(null);
+  const [errorDatos, setErrorDatos] = useState<MensajeDeError | null>(null);
   const { colores: t } = useTema();
   const router = useRouter();
   const pathname = usePathname();
@@ -74,40 +82,53 @@ export default function RootLayout() {
   }, [router]);
 
   /**
-   * Un fallo de BD debe degradar, no matar la app.
+   * Arranque (ADR-029, ADR-030): abre la base, aplica el tema y comprueba si
+   * hay que ofrecer recuperar datos. Cada paso se le cuenta a la pantalla de
+   * arranque de la PWA, que mueve su barra y se retira con `lista`.
    *
-   * `setTemaListo(true)` va en `finally` a propósito: sin eso, cualquier rechazo
-   * dejaba `temaListo` en false para siempre y el `return null` de abajo
-   * producía una pantalla en blanco permanente, sin error visible ni forma de
-   * recuperarse (src/db/client.ts memoiza la promesa rechazada, así que ni
-   * siquiera reintenta).
-   *
-   * En la PWA esa superficie de fallo es mucho mayor que en nativo: OPFS
-   * bloqueado por una segunda pestaña abierta, `wa-sqlite.wasm` que no descarga,
-   * el worker que no carga. Si el tema no se puede leer, se arranca con el
-   * tema por defecto del store y la app sigue siendo usable.
+   * Si la base no abre, la app no finge que funciona: antes arrancaba con el
+   * tema por defecto y todas las pantallas aparecían vacías, lo que parecía una
+   * pérdida de datos aunque los datos siguieran ahí. Ahora se muestra el error
+   * con un botón para reintentar (`obtenerBD` ya no memoiza el fallo).
    */
-  const cargarTema = useCallback(async () => {
+  const cargar = useCallback(async () => {
+    setEstado('cargando');
     try {
+      senalarArranque('datos');
       const db = await obtenerBD();
       const prefs = await obtenerPreferencias(db);
       useTemaStore.getState().establecer(prefs);
+      const [resumen, idBase, copias, descartada] = await Promise.all([
+        obtenerResumenDatos(db),
+        obtenerNacimientoBase(db),
+        listarCopiasAutomaticas(),
+        recuperacionDescartadaHasta(),
+      ]);
+      const candidata = copiaParaRecuperar(resumen, idBase, copias, descartada);
+      setCopiaARecuperar(candidata);
+      setEstado(candidata ? 'recuperar' : 'lista');
     } catch (e) {
-      console.error('No se pudieron cargar las preferencias de tema:', e);
-    } finally {
-      setTemaListo(true);
+      console.error('No se pudo abrir la base de datos:', e);
+      const mensaje = mensajeDeErrorDeDatos(String(e));
+      setErrorDatos(mensaje);
+      senalarErrorDeArranque(mensaje.titulo, mensaje.texto, String(e));
+      setEstado('error');
     }
   }, []);
 
   useEffect(() => {
-    cargarTema();
-  }, [cargarTema]);
+    senalarArranque('app');
+    cargar();
+  }, [cargar]);
+
+  const fuentesListas = Boolean(fontsListas || errorFuentes);
 
   useEffect(() => {
-    if ((fontsListas || errorFuentes) && temaListo) {
+    if (fuentesListas && (estado === 'lista' || estado === 'recuperar')) {
       SplashScreen.hideAsync();
+      senalarArranque('lista');
     }
-  }, [fontsListas, errorFuentes, temaListo]);
+  }, [fuentesListas, estado]);
 
   // En la PWA, el fondo del documento es lo que iOS pinta fuera del área
   // segura (la franja del indicador de inicio) y `theme-color` tiñe la barra
@@ -122,8 +143,31 @@ export default function RootLayout() {
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', t.bg);
   }, [t.bg]);
 
-  if (!(fontsListas || errorFuentes) || !temaListo) {
+  if (!fuentesListas || estado === 'cargando') {
     return null;
+  }
+
+  // En la PWA este error lo tapa la pantalla de arranque (con su propio
+  // «Reintentar»); en nativo, que no la tiene, es lo único que se ve.
+  if (estado === 'error') {
+    return (
+      <View style={[estilos.error, { backgroundColor: t.bg }]}>
+        <Text style={[estilos.errorTitulo, { color: t.ink }]}>{errorDatos?.titulo}</Text>
+        <Text style={[estilos.errorDetalle, { color: t.inkMuted }]}>{errorDatos?.texto}</Text>
+        <Pressable onPress={cargar} style={[estilos.errorBoton, { backgroundColor: t.accent1 }]} accessibilityRole="button">
+          <Text style={{ color: t.inkOnAccent, fontWeight: '800' }}>Reintentar</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  if (estado === 'recuperar' && copiaARecuperar) {
+    return (
+      <SafeAreaProvider>
+        <PantallaRecuperacion copia={copiaARecuperar} onContinuar={() => setEstado('lista')} />
+        <DialogoHost />
+      </SafeAreaProvider>
+    );
   }
 
   return (
@@ -171,11 +215,21 @@ export default function RootLayout() {
         <Stack.Screen name="ajustes" options={{ title: 'Ajustes' }} />
         <Stack.Screen name="resumen-sesion" options={{ title: 'Resumen' }} />
         <Stack.Screen name="hojear/[categoria]" options={{ title: 'Hojear' }} />
+        <Stack.Screen name="guia/index" options={{ title: 'Guía' }} />
+        <Stack.Screen name="guia/[capitulo]" options={{ title: 'Guía' }} />
       </Stack>
       {!tabBarOculta && tabActiva !== null && (
         <TabBarInferior activa={tabActiva} onChange={cambiarTab} onRepaso={irARepaso} />
       )}
       {!tabBarOculta && <FAB />}
+      <DialogoHost />
     </SafeAreaProvider>
   );
 }
+
+const estilos = StyleSheet.create({
+  error: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
+  errorTitulo: { fontSize: 20, fontWeight: '700' },
+  errorDetalle: { fontSize: 13, textAlign: 'center' },
+  errorBoton: { marginTop: 8, paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14 },
+});

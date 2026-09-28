@@ -55,6 +55,9 @@ const INMERSIVAS = ['/hojear'];
 /** Pantallas de consulta: se miran, no se editan. */
 const SOLO_LECTURA = ['/estadisticas', '/ajustes', '/racha', '/historial-sesiones'];
 
+/** Secciones de lectura con subpáginas: la Guía y sus capítulos (ADR-031). */
+const LECTURA_CON_SUBPAGINAS = ['/guia'];
+
 /** ¿Esta ruta es una sesión de estudio en curso? */
 export function esRutaDeSesion(pathname: string | undefined): boolean {
   if (!pathname) return false;
@@ -82,6 +85,7 @@ export function debeMostrarFab(pathname: string | undefined): boolean {
   const ruta = pathname.split('?')[0];
   if (ruta === '/' || ruta === '/index') return false;
   if (SOLO_LECTURA.includes(ruta)) return false;
+  if (LECTURA_CON_SUBPAGINAS.some((p) => ruta === p || ruta.startsWith(`${p}/`))) return false;
   if (INMERSIVAS.some((p) => ruta.startsWith(p))) return false;
   return !esRutaDeSesion(ruta);
 }

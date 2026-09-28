@@ -898,3 +898,119 @@ de notificaciones no existe.**
   confirmar** que sea la causa. Diagnóstico más rápido para quien retome:
   cambiar Tipografía a "La del sistema" en Ajustes; si con eso aparecen, la
   causa es la resolución de fuentes.
+
+## ADR-029 · 2026-09-28 · Aceptada
+
+**Decisión:** los datos del usuario se protegen en cuatro capas, sin servidor y
+sin salir del teléfono salvo que el usuario exporte un respaldo:
+
+1. **Migraciones atómicas.** Cada migración y su fila en `migracion` van en una
+   sola transacción (`src/db/migrations/index.ts`). Antes, un fallo a medias
+   dejaba tablas creadas sin registro y el reintento chocaba con ellas.
+2. **Copias automáticas en IndexedDB** (`src/db/copias.ts`, `instantaneas.ts`):
+   una antes de cada actualización que migre una base con datos, una diaria si
+   hay progreso y una antes de restaurar. Conservación en
+   `domain/respaldo/copias.ts` (3 diarias, 2 por actualización, 2 por
+   restauración; la más reciente con progreso nunca se borra).
+3. **Recuperación al arrancar.** Si la base actual nació DESPUÉS que la de una
+   copia con progreso y está vacía, la app ofrece recuperarla
+   (`PantallaRecuperacion`). La identidad es el nacimiento de la base
+   (`MIN(migracion.aplicada_en)`): una base vaciada por el usuario conserva su
+   nacimiento y no dispara nada (lo encontró la prueba E2E de restaurar).
+4. **Respaldo que el usuario se lleva** (Ajustes → Tus datos): el archivo SQLite
+   completo por el menú de compartir de iOS (Archivos, iCloud, AirDrop) o como
+   descarga, y restauración desde un archivo con confirmación. Además se pide
+   `navigator.storage.persist()` en cada arranque y se muestra su estado.
+
+**Por qué IndexedDB y no SQLite para las copias:** expo-sqlite 16.0.10 guarda la
+base en un grupo de archivos OPFS con cabecera de control; si la cabecera
+aparece dañada (iOS cerrando la app a mitad de una escritura), la librería la
+«repara» vaciando el archivo (`web/wa-sqlite/AccessHandlePoolVFS.js`,
+«Disassociating file with bad digest»). Una copia en ese mismo grupo se iría con
+ella. Lo que NO cubren las copias automáticas: que iOS borre todo el
+almacenamiento de la app (por ejemplo, al quitarla de la pantalla de inicio,
+que era la única forma de ver el ícono nuevo). Para eso está el respaldo.
+
+**Restaurar** no reemplaza el archivo: abre el respaldo en memoria
+(`deserializeDatabaseAsync`) y lo vuelca sobre la base viva con
+`backupDatabaseAsync`, después de `PRAGMA quick_check` y de comprobar que es una
+base de Ancla de una versión no posterior. APIs verificadas en
+`node_modules/expo-sqlite/web/worker.ts`.
+
+**Otros cambios de la misma decisión:** `obtenerBD()` ya no memoiza una apertura
+fallida; si la base no abre, la app muestra el error con «Reintentar» en vez de
+arrancar vacía (lo que parecía una pérdida de datos aunque no lo fuera).
+`Alert.alert`, que en react-native-web es `static alert() {}`, se sustituye por
+diálogos propios en Soft UI (`stores/dialogo.ts`, `DialogoHost`): los tres
+botones de eliminar vuelven a funcionar y los mensajes de error se ven.
+
+**Supersede** el botón «Exportar BD (verificación)» de ADR-024: no funcionaba en
+la PWA (pasaba a `navigator.share` una ruta `file://`). El respaldo de Ajustes
+produce el mismo archivo `.db`. `expo-sharing` queda instalado pero sin uso.
+
+## ADR-030 · 2026-09-28 · Aceptada
+
+**Decisión:** la PWA arranca con una pantalla propia —HTML, CSS y SVG en línea
+dentro de `index.html`— con una mascota pixel art, una barra de carga y un
+estado de error. Vive en `pwa/arranque/` y la inyecta `pwa/patch_dist.py`.
+
+**Por qué fuera de React:** es lo único que puede verse si el JavaScript de la
+app no llega o no arranca, que era exactamente el caso de la pantalla en blanco.
+Aparece a los 250 ms (sin destello si la app carga antes), avanza con los avisos
+de la app (`src/arranque/senales.ts`: `app`, `datos`, `lista`) y se retira al
+recibir `lista`. En error ofrece «Reintentar» y, plegados, el detalle técnico y
+«Forzar actualización» (vacía Cache Storage, nunca OPFS ni IndexedDB).
+Sustituye al banner amarillo de diagnóstico. Respeta «Reducir movimiento».
+
+**Mascota:** tres propuestas generadas por `pwa/arranque/generar_mascotas.py`
+(Ancla, Memo, Lumi), con los tonos de Soft UI más un color de los botones de
+respuesta cada una. La elegida está en `pwa/arranque/config.json` (hoy «ancla»,
+pendiente de la elección del operador); cambiarla es editar esa línea.
+
+**Service worker y rutas internas:** toda navegación a una ruta de la app pide
+la página principal a la red (`cache: 'no-store'`) y solo cae a la copia sin
+conexión. Antes pedía la ruta tal cual; GitHub Pages responde 404 a
+`/…/hojear/colgadero` y el service worker servía un `index.html` guardado que,
+tras un despliegue, apuntaba a un bundle ya borrado. Además `dist/404.html` es
+la propia app, manifest/íconos/service worker usan direcciones absolutas y el
+documento declara `lang="es-CO"`. Caché `ancla-v8`.
+
+## ADR-031 · 2026-09-28 · Aceptada
+
+**Decisión:** una sola sección «Guía» (`app/guia/`) con un capítulo por técnica
+—fundamentos, alfabeto fonético, colgadero, naipes, cadena, números—, a la que
+cada categoría enlaza desde el libro de su cabecera. Una sección y no textos
+repartidos por categoría: se puede leer de corrido y no hay contenido duplicado.
+
+**Contenido** en `src/domain/guia/contenido.ts`, como datos puros. Las técnicas
+se describen como las implementa Ancla (tabla de `decodificacion-fonetica.md`,
+reglas de `seeds/naipes-52.md`), y las pruebas comprueban cada ejemplo del texto
+contra el decodificador real. Cada consejo lleva la etiqueta de su origen
+(investigación, Lorayne, FSRS o regla de Ancla) y las referencias se
+verificaron en Crossref y Europe PMC el 2026-09-28. Del libro de Lorayne no se
+citan frases: no hay texto verificado; se atribuye solo lo confirmado por
+fuentes secundarias.
+
+**Ejercicios** con las palabras reales del usuario (colgadero y naipes leídos de
+la base), no con la semilla: si el usuario editó una palabra, la Guía enseña con
+la suya.
+
+## ADR-032 · 2026-09-28 · Aceptada
+
+**Decisión:** pruebas de extremo a extremo con Playwright (`@playwright/test`,
+dependencia de desarrollo) contra el build de producción, en WebKit —el motor de
+Safari— y Chromium. `npm run test:e2e` construye la PWA y corre `e2e/`. Se
+añade al stack de pruebas; Jest sigue siendo el de la lógica.
+
+**Detalles que importan para quien las toque:**
+- `e2e/servidor.mjs` imita a GitHub Pages: base `/ancla-memory-trainer/`,
+  `max-age=600`, 404 con `404.html`, y `/__servir?dir=` para simular un
+  despliegue en caliente.
+- En WebKit, el perfil efímero de Playwright es como la navegación privada de
+  Safari: OPFS falla con «UnknownError… transient reason». Las pruebas usan
+  perfiles persistentes (`e2e/fixtures.ts`), y como en WebKit esos perfiles
+  comparten almacenamiento, cada prueba limpia el origen antes de empezar.
+- El menú de compartir de iOS nunca se cierra en WebKit sin pantalla: las
+  pruebas lo sustituyen (`simularMenuCompartir`) y prueban aparte la descarga.
+- La prueba sin conexión se omite en WebKit: Playwright no deja que el service
+  worker atienda la navegación con la red cortada.

@@ -4,6 +4,7 @@ import { crearTarjetaNueva, filaTarjetaACardInput, programar, type Calificacion 
 import { estadoVisual, type EstadoVisual } from '../domain/fsrs/estado';
 import { calcularRacha, fechaLocal, type ResultadoRacha } from '../domain/racha/calculo';
 import { calcularPanelRetencion, type PanelRetencion, type Ventana } from '../domain/estadisticas/retencion';
+import type { ResumenDatos } from '../domain/respaldo/copias';
 import { mezclarSesion } from '../domain/sesion/mezcla';
 import { armarSesion, type OpcionesSesion } from '../domain/sesion/motor';
 import type {
@@ -850,6 +851,63 @@ export async function actualizarTema(db: ConexionBD, tema: TemaId): Promise<void
 
 export async function actualizarTipografia(db: ConexionBD, tipografia: TipografiaId): Promise<void> {
   await db.runAsync('UPDATE preferencias SET tipografia = ? WHERE id = 1', [tipografia]);
+}
+
+// --- Copias de seguridad (ADR-029) ---
+
+/**
+ * La huella del usuario: todo lo que una instalación nueva no trae. Las
+ * semillas (colgadero, naipes) no cuentan, así que una base recién creada da
+ * todo en cero. Sirve para no copiar bases vacías, para describir una copia y
+ * para notar que la base apareció vacía cuando antes no lo estaba.
+ */
+export async function obtenerResumenDatos(db: ConexionBD): Promise<ResumenDatos> {
+  const contar = async (tabla: string) =>
+    (await db.getFirstAsync<{ n: number }>(`SELECT COUNT(*) AS n FROM ${tabla}`, []))?.n ?? 0;
+  const [revisiones, sesiones, diasPracticados, listas, numeros] = await Promise.all([
+    contar('revision'),
+    contar('sesion_estudio'),
+    contar('dia_practica'),
+    contar('lista'),
+    contar('numero_importante'),
+  ]);
+  return { revisiones, sesiones, diasPracticados, listas, numeros };
+}
+
+/**
+ * Nacimiento de la base: cuándo se aplicó su primera migración. Si la base se
+ * pierde y se vuelve a crear, nace de nuevo; una base vaciada por el usuario
+ * conserva su nacimiento. Cadena vacía si no hay migraciones.
+ */
+export async function obtenerNacimientoBase(db: ConexionBD): Promise<string> {
+  const tablas = await listarTablas(db);
+  if (!tablas.includes('migracion')) return '';
+  const fila = await db.getFirstAsync<{ n: string | null }>('SELECT MIN(aplicada_en) AS n FROM migracion', []);
+  return fila?.n ?? '';
+}
+
+/** Última migración aplicada; 0 si la base no tiene la tabla `migracion` (no es una base de Ancla). */
+export async function obtenerVersionEsquema(db: ConexionBD): Promise<number> {
+  const tablas = await listarTablas(db);
+  if (!tablas.includes('migracion')) return 0;
+  const fila = await db.getFirstAsync<{ v: number | null }>('SELECT MAX(version) AS v FROM migracion', []);
+  return fila?.v ?? 0;
+}
+
+/**
+ * `PRAGMA quick_check`: SQLite recorre la base y responde «ok» si su estructura
+ * está sana. Se pasa antes de restaurar un respaldo, para no sustituir datos
+ * buenos por un archivo dañado.
+ */
+export async function verificarIntegridad(db: ConexionBD): Promise<boolean> {
+  const filas = await db.getAllAsync<{ quick_check: string }>('PRAGMA quick_check', []);
+  return filas.length === 1 && filas[0].quick_check === 'ok';
+}
+
+/** Nombres de las tablas de la base, para reconocer un respaldo de Ancla antes de restaurarlo. */
+export async function listarTablas(db: ConexionBD): Promise<string[]> {
+  const filas = await db.getAllAsync<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table'", []);
+  return filas.map((f) => f.name);
 }
 
 // --- Panel de retención (§8.8, agent_docs/modulos/08-panel-retencion.md) ---

@@ -53,6 +53,21 @@ export function IconoNumero({ color, tamano = 18, trazo = TRAZO }: PropsIcono) {
   );
 }
 
+/** Libro abierto: la Guía de técnicas (ADR-031). Mismo trazo que las categorías. */
+export function IconoGuia({ color, tamano = 18, trazo = TRAZO }: PropsIcono) {
+  return (
+    <Svg width={tamano} height={tamano} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 7c-2-1.6-4.7-2-8-2v13c3.3 0 6 .4 8 2 2-1.6 4.7-2 8-2V5c-3.3 0-6 .4-8 2Z"
+        stroke={color}
+        strokeWidth={trazo}
+        strokeLinejoin="round"
+      />
+      <Path d="M12 7v13" stroke={color} strokeWidth={trazo} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
 /** Deslizadores — el ícono de Ajustes del mockup. NO es un engranaje. */
 export function IconoAjustes({ color, tamano = 18, trazo = TRAZO }: PropsIcono) {
   return (

@@ -11,6 +11,7 @@ import {
 } from '../src/db/repository';
 import type { ConexionBD } from '../src/db/tipos';
 import { PreviewEstilo } from '../src/components/PreviewEstilo';
+import { SeccionDatos } from '../src/components/SeccionDatos';
 import type { TemaId } from '../src/tema/colores';
 import type { TipografiaId } from '../src/tema/tipografia';
 import { useTema, useTemaStore } from '../src/stores/tema';
@@ -40,6 +41,8 @@ export default function Ajustes() {
   const [metaTexto, setMetaTexto] = useState('');
   const [horaTexto, setHoraTexto] = useState('');
   const [congeladoresTexto, setCongeladoresTexto] = useState('');
+  // Cada cambio guardado deja viejo el respaldo que SeccionDatos tiene preparado.
+  const [cambios, setCambios] = useState(0);
   const { tema, colores: t, tipografia, preferenciaTipografia } = useTema();
 
   const cargar = useCallback(() => {
@@ -75,6 +78,7 @@ export default function Ajustes() {
     await actualizarTema(db, nuevoTema);
     const prefs = await obtenerPreferencias(db);
     useTemaStore.getState().establecer(prefs);
+    setCambios((n) => n + 1);
   }
 
   async function elegirTipografia(nueva: TipografiaId) {
@@ -82,6 +86,7 @@ export default function Ajustes() {
     await actualizarTipografia(db, nueva);
     const prefs = await obtenerPreferencias(db);
     useTemaStore.getState().establecer(prefs);
+    setCambios((n) => n + 1);
   }
 
   async function guardarConfig() {
@@ -92,6 +97,7 @@ export default function Ajustes() {
     if (!Number.isFinite(congeladoresDisponibles) || congeladoresDisponibles < 0) return;
     if (!/^\d{2}:\d{2}$/.test(horaTexto)) return;
     await actualizarConfigRacha(db, { metaDiaria, congeladoresDisponibles, horaRecordatorio: horaTexto });
+    setCambios((n) => n + 1);
     cargar();
   }
 
@@ -193,13 +199,16 @@ export default function Ajustes() {
       <Pressable onPress={guardarConfig} style={[estilos.botonGuardar, { backgroundColor: t.accent1 }]}>
         <Text style={[estilos.textoBotonGuardar, { color: t.inkOnAccent }]}>Guardar configuración</Text>
       </Pressable>
+
+      <SeccionDatos cambios={cambios} />
     </ScrollView>
   );
 }
 
 const estilos = StyleSheet.create({
   contenedorScroll: { flex: 1 },
-  contenido: { padding: 24, paddingBottom: 60, gap: 12 },
+  // 140 abajo: la isla flotante tapaba la última tarjeta.
+  contenido: { padding: 24, paddingBottom: 140, gap: 12 },
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   subtitulo: { fontSize: 16, fontWeight: '600', marginTop: 16, marginBottom: 4 },
   filaOpcion: {

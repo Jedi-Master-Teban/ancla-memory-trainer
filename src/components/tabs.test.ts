@@ -1,4 +1,4 @@
-import { TABS, type TabId } from './tabs';
+import { pestanaActiva, TABS, type TabId } from './tabs';
 
 describe('tabs (configuración pura)', () => {
   it('define exactamente 4 tabs globales', () => {
@@ -18,3 +18,15 @@ describe('tabs (configuración pura)', () => {
     });
   });
 });
+
+describe('pestanaActiva — la Guía cuelga de Inicio', () => {
+  it('la Guía y cualquiera de sus capítulos encienden Inicio', () => {
+    expect(pestanaActiva('/guia')).toBe('inicio');
+    expect(pestanaActiva('/guia/colgadero')).toBe('inicio');
+  });
+
+  it('una ruta que solo empieza igual no se confunde con la Guía', () => {
+    expect(pestanaActiva('/guiado')).toBeNull();
+  });
+});
+

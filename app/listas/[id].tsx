@@ -1,6 +1,6 @@
 import { Link, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState, useMemo } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { HeaderFlotante } from '../../src/components/HeaderFlotante';
 import { EditorLista, type ObjetoEditable } from '../../src/components/EditorLista';
 import { obtenerBD } from '../../src/db/client';
@@ -14,6 +14,7 @@ import {
 import type { ConexionBD, FilaLista, FilaListaObjeto } from '../../src/db/tipos';
 import { useTema } from '../../src/stores/tema';
 import type { TokensColor } from '../../src/tema/colores';
+import { confirmar } from '../../src/stores/dialogo';
 
 export default function ListaDetalle() {
   const { colores: t } = useTema();
@@ -71,19 +72,16 @@ export default function ListaDetalle() {
     cargar();
   }
 
-  function confirmarEliminar() {
-    Alert.alert('Eliminar lista', `¿Eliminar "${lista?.nombre}"? Se archivará su historial de repaso.`, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar',
-        style: 'destructive',
-        onPress: async () => {
-          if (!db) return;
-          await eliminarLista(db, id);
-          router.replace('/listas');
-        },
-      },
-    ]);
+  async function confirmarEliminar() {
+    const eliminar = await confirmar({
+      titulo: 'Eliminar lista',
+      mensaje: `¿Eliminar "${lista?.nombre}"? Se archivará su historial de repaso.`,
+      accion: 'Eliminar',
+      destructiva: true,
+    });
+    if (!eliminar || !db) return;
+    await eliminarLista(db, id);
+    router.replace('/listas');
   }
 
   if (cargando) {

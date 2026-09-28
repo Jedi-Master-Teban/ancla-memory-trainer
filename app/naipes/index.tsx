@@ -2,6 +2,7 @@ import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState, useMemo } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { HeaderFlotante } from '../../src/components/HeaderFlotante';
+import { EnlaceGuia } from '../../src/components/guia/EnlaceGuia';
 import { EditorNaipe } from '../../src/components/EditorNaipe';
 import { obtenerBD } from '../../src/db/client';
 import { actualizarContenidoTarjeta, listarTarjetasPorMazo, obtenerMazoPorCategoria } from '../../src/db/repository';
@@ -115,7 +116,7 @@ export default function NaipesIndex() {
 
   return (
       <>
-        <HeaderFlotante titulo="Naipes" volverA="/" />
+        <HeaderFlotante titulo="Naipes" volverA="/" derecha={<EnlaceGuia capitulo="naipes" nombre="Naipes" />} />
         <ScrollView style={estilos.contenedor} contentContainerStyle={estilos.contenido}>
         <ResumenCategoria categoria="naipe" unidad="cartas" />
 

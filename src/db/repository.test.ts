@@ -9,7 +9,7 @@ import * as m004 from './migrations/004_listas_numeros';
 import * as m005 from './migrations/005_racha';
 import * as m006 from './migrations/006_preferencias';
 import * as m007 from './migrations/007_tipografia';
-import { ejecutarMigraciones } from './migrations';
+import { ejecutarMigraciones, MIGRACIONES, ULTIMA_VERSION } from './migrations';
 import type { Categoria, ConexionBD, MetadataColgadero, MetadataListaItem, MetadataNaipe, MetadataNumero } from './tipos';
 import {
   ARCHIVAR_CATEGORIA,
@@ -56,6 +56,11 @@ import {
   obtenerNumeroImportante,
   obtenerPanelRetencion,
   obtenerPreferencias,
+  obtenerResumenDatos,
+  obtenerVersionEsquema,
+  obtenerNacimientoBase,
+  listarTablas,
+  verificarIntegridad,
   obtenerTarjeta,
   obtenerTarjetaDeNumero,
 } from './repository';
@@ -1478,5 +1483,56 @@ describe('ARCHIVAR_CATEGORIA — solo colgadero (§8.6, ADR-025)', () => {
     expect(ARCHIVAR_CATEGORIA.naipe).toBeUndefined();
     expect(ARCHIVAR_CATEGORIA.numero).toBeUndefined();
     expect(ARCHIVAR_CATEGORIA.lista_item).toBeUndefined();
+  });
+});
+
+describe('obtenerResumenDatos — la huella del usuario (ADR-029)', () => {
+  const AHORA = new Date('2026-09-28T15:00:00Z');
+
+  it('una base recién instalada tiene todo en cero, aunque traiga las semillas', async () => {
+    const db = crearConexionDePrueba();
+    await ejecutarMigraciones(db, AHORA);
+    expect(await obtenerResumenDatos(db)).toEqual({ revisiones: 0, sesiones: 0, diasPracticados: 0, listas: 0, numeros: 0 });
+  });
+
+  it('cuenta repasos, sesiones, días, listas y números', async () => {
+    const db = crearConexionDePrueba();
+    await ejecutarMigraciones(db, AHORA);
+    const mazo = await obtenerMazoPorCategoria(db, 'colgadero');
+    const [tarjeta] = await listarTarjetasPorMazo(db, mazo!.id);
+    const sesion = await crearSesion(db, { modo: 'flash' }, AHORA);
+    await calificarTarjeta(db, { tarjetaId: tarjeta.id, sesionId: sesion.id, calificacion: 'bien' }, AHORA);
+    await crearLista(db, { nombre: 'Mercado', segundosEstudio: 0 }, AHORA);
+    await crearNumeroImportante(db, { etiqueta: 'Cédula', digitos: '1020304050' }, AHORA);
+
+    expect(await obtenerResumenDatos(db)).toEqual({ revisiones: 1, sesiones: 1, diasPracticados: 1, listas: 1, numeros: 1 });
+  });
+});
+
+describe('obtenerVersionEsquema y listarTablas — reconocer una base de Ancla', () => {
+  it('una base migrada está en la última versión y tiene sus tablas', async () => {
+    const db = crearConexionDePrueba();
+    await ejecutarMigraciones(db, new Date('2026-09-28T15:00:00Z'));
+    expect(await obtenerVersionEsquema(db)).toBe(ULTIMA_VERSION);
+    expect(await listarTablas(db)).toEqual(expect.arrayContaining(['migracion', 'tarjeta', 'revision', 'lista']));
+  });
+
+  it('el nacimiento de la base es su primera migración y no cambia con las siguientes', async () => {
+    const db = crearConexionDePrueba();
+    await ejecutarMigraciones(db, new Date('2026-08-01T10:00:00Z'), { migraciones: MIGRACIONES.slice(0, 3) });
+    await ejecutarMigraciones(db, new Date('2026-09-28T10:00:00Z'));
+    expect(await obtenerNacimientoBase(db)).toBe('2026-08-01T10:00:00.000Z');
+  });
+
+  it('una base sana pasa la comprobación de integridad', async () => {
+    const db = crearConexionDePrueba();
+    await ejecutarMigraciones(db, new Date('2026-09-28T15:00:00Z'));
+    expect(await verificarIntegridad(db)).toBe(true);
+  });
+
+  it('una base ajena da versión 0', async () => {
+    const db = crearConexionDePrueba();
+    await db.execAsync('CREATE TABLE otra (id INTEGER);');
+    expect(await obtenerVersionEsquema(db)).toBe(0);
   });
 });

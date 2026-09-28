@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AnilloMeta } from '../src/components/AnilloMeta';
 import { StreakPill } from '../src/components/StreakPill';
-import { IconoChevron, IconoColgadero, IconoLista, IconoNaipe, IconoNumero } from '../src/components/iconos';
+import { IconoChevron, IconoColgadero, IconoGuia, IconoLista, IconoNaipe, IconoNumero } from '../src/components/iconos';
 import { obtenerBD } from '../src/db/client';
 import {
   calcularRachaActual,
@@ -312,6 +312,28 @@ export default function Index() {
           })}
         </View>
       </View>
+
+      <Pressable
+        onPress={() => router.push('/guia' as never)}
+        accessibilityRole="button"
+        accessibilityLabel="Guía de técnicas"
+        style={({ pressed }) => [
+          estilos.fila,
+          { backgroundColor: t.card, borderColor: t.borderMuted ?? t.glassBorder, borderRadius: forma.rRow },
+          pressed && { opacity: 0.75 },
+        ]}
+      >
+        <View style={[estilos.iconoCaja, { backgroundColor: `${t.accent1}29`, borderRadius: forma.rIcon }]}>
+          <IconoGuia color={t.accent1} tamano={19} />
+        </View>
+        <View style={estilos.filaTexto}>
+          <Text style={[estilos.filaNombre, { color: t.ink, fontFamily: tipografia.display }]}>Guía de técnicas</Text>
+          <Text style={[estilos.filaPie, { color: t.inkMuted, fontFamily: tipografia.body }]}>
+            Cómo funciona cada técnica y cómo recordar más
+          </Text>
+        </View>
+        <IconoChevron color={t.inkMuted} tamano={17} trazo={2.2} />
+      </Pressable>
 
       <Pressable
         onPress={() => router.push('/estadisticas')}

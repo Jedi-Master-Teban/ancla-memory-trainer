@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState, useMemo } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FormularioGenerico } from '../../src/components/FormularioGenerico';
 import { HeaderFlotante } from '../../src/components/HeaderFlotante';
 import { obtenerBD } from '../../src/db/client';
@@ -10,6 +10,7 @@ import { esCategoriaValida, REGISTRO } from '../../src/domain/categorias/registr
 import type { Categoria } from '../../src/db/tipos';
 import { useTema } from '../../src/stores/tema';
 import type { TokensColor } from '../../src/tema/colores';
+import { confirmar } from '../../src/stores/dialogo';
 
 /** A dónde vuelve el header de cada categoría. */
 const RUTA_CATEGORIA: Record<Categoria, string> = {
@@ -83,21 +84,19 @@ export default function Crear() {
     router.back();
   }
 
-  function confirmarEliminar() {
+  async function confirmarEliminar() {
     if (!db || !categoria || !id) return;
     const archivar = ARCHIVAR_CATEGORIA[categoria];
     if (!archivar) return;
-    Alert.alert('Eliminar', `¿Eliminar "${tarjeta?.contenido_frente}"? Se archivará su historial de repaso.`, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar',
-        style: 'destructive',
-        onPress: async () => {
-          await archivar(db, id);
-          router.back();
-        },
-      },
-    ]);
+    const eliminar = await confirmar({
+      titulo: 'Eliminar',
+      mensaje: `¿Eliminar "${tarjeta?.contenido_frente}"? Se archivará su historial de repaso.`,
+      accion: 'Eliminar',
+      destructiva: true,
+    });
+    if (!eliminar) return;
+    await archivar(db, id);
+    router.back();
   }
 
   if (cargando) {

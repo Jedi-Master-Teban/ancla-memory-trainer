@@ -1,7 +1,8 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { HeaderFlotante } from '../../src/components/HeaderFlotante';
+import { EnlaceGuia } from '../../src/components/guia/EnlaceGuia';
 import { obtenerBD } from '../../src/db/client';
 import {
   editarNumeroImportante,
@@ -16,6 +17,7 @@ import { sanitizarDigitosConDecimal } from '../../src/domain/numeros/entrada';
 import { useTema } from '../../src/stores/tema';
 import type { TokensColor } from '../../src/tema/colores';
 import { ResumenCategoria } from '../../src/components/ResumenCategoria';
+import { confirmar } from '../../src/stores/dialogo';
 
 export default function NumerosIndex() {
   const { colores: t } = useTema();
@@ -83,19 +85,16 @@ export default function NumerosIndex() {
     cargar();
   }
 
-  function confirmarEliminar(numero: FilaNumeroImportante) {
-    Alert.alert('Eliminar número', `¿Eliminar "${numero.etiqueta}"? Se archivará su historial de repaso.`, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar',
-        style: 'destructive',
-        onPress: async () => {
-          if (!db) return;
-          await eliminarNumeroImportante(db, numero.id);
-          cargar();
-        },
-      },
-    ]);
+  async function confirmarEliminar(numero: FilaNumeroImportante) {
+    const eliminar = await confirmar({
+      titulo: 'Eliminar número',
+      mensaje: `¿Eliminar "${numero.etiqueta}"? Se archivará su historial de repaso.`,
+      accion: 'Eliminar',
+      destructiva: true,
+    });
+    if (!eliminar || !db) return;
+    await eliminarNumeroImportante(db, numero.id);
+    cargar();
   }
 
   if (cargando) {
@@ -116,7 +115,7 @@ export default function NumerosIndex() {
 
   return (
     <>
-      <HeaderFlotante titulo="Números" volverA="/" />
+      <HeaderFlotante titulo="Números" volverA="/" derecha={<EnlaceGuia capitulo="numeros" nombre="Números importantes" />} />
       <ScrollView style={estilos.contenedor} contentContainerStyle={estilos.contenido}>
         <ResumenCategoria categoria="numero" unidad="números" />
 

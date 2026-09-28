@@ -78,10 +78,19 @@ const RUTA_EXACTA: Record<string, TabId> = {
  * práctica (`/naipes/flash`) devuelven `null` porque son sesiones, y durante
  * una sesión la isla estorba.
  */
+/**
+ * Secciones con subpáginas: la sección y todo lo que cuelga de ella tienen la
+ * misma pestaña padre. La Guía (`/guia`, `/guia/colgadero`…) se abre desde
+ * Inicio (ADR-031).
+ */
+const SECCION_PADRE: [string, TabId][] = [['/guia', 'inicio']];
+
 export function pestanaActiva(pathname: string): TabId | null {
   const exacta = RUTA_EXACTA[pathname];
   if (exacta) return exacta;
   const padre = PESTANA_PADRE[pathname];
   if (padre) return padre;
+  const seccion = SECCION_PADRE.find(([prefijo]) => pathname === prefijo || pathname.startsWith(`${prefijo}/`));
+  if (seccion) return seccion[1];
   return null;
 }

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { HeaderFlotante } from '../src/components/HeaderFlotante';
 import { Heatmap90 } from '../src/components/Heatmap90';
@@ -11,6 +11,7 @@ import { diaAnterior, fechaLocal } from '../src/domain/racha/calculo';
 import { useRachaStore } from '../src/stores/racha';
 import { useTema } from '../src/stores/tema';
 import { cardStyle } from '../src/tema/colores';
+import { avisar } from '../src/stores/dialogo';
 
 const VENTANA_CONGELABLE_DIAS = 14;
 
@@ -81,7 +82,7 @@ export default function Racha() {
       await aplicarCongelador(db, fecha, new Date());
       cargar();
     } catch (e) {
-      Alert.alert('No se pudo congelar', String(e));
+      await avisar({ titulo: 'No se pudo congelar', mensaje: String(e) });
     }
   }
 

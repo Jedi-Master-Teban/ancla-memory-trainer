@@ -137,6 +137,11 @@ describe('debeMostrarFab', () => {
       },
     );
 
+    it('en la Guía y sus capítulos — se lee, no se crea nada', () => {
+      expect(debeMostrarFab('/guia')).toBe(false);
+      expect(debeMostrarFab('/guia/colgadero')).toBe(false);
+    });
+
     it('durante una sesión de estudio — competía con los botones de calificar', () => {
       expect(debeMostrarFab('/colgadero/flash')).toBe(false);
       expect(debeMostrarFab('/naipes/reverso')).toBe(false);
