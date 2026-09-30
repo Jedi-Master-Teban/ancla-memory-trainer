@@ -24,7 +24,7 @@ import { CUADROS_MEMO, EXTRAS_MEMO, LADO_SPRITE, PALETA_MEMO, type CuadroMemo } 
  */
 
 const INTERVALO_BRINCO = 14_000;
-const PERIODO_ZETAS = 3000;
+const PERIODO_ZETAS = 5000;
 
 /**
  * El driver nativo solo existe fuera de la web. Pedirlo en la web no es
@@ -131,8 +131,8 @@ function useBrincos(px: number) {
       const ir = (altura: number) => Animated.timing(y, { toValue: -altura * px, duration: 0, useNativeDriver: NATIVO });
       const pasos: Animated.CompositeAnimation[] = [];
       for (let i = 0; i < veces; i++) {
-        for (let a = 1; a <= alto; a++) pasos.push(ir(a), Animated.delay(a === alto ? 90 : 45));
-        for (let a = alto - 1; a >= 0; a--) pasos.push(ir(a), Animated.delay(55));
+        for (let a = 1; a <= alto; a++) pasos.push(ir(a), Animated.delay(a === alto ? 140 : 70));
+        for (let a = alto - 1; a >= 0; a--) pasos.push(ir(a), Animated.delay(80));
       }
       Animated.sequence(pasos).start();
     },
@@ -154,11 +154,13 @@ function useBrincos(px: number) {
  * movimiento» se quedan las tres fijas.
  */
 const ZETAS = [
-  { x: 20, y: 2, escala: 1, aparece: 0.08 },
-  { x: 23, y: -2, escala: 1.2, aparece: 0.32 },
-  { x: 26, y: -7, escala: 1.4, aparece: 0.56 },
+  { x: 20, y: 2, escala: 1, aparece: 0.06 },
+  { x: 23, y: -2, escala: 1.2, aparece: 0.22 },
+  { x: 26, y: -7, escala: 1.4, aparece: 0.38 },
 ];
-const SE_APAGAN = 0.86;
+// Las tres juntas se quedan ~2,6 s antes de apagarse: si duraban menos de un
+// segundo parecía un parpadeo de error, no una animación.
+const SE_APAGAN = 0.9;
 
 function Zetas({ px, animar }: { px: number; animar: boolean }) {
   const reloj = useRef(new Animated.Value(0)).current;
@@ -255,8 +257,9 @@ export function MemoInicio({ despierto, tamano = 40 }: { despierto: boolean; tam
 
   useEffect(() => {
     if (!animar || !despierto) return;
-    const llegada = setTimeout(() => brincar(2, 2), 700);
-    const cada = setInterval(() => brincar(2, 2), INTERVALO_BRINCO);
+    // Tres brincos (~1,1 s): con dos rápidos no alcanzaba a notarse.
+    const llegada = setTimeout(() => brincar(3, 2), 700);
+    const cada = setInterval(() => brincar(3, 2), INTERVALO_BRINCO);
     return () => {
       clearTimeout(llegada);
       clearInterval(cada);
