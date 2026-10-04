@@ -29,6 +29,11 @@ export const test = base.extend<{ context: BrowserContext; page: Page }>({
       locale,
       acceptDownloads: true,
     });
+    // La pantalla de arranque dura ~3 s a propósito (ADR-036); las pruebas no
+    // esperan eso en cada página. arranque.spec.ts la restablece.
+    await contexto.addInitScript(() => {
+      (window as unknown as { __ANCLA_ARRANQUE_MS__: number }).__ANCLA_ARRANQUE_MS__ = 0;
+    });
     await use(contexto);
     await contexto.close();
     rmSync(carpeta, { recursive: true, force: true });

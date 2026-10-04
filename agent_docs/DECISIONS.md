@@ -1121,3 +1121,23 @@ reutiliza y prueba el `dist/` de ESE checkout; para correr en paralelo:
 `ANCLA_E2E_PUERTO=4174 npm run test:e2e`.
 
 **Queda fuera:** la isla sigue con `push` (P-7).
+
+## ADR-036 · 2026-10-03 · Aceptada
+
+**Decisión:** la pantalla de arranque dura ~3 s y su barra de tarjetas se llena
+de izquierda a derecha, de forma continua (cada tarjeta se rellena con su
+propia variable `--aa-f`, de 0 a 1), en vez de encender una tarjeta de golpe.
+Antes, con la app en caché, aparecía y se iba en menos de un segundo y
+parecía un error.
+
+**Honestidad de la barra:** el tiempo manda hasta un tope que fija la última
+señal de la app (`ninguno` 60 %, `app` 80 %, `datos` 95 %, `lista` 100 %). Si
+la app tarda más de lo previsto, la barra espera en su tope; si está lista
+antes, igual termina de llenarse (a los 3 s de abrir, 250 ms de la escena +
+2750 ms) y el texto pasa a «¡Listo!». Los errores no esperan: salen al
+instante. Costo asumido: abrir la app tarda ~3 s aunque estuviera lista antes.
+
+**Para pruebas:** `window.__ANCLA_ARRANQUE_MS__` cambia la duración (0 = sin
+espera). `e2e/fixtures.ts` lo pone en 0 para que cada página no pague 3 s, y
+`e2e/arranque.spec.ts` lo restablece para comprobar la duración y el orden de
+llenado.

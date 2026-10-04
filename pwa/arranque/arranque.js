@@ -16,7 +16,18 @@
     datos: 'Abriendo tus datos…',
     lista: '¡Listo!',
   };
-  var METAS = { app: 0.55, datos: 0.8, lista: 1 };
+  var METAS = { app: 0.55, datos: 0.8, lista: 1 }; // solo la página de propuestas (demo)
+
+  // La barra se llena sola, de izquierda a derecha, en DURACION_MS: tiempo
+  // suficiente para verla. Pero no promete más de lo que la app ha avisado:
+  // hasta dónde puede llegar depende de la última señal. Si la app tarda más
+  // de lo previsto, la barra espera en su tope; si está lista antes, igual
+  // termina de llenarse. Una prueba o un diagnóstico pueden cambiar la
+  // duración con window.__ANCLA_ARRANQUE_MS__ (0 = sin espera).
+  var DURACION_MS = 2750; // + los 250 ms de la escena: llena a los 3 s de abrir
+  var ESCENA_MS = 250; // la escena aparece a los 250 ms (CSS)
+  var TOPES = { ninguno: 0.6, app: 0.8, datos: 0.95, lista: 1 };
+  var PASO_MAX = 0.03; // lo más que avanza en un tic (30 ms): sin saltos
 
   function iniciar(raiz, opciones) {
     opciones = opciones || {};
@@ -27,14 +38,23 @@
     var progreso = 0;
     var lista = false;
     var conError = false;
+    var tope = TOPES.ninguno;
+    var inicio = Date.now();
+    var duracion = typeof window.__ANCLA_ARRANQUE_MS__ === 'number' ? window.__ANCLA_ARRANQUE_MS__ : DURACION_MS;
+    var reloj = null;
 
     function pintar(p) {
       if (cinta) {
         cinta.style.width = Math.round(p * 100) + '%';
         return;
       }
-      var llenas = Math.round(p * piezas.length);
-      for (var i = 0; i < piezas.length; i++) piezas[i].classList.toggle('aa-lleno', i < llenas);
+      // Cada pieza se llena a su turno: la variable --aa-f (0 a 1) es cuánto
+      // de la tarjeta está lleno, y la cadena de Ancla enciende sus eslabones.
+      for (var i = 0; i < piezas.length; i++) {
+        var f = Math.max(0, Math.min(1, p * piezas.length - i));
+        piezas[i].style.setProperty('--aa-f', f.toFixed(3));
+        piezas[i].classList.toggle('aa-lleno', f >= 1);
+      }
     }
 
     function avanzar(p) {
@@ -50,21 +70,51 @@
 
     // Mientras llega el JavaScript de la app nadie avisa: la barra avanza sola
     // hasta el 40 % y ahí espera, para no prometer más de lo que sabe.
-    var arrastre = setInterval(function () {
-      if (progreso < 0.4) avanzar(progreso + 0.05);
-      else clearInterval(arrastre);
-    }, 250);
+    var arrastre = null;
+    if (opciones.demo) {
+      arrastre = setInterval(function () {
+        if (progreso < 0.4) avanzar(progreso + 0.05);
+        else clearInterval(arrastre);
+      }, 250);
+    }
+
+    function textoPara(p) {
+      if (p >= 1) return TEXTOS.lista;
+      if (p >= 0.66) return TEXTOS.datos;
+      if (p >= 0.33) return TEXTOS.app;
+      return 'Preparando tu memoria…';
+    }
+
+    function tic() {
+      if (conError) return clearInterval(reloj);
+      var linea = duracion > 0 ? (Date.now() - inicio - ESCENA_MS) / duracion : 1;
+      var objetivo = Math.min(Math.max(linea, 0), tope);
+      if (objetivo > progreso) avanzar(duracion > 0 ? Math.min(objetivo, progreso + PASO_MAX) : objetivo);
+      decir(textoPara(progreso));
+      if (lista && progreso >= 1) {
+        clearInterval(reloj);
+        terminar();
+      }
+    }
+    if (!opciones.demo) reloj = setInterval(tic, 30);
 
     function etapa(nombre) {
       if (!(nombre in METAS) || conError || lista) return;
-      decir(TEXTOS[nombre]);
-      avanzar(METAS[nombre]);
-      if (nombre === 'lista') terminar();
+      if (opciones.demo) {
+        decir(TEXTOS[nombre]);
+        avanzar(METAS[nombre]);
+        if (nombre === 'lista') terminar();
+        return;
+      }
+      // Solo sube el tope; la barra llega a él al ritmo de la línea de tiempo.
+      tope = TOPES[nombre];
+      if (nombre === 'lista') lista = true;
     }
 
     function terminar() {
       lista = true;
       clearInterval(arrastre);
+      clearInterval(reloj);
       if (opciones.demo) return;
       setTimeout(function () {
         raiz.classList.add('aa-saliendo');
@@ -78,6 +128,7 @@
       if (lista || conError) return;
       conError = true;
       clearInterval(arrastre);
+      clearInterval(reloj);
       raiz.setAttribute('data-estado', 'error');
       var sinRed = navigator.onLine === false;
       raiz.querySelector('.aa-error-titulo').textContent = titulo || (sinRed ? 'Sin conexión' : 'Algo no cargó bien');
@@ -97,6 +148,12 @@
       conError = false;
       lista = false;
       progreso = 0;
+      tope = TOPES.ninguno;
+      inicio = Date.now();
+      if (!opciones.demo) {
+        clearInterval(reloj);
+        reloj = setInterval(tic, 30);
+      }
       raiz.setAttribute('data-estado', 'cargando');
       raiz.classList.remove('aa-con-detalle');
       decir('Preparando tu memoria…');

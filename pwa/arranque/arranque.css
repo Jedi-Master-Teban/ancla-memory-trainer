@@ -164,8 +164,15 @@
 
 /* Memo: tarjetas que se voltean al verde de «Bien», con su marca. */
 .aa-tarjetas { display: flex; gap: 6px; }
-.aa-tarjetas i { position: relative; width: 18px; height: 24px; border-radius: 4px; background: var(--aa-pista); }
-.aa-tarjetas i.aa-lleno { background: var(--aa-extra); animation: aa-voltear .45s ease; }
+.aa-tarjetas i {
+  position: relative;
+  width: 18px;
+  height: 24px;
+  border-radius: 4px;
+  /* --aa-f: cuánto de la tarjeta está lleno (lo escribe arranque.js), de izquierda a derecha. */
+  background: linear-gradient(to right, var(--aa-extra) calc(var(--aa-f, 0) * 100%), var(--aa-pista) calc(var(--aa-f, 0) * 100%));
+}
+.aa-tarjetas i.aa-lleno { animation: aa-pop .3s ease-out; }
 .aa-tarjetas i.aa-lleno::after {
   content: "";
   position: absolute;
@@ -177,7 +184,7 @@
   border-width: 0 3px 3px 0;
   transform: rotate(45deg);
 }
-@keyframes aa-voltear { 0% { transform: scaleX(1); } 50% { transform: scaleX(0); } 100% { transform: scaleX(1); } }
+@keyframes aa-pop { 0% { transform: scale(1); } 45% { transform: scale(1.14); } 100% { transform: scale(1); } }
 
 /* Lumi: una cinta de marcapáginas en ámbar. */
 .aa-cinta { width: 204px; height: 14px; border-radius: 3px; background: var(--aa-pista); overflow: hidden; }
@@ -187,7 +194,7 @@
   height: 100%;
   background: var(--aa-extra);
   clip-path: polygon(0 0, 100% 0, calc(100% - 7px) 50%, 100% 100%, 0 100%);
-  transition: width .5s ease;
+  transition: width .12s linear;
 }
 
 /* ── Error ───────────────────────────────────────────────────────────── */
