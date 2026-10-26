@@ -226,7 +226,7 @@ export default function ResumenSesion() {
 
       <View style={estilos.acciones}>
         <Pressable
-          onPress={() => router.dismissTo('/racha')}
+          onPress={() => router.dismissTo('/estadisticas')}
           style={({ pressed }) => [
             estilos.cta,
             forma.sombraCta(t),

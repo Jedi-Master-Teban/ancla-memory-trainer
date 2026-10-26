@@ -1,7 +1,9 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { HeaderFlotante } from '../src/components/HeaderFlotante';
 import { LineChart } from '../src/components/LineChart';
+import { SeccionRacha } from '../src/components/SeccionRacha';
 import { RetencionPorCategoria as VistaRetencion, type VistaRetencion as ModoVista } from '../src/components/RetencionPorCategoria';
 import { TarjetasProblematicas } from '../src/components/TarjetasProblematicas';
 import { obtenerBD } from '../src/db/client';
@@ -190,7 +192,15 @@ export default function Estadisticas() {
         />
       }
     >
-      <Text style={[estilos.titulo, { color: t.ink, fontFamily: tipografia.display }]}>Retención</Text>
+      <HeaderFlotante titulo="Progreso" volverA="/" />
+
+      {/* La racha vivía en su propia pantalla; es el mismo progreso, así que va
+          aquí, arriba: primero cuánto llevas, después qué tanto recuerdas. */}
+      <SeccionRacha />
+
+      <Text style={[estilos.seccionTitulo, { color: t.inkMuted, fontFamily: tipografia.display }]} role="heading">
+        Retención
+      </Text>
 
       {/* Segmentado: riel hundido en cardAlt, activo elevado en card. */}
       <View style={[estilos.segmentado, { backgroundColor: t.cardAlt, borderRadius: forma.rPill }]}>
@@ -334,7 +344,7 @@ const estilos = StyleSheet.create({
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   error: { padding: 24, textAlign: 'center' },
 
-  titulo: { fontSize: 20, fontWeight: '700', paddingHorizontal: 2, paddingTop: 6, paddingBottom: 12 },
+  seccionTitulo: { fontSize: 13, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', paddingHorizontal: 4, paddingTop: 14 },
 
   segmentado: { flexDirection: 'row', gap: 5, padding: 3, marginBottom: 6 },
   segmento: { flex: 1, paddingVertical: 9, alignItems: 'center' },

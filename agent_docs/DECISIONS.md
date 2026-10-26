@@ -1141,3 +1141,24 @@ instante. Costo asumido: abrir la app tarda ~3 s aunque estuviera lista antes.
 espera). `e2e/fixtures.ts` lo pone en 0 para que cada página no pague 3 s, y
 `e2e/arranque.spec.ts` lo restablece para comprobar la duración y el orden de
 llenado.
+
+## ADR-038 · 2026-10-25 · Aceptada
+
+**Decisión:** la racha y las estadísticas son una sola página, **Progreso**
+(`/estadisticas`, la pestaña antes llamada «Stats»). De arriba abajo: una
+tarjeta de racha (llama, días, estado, anillo de hoy y los últimos 90 días),
+tres datos de ajustes (meta, recordatorio, congeladores), los congeladores
+plegados, y después la retención (ventana, promedio, gráfica por día,
+categorías, avisos, tarjetas problemáticas).
+
+**Por qué:** eran el mismo progreso en dos pantallas con estilos distintos: la
+de racha no tenía tarjetas y su final quedaba tapado por la isla; la de
+estadísticas no mostraba nada de la racha (reporte del operador).
+
+**Detalles:**
+- `src/components/SeccionRacha.tsx` es la sección de racha; `diasCongelables`
+  pasó a `src/domain/racha/congelables.ts` con pruebas.
+- `/racha` queda como redirección a `/estadisticas` para enlaces guardados; la
+  píldora de Inicio y «Ver mi racha» van directo a Progreso.
+- La configuración de la racha sigue editándose solo en Ajustes (ADR de la
+  Fase 8); aquí se muestra y enlaza.

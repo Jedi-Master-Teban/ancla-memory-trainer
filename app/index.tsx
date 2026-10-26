@@ -193,7 +193,7 @@ export default function Index() {
         <StreakPill
           dias={racha.diasConsecutivos}
           estado={racha.estado}
-          onPress={() => router.push('/racha')}
+          onPress={() => router.push('/estadisticas')}
         />
       </View>
 
@@ -346,7 +346,7 @@ export default function Index() {
         ]}
       >
         <Text style={[estilos.pieRetencionTexto, { color: t.inkMuted, fontFamily: tipografia.body }]}>
-          Ver retención y estadísticas
+          Ver mi progreso: racha y retención
         </Text>
         <IconoChevron color={t.inkMuted} tamano={15} trazo={2.2} />
       </Pressable>
