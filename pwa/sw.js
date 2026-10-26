@@ -2,8 +2,15 @@
  * Estrategia: precache del app shell + cache-first para assets estáticos,
  * network-first para navegación (para que las actualizaciones lleguen).
  */
-const CACHE = 'ancla-v8';
+const CACHE = 'ancla-v9';
+// La caché del origen es compartida con la versión alfa (ADR-039), que vive en
+// /alpha/ con su propio service worker y sus propias cachés. Cada uno limpia
+// SOLO las suyas, por prefijo: antes se borraba toda caché que no fuera esta.
+const PREFIJO = 'ancla-v';
 const PRECACHE = ['./', './index.html'];
+// La alfa cuelga de este alcance: su service worker, más específico, la
+// atiende; esta app no debe tocar ni sus navegaciones ni sus archivos.
+const RUTA_ALFA = new URL('alpha/', self.registration.scope).pathname;
 
 /**
  * Todas las peticiones de red de este SW van con `cache: 'no-store'`.
@@ -32,7 +39,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith(PREFIJO) && k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -40,6 +47,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
+  if (new URL(req.url).pathname.startsWith(RUTA_ALFA)) return;
 
   // Navegación: SIEMPRE la página principal, de la red y sin caché; la copia
   // guardada solo sin conexión (ADR-030).

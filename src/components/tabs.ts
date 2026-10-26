@@ -29,7 +29,7 @@ export interface Tab {
 export const TABS: Tab[] = [
   { id: 'inicio', ruta: '/', etiqueta: 'Inicio', icono: Home },
   { id: 'editar', ruta: '/editar', etiqueta: 'Editar', icono: Pencil },
-  { id: 'stats', ruta: '/estadisticas', etiqueta: 'Stats', icono: BarChart3 },
+  { id: 'stats', ruta: '/estadisticas', etiqueta: 'Progreso', icono: BarChart3 },
   { id: 'ajustes', ruta: '/ajustes', etiqueta: 'Ajustes', icono: Settings },
 ];
 
@@ -53,7 +53,8 @@ export const RUTA_POR_TAB: Record<TabId, Tab['ruta']> = {
  * repaso, resumen, formularios de creación).
  */
 const PESTANA_PADRE: Record<string, TabId> = {
-  '/racha': 'inicio',
+  // La racha vive ahora dentro de Progreso; la ruta vieja solo redirige.
+  '/racha': 'stats',
   '/colgadero': 'inicio',
   '/naipes': 'inicio',
   '/listas': 'inicio',

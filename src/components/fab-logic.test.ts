@@ -1,4 +1,6 @@
-import { categoriaDeRuta, debeMostrarFab, esRutaDeSesion, rutaCrear } from './fab-logic';
+import {
+  destinoDelFab,
+  CATEGORIAS_CREABLES, categoriaDeRuta, debeMostrarFab, esRutaDeSesion, rutaCrear } from './fab-logic';
 
 describe('categoriaDeRuta', () => {
   describe('pantallas de categoría', () => {
@@ -153,17 +155,64 @@ describe('debeMostrarFab', () => {
     it('sin pathname', () => {
       expect(debeMostrarFab(undefined)).toBe(false);
     });
+
+    it.each(['/naipes', '/naipes/baraja-completa', '/crear/naipe', '/crear/naipe?id=4'])(
+      'en %s — los naipes son 52 cartas fijas, no se crean',
+      (ruta) => {
+        expect(debeMostrarFab(ruta)).toBe(false);
+      },
+    );
+
+    it.each(['/crear/colgadero', '/crear/lista_item', '/crear/lista_item?listaId=7'])(
+      'en el formulario %s — un «+» sobre el formulario no crea nada',
+      (ruta) => {
+        expect(debeMostrarFab(ruta)).toBe(false);
+      },
+    );
   });
 
   describe('lo muestra donde sí se crea', () => {
-    it.each(['/colgadero', '/naipes', '/listas', '/numeros', '/listas/7'])('en %s', (ruta) => {
+    it.each(['/colgadero', '/listas', '/numeros', '/listas/7'])('en %s', (ruta) => {
       expect(debeMostrarFab(ruta)).toBe(true);
     });
 
-    it('en Editar y en las pantallas de creación', () => {
+    it('en Editar (donde elige categoría) y en el formulario de números', () => {
       expect(debeMostrarFab('/editar')).toBe(true);
-      expect(debeMostrarFab('/crear/colgadero')).toBe(true);
       expect(debeMostrarFab('/numeros/nuevo')).toBe(true);
     });
+  });
+});
+
+describe('destinoDelFab — qué hace el «+» en cada sitio', () => {
+  it('colgadero abre su formulario', () => {
+    expect(destinoDelFab('colgadero', '/colgadero')).toEqual({ tipo: 'ruta', ruta: '/crear/colgadero' });
+  });
+
+  it('números abre su pantalla con vista previa', () => {
+    expect(destinoDelFab('numero', '/numeros')).toEqual({ tipo: 'ruta', ruta: '/numeros/nuevo' });
+  });
+
+  it('dentro de una lista añade un objeto A ESA lista', () => {
+    expect(destinoDelFab('lista_item', '/listas/abc-12')).toEqual({
+      tipo: 'ruta',
+      ruta: '/crear/lista_item?listaId=abc-12',
+    });
+  });
+
+  it('en la pantalla de Listas crea una lista nueva (no un objeto sin lista)', () => {
+    expect(destinoDelFab('lista_item', '/listas')).toEqual({ tipo: 'nueva-lista' });
+  });
+
+  it('desde fuera de Listas (el menú de Editar) también crea una lista nueva', () => {
+    expect(destinoDelFab('lista_item', '/editar')).toEqual({ tipo: 'nueva-lista' });
+    expect(destinoDelFab('lista_item', undefined)).toEqual({ tipo: 'nueva-lista' });
+  });
+
+  it('naipes no tiene destino: no se crean', () => {
+    expect(destinoDelFab('naipe', '/naipes')).toBeNull();
+  });
+
+  it('el menú de categorías no ofrece naipes', () => {
+    expect(CATEGORIAS_CREABLES).toEqual(['colgadero', 'lista_item', 'numero']);
   });
 });

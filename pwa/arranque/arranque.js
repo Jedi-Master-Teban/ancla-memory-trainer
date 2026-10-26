@@ -162,10 +162,18 @@
 
     function forzarActualizacion() {
       var tareas = [];
+      // El origen también aloja la versión alfa (ADR-039): esto solo toca lo
+      // de ESTA app, el service worker de su ruta y sus cachés por prefijo.
+      var esAlfa = base.indexOf('/alpha/') !== -1;
+      var prefijo = esAlfa ? 'ancla-alfa-' : 'ancla-v';
       if ('serviceWorker' in navigator) {
         tareas.push(
           navigator.serviceWorker.getRegistrations().then(function (registros) {
-            return Promise.all(registros.map(function (r) { return r.unregister(); }));
+            return Promise.all(
+              registros
+                .filter(function (r) { return new URL(r.scope).pathname === base; })
+                .map(function (r) { return r.unregister(); }),
+            );
           }),
         );
       }
@@ -174,7 +182,11 @@
       if (window.caches) {
         tareas.push(
           caches.keys().then(function (claves) {
-            return Promise.all(claves.map(function (c) { return caches.delete(c); }));
+            return Promise.all(
+              claves
+                .filter(function (c) { return c.indexOf(prefijo) === 0; })
+                .map(function (c) { return caches.delete(c); }),
+            );
           }),
         );
       }

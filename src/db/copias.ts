@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import { NOMBRE_IDB_COPIAS } from '../canal';
 import type { MetaCopia } from '../domain/respaldo/copias';
 
 /**
@@ -15,7 +16,7 @@ import type { MetaCopia } from '../domain/respaldo/copias';
  * Solo web: en nativo (Expo Go) no hay IndexedDB y todo esto no hace nada.
  */
 
-const NOMBRE = 'ancla-copias';
+const NOMBRE = NOMBRE_IDB_COPIAS;
 const VERSION = 1;
 const METAS = 'metas';
 const DATOS = 'datos';

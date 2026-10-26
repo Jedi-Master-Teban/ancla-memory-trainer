@@ -12,6 +12,9 @@ import { extname, join, resolve, sep } from 'node:path';
 
 const PUERTO = Number(process.env.PUERTO ?? 4173);
 const BASE = '/ancla-memory-trainer/';
+// La versión alfa cuelga de la real, como en GitHub Pages (ADR-039).
+const BASE_ALFA = `${BASE}alpha/`;
+const raizAlfa = resolve(process.env.ANCLA_DIST_ALFA ?? 'dist-alfa');
 let raiz = resolve(process.env.ANCLA_DIST ?? 'dist');
 
 const TIPOS = {
@@ -49,10 +52,12 @@ createServer(async (req, res) => {
     res.end('404');
     return;
   }
-  let relativa = decodeURIComponent(url.pathname.slice(BASE.length));
+  const enAlfa = url.pathname.startsWith(BASE_ALFA);
+  const carpeta = enAlfa ? raizAlfa : raiz;
+  let relativa = decodeURIComponent(url.pathname.slice((enAlfa ? BASE_ALFA : BASE).length));
   if (relativa === '' || relativa.endsWith('/')) relativa += 'index.html';
-  const archivo = resolve(join(raiz, relativa));
-  if (!archivo.startsWith(raiz + sep)) {
+  const archivo = resolve(join(carpeta, relativa));
+  if (!archivo.startsWith(carpeta + sep)) {
     res.writeHead(403);
     res.end();
     return;

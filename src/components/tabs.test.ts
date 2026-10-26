@@ -19,6 +19,16 @@ describe('tabs (configuración pura)', () => {
   });
 });
 
+describe('Progreso (antes Stats) reúne la racha y la retención', () => {
+  it('la pestaña se llama Progreso', () => {
+    expect(TABS.find((t) => t.id === 'stats')?.etiqueta).toBe('Progreso');
+  });
+
+  it('la ruta antigua de la racha enciende Progreso, no Inicio', () => {
+    expect(pestanaActiva('/racha')).toBe('stats');
+  });
+});
+
 describe('pestanaActiva — la Guía cuelga de Inicio', () => {
   it('la Guía y cualquiera de sus capítulos encienden Inicio', () => {
     expect(pestanaActiva('/guia')).toBe('inicio');

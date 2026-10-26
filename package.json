@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "build:pwa": "expo export --platform web && python3 pwa/patch_dist.py",
     "lint": "expo lint",
-    "test:e2e": "npm run build:pwa && playwright test"
+    "test:e2e": "npm run build:pwa && npm run build:pwa:alfa && playwright test",
+    "build:pwa:alfa": "EXPO_PUBLIC_CANAL=alfa expo export --platform web --output-dir dist-alfa && EXPO_PUBLIC_CANAL=alfa python3 pwa/patch_dist.py"
   },
   "dependencies": {
     "@expo-google-fonts/fredoka": "^0.4.1",

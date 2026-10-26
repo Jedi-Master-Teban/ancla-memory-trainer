@@ -30,7 +30,7 @@ test.describe('volver al terminar una sesión', () => {
     await repasarUnaTarjeta(page);
 
     await page.getByText('Ver mi racha').click();
-    await expect(page).toHaveURL(/\/racha$/);
+    await expect(page).toHaveURL(/\/estadisticas$/);
     await page.getByRole('button', { name: 'Volver', exact: true }).click();
 
     await expect(page.getByRole('progressbar', { name: '1 de 1 tarjetas hoy', exact: true })).toBeVisible();

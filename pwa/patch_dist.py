@@ -5,13 +5,15 @@ dist/ y copia íconos.
 Uso: python3 pwa/patch_dist.py   (correr después de `npx expo export --platform web`)
 """
 import json
+import os
 import re
 import shutil
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-DIST = ROOT / "dist"
+ALFA = os.environ.get("EXPO_PUBLIC_CANAL") == "alfa"  # ADR-039: build de prueba bajo /alpha/
+DIST = ROOT / ("dist-alfa" if ALFA else "dist")
 PWA = ROOT / "pwa"
 
 sys.path.insert(0, str(PWA / "arranque"))
@@ -31,6 +33,8 @@ def base_url() -> str:
     """'/ancla-memory-trainer/', leída de app.json (experiments.baseUrl)."""
     app = json.loads((ROOT / "app.json").read_text())
     base = app["expo"].get("experiments", {}).get("baseUrl", "")
+    if ALFA:
+        base = base.rstrip("/") + "/alpha"
     return base.rstrip("/") + "/"
 
 
@@ -42,10 +46,25 @@ FONDO = fondo_del_tema("SOFT")
 #
 #    Los colores del manifest (pantalla de arranque del sistema y tinte) salen
 #    del mismo token que el fondo del documento — ver 2a.
-manifest = json.loads((PWA / "manifest.json").read_text())
+manifest_texto = (PWA / "manifest.json").read_text()
+if ALFA:
+    # Otra aplicación para el sistema: otro id, otro alcance y otro nombre, para
+    # que se instale como un segundo ícono y no se confunda con la real.
+    manifest_texto = manifest_texto.replace("/ancla-memory-trainer/", BASE)
+manifest = json.loads(manifest_texto)
 manifest["background_color"] = manifest["theme_color"] = FONDO
+if ALFA:
+    manifest["name"] = "Ancla alfa — versión de prueba"
+    manifest["short_name"] = "Ancla α"
 (DIST / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
-shutil.copy(PWA / "sw.js", DIST / "sw.js")
+sw = (PWA / "sw.js").read_text()
+if ALFA:
+    # Otra caché y otro prefijo de limpieza: la caché del origen es compartida,
+    # y el service worker de la app real borra las suyas por prefijo.
+    sw = sw.replace("const CACHE = 'ancla-v9';", "const CACHE = 'ancla-alfa-v1';")
+    sw = sw.replace("const PREFIJO = 'ancla-v';", "const PREFIJO = 'ancla-alfa-';")
+    assert "ancla-alfa-v1" in sw and "ancla-alfa-';" in sw, "patch_dist: no pude adaptar sw.js a la alfa"
+(DIST / "sw.js").write_text(sw)
 (DIST / ".nojekyll").touch()
 icons = DIST / "icons"
 icons.mkdir(exist_ok=True)
@@ -87,11 +106,16 @@ if "manifest.json" not in html:
         # siempre en blanco, que sobre el crema de Soft UI no se ve. iOS lee
         # este valor solo al abrir la app: no puede seguir al tema en vivo.
         '  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>\n'
-        '  <meta name="apple-mobile-web-app-title" content="Ancla"/>\n'
+        f'  <meta name="apple-mobile-web-app-title" content="{"Ancla α" if ALFA else "Ancla"}"/>\n'
         '  <script>if("serviceWorker" in navigator)window.addEventListener("load",function(){'
         f'navigator.serviceWorker.register("{BASE}sw.js",{{scope:"{BASE}"}})}});</script>\n'
     )
     html = html.replace("</head>", inject + "</head>")
+
+# 2d. La alfa se reconoce a simple vista: atributo en <html> (lo usan las pruebas)
+#     y la palabra «alfa» junto al nombre en la pantalla de arranque.
+if ALFA:
+    html = html.replace('<html lang="es-CO">', '<html lang="es-CO" data-canal="alfa">', 1)
 
 # 3. Pantalla de arranque (ADR-030): HTML, CSS y SVG en línea, visibles desde el
 #    primer instante. Si el JavaScript de la app no llega o no arranca, ella
@@ -107,6 +131,8 @@ if 'id="ancla-arranque"' not in html:
         + f'\n<script>window.__ANCLA_BASE__="{BASE}";</script>'
         + f"\n<script>{construir.js()}</script>\n"
     )
+    if ALFA:
+        pantalla = pantalla.replace('<p class="aa-titulo">Ancla</p>', '<p class="aa-titulo">Ancla <small class="aa-alfa">alfa</small></p>', 1)
     html = re.sub(r"(<body[^>]*>)", lambda m: m.group(1) + "\n" + pantalla, html, count=1)
     print(f"pantalla de arranque con la mascota «{datos['mascotas'][mascota]['nombre']}»")
 

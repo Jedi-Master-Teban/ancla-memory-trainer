@@ -1142,7 +1142,7 @@ espera). `e2e/fixtures.ts` lo pone en 0 para que cada página no pague 3 s, y
 `e2e/arranque.spec.ts` lo restablece para comprobar la duración y el orden de
 llenado.
 
-## ADR-037 · 2026-10-25 · Propuesta (rama `alpha/vocabulario`, sin aprobar)
+## ADR-037 · 2026-10-25 · Aceptada para la alfa (rama `alpha/vocabulario`; no está en `main`)
 
 **Decisión propuesta:** añadir la categoría `vocabulario` —palabras sueltas, sin
 orden, agrupadas por tema— con imagen por tarjeta (foto propia o búsqueda en
@@ -1162,5 +1162,64 @@ Diseño, evidencia y spikes en `agent_docs/modulos/10-vocabulario.md`.
 - **Una alfa en el mismo origen comparte la base y la migraría:** hay que
   elegir cómo probarla (§13 del módulo) antes de publicarla.
 
-Se vuelve «Aceptada» solo cuando el operador la apruebe; no se fusiona a
-`main` antes.
+**Aprobado por el operador el 2026-10-25:** imágenes de 400 px de ancho en
+JPEG, filtro de licencias CC0 / dominio público / BY / BY-SA, créditos en la
+esquina con botón «i», aviso de transparencia antes de la primera búsqueda,
+foto propia y búsqueda abierta desde la alfa, palabras abstractas como consejo
+de la Guía, imágenes como BLOB con tope de 300, y la alfa en `/alpha/` (ADR-039).
+No se fusiona a `main` hasta que el operador apruebe la alfa.
+## ADR-038 · 2026-10-25 · Aceptada
+
+**Decisión:** la racha y las estadísticas son una sola página, **Progreso**
+(`/estadisticas`, la pestaña antes llamada «Stats»). De arriba abajo: una
+tarjeta de racha (llama, días, estado, anillo de hoy y los últimos 90 días),
+tres datos de ajustes (meta, recordatorio, congeladores), los congeladores
+plegados, y después la retención (ventana, promedio, gráfica por día,
+categorías, avisos, tarjetas problemáticas).
+
+**Por qué:** eran el mismo progreso en dos pantallas con estilos distintos: la
+de racha no tenía tarjetas y su final quedaba tapado por la isla; la de
+estadísticas no mostraba nada de la racha (reporte del operador).
+
+**Detalles:**
+- `src/components/SeccionRacha.tsx` es la sección de racha; `diasCongelables`
+  pasó a `src/domain/racha/congelables.ts` con pruebas.
+- `/racha` queda como redirección a `/estadisticas` para enlaces guardados; la
+  píldora de Inicio y «Ver mi racha» van directo a Progreso.
+- La configuración de la racha sigue editándose solo en Ajustes (ADR de la
+  Fase 8); aquí se muestra y enlaza.
+
+## ADR-039 · 2026-10-25 · Aceptada
+
+**Decisión:** la versión alfa se publica en `/alpha/` del mismo sitio de GitHub
+Pages, con sus propios datos, y la app real aprende a convivir con ella. Es la
+opción 1 de `agent_docs/modulos/10-vocabulario.md` §13, aprobada por el operador.
+
+**Por qué:** una alfa en el mismo origen compartía base, copias y caché con la
+app real; su migración habría dejado los datos de verdad en una versión que la
+app real no puede abrir. El operador ya perdió datos por una actualización
+(ADR-029).
+
+**Cómo:**
+- `src/canal.ts` es la única fuente de los nombres que se guardan:
+  `memory-trainer.db` / `ancla-copias` / caché `ancla-v9` para la real, y
+  `ancla-alfa.db` / `ancla-alfa-copias` / `ancla-alfa-v1` para la alfa.
+  `EXPO_PUBLIC_CANAL=alfa` lo fija el build (`npm run build:pwa:alfa`).
+- `app.config.js` cuelga la ruta base de la alfa de la real; `patch_dist.py`
+  genera otro manifest (id y alcance propios, «Ancla α»), `data-canal="alfa"`
+  y la palabra «alfa» en el arranque; Inicio muestra la insignia ALFA.
+- El service worker de la real limpia solo sus cachés por prefijo (antes
+  borraba toda caché que no fuera la suya) e ignora `/alpha/`; «Forzar
+  actualización» solo toca el de su ruta.
+- `scripts/desplegar.sh estable|alfa` sustituye a `gh-pages -d dist`, que
+  borraba la rama entera y se habría llevado la alfa.
+
+**Limitación comprobada, no un defecto:** expo-sqlite web guarda todas las
+bases en un único grupo de OPFS (`VFS_NAME_PERSISTENT`) bloqueado por quien lo
+abre primero. Los datos no se mezclan, pero la real y la alfa no pueden estar
+abiertas a la vez. Si molesta, la salida es otro origen (otro servicio de
+alojamiento), que aísla del todo.
+
+**Pruebas:** `e2e/canales.spec.ts` (datos separados, caché de cada una, la real
+no atiende la alfa, aviso al abrir las dos). La de cachés se comprobó
+revirtiendo el arreglo: falla.
