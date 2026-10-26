@@ -179,6 +179,8 @@
 
 /* ── Texto y barra ───────────────────────────────────────────────────── */
 .aa-titulo { margin: 10px 0 0; font-size: 26px; font-weight: 800; letter-spacing: .01em; }
+/* La versión de prueba se reconoce al abrirla (ADR-039). */
+.aa-alfa { margin-left: 4px; padding: 2px 8px; border-radius: 999px; background: var(--aa-naranja); color: #fff; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; vertical-align: middle; }
 .aa-estado { margin: 0; min-height: 1.4em; font-size: 15px; color: var(--aa-suave); }
 .aa-barra { margin-top: 6px; }
 
@@ -486,10 +488,18 @@
 
     function forzarActualizacion() {
       var tareas = [];
+      // El origen también aloja la versión alfa (ADR-039): esto solo toca lo
+      // de ESTA app, el service worker de su ruta y sus cachés por prefijo.
+      var esAlfa = base.indexOf('/alpha/') !== -1;
+      var prefijo = esAlfa ? 'ancla-alfa-' : 'ancla-v';
       if ('serviceWorker' in navigator) {
         tareas.push(
           navigator.serviceWorker.getRegistrations().then(function (registros) {
-            return Promise.all(registros.map(function (r) { return r.unregister(); }));
+            return Promise.all(
+              registros
+                .filter(function (r) { return new URL(r.scope).pathname === base; })
+                .map(function (r) { return r.unregister(); }),
+            );
           }),
         );
       }
@@ -498,7 +508,11 @@
       if (window.caches) {
         tareas.push(
           caches.keys().then(function (claves) {
-            return Promise.all(claves.map(function (c) { return caches.delete(c); }));
+            return Promise.all(
+              claves
+                .filter(function (c) { return c.indexOf(prefijo) === 0; })
+                .map(function (c) { return caches.delete(c); }),
+            );
           }),
         );
       }
@@ -579,6 +593,6 @@
     </noscript>
     <!-- The root element for your Expo app. -->
     <div id="root"></div>
-  <script src="/ancla-memory-trainer/_expo/static/js/web/entry-ec56a7b0959866844977aefeb48817e3.js" defer></script>
+  <script src="/ancla-memory-trainer/_expo/static/js/web/entry-48861abfe82a96a1db2548f5376268d0.js" defer></script>
 </body>
 </html>
