@@ -147,8 +147,14 @@ del iPhone)**, a 400, 640 y 800 px, calidad 0.82.
 - La orientación EXIF de las fotos del iPhone debe respetarse al reducir
   (spike S2).
 
-**Recomendación:** 600/500 px de la fuente y 640 px para fotos propias. El
-operador decide mirando la hoja `comparacion.jpg` del ensayo.
+**Decisión del operador (2026-10-25): 400 px de ancho máximo, JPEG, para
+todas las imágenes** —las de las bibliotecas y las fotos propias—, calidad
+0.82. Una nota para cuando se implemente: el codificador de Safari deja un
+JPEG de 400 px en ≈ 33–47 KB, casi lo mismo que pesan los originales de 600 px
+que entrega Openverse (17–46 KB) y más que ellos; el 400 se elige por
+uniformidad y por decisión de diseño, no porque ahorre espacio. Si más
+adelante se prefiere más nitidez al mismo peso, guardar el original de
+Openverse tal cual es la alternativa.
 
 ## 5. Búsqueda en bibliotecas abiertas
 
@@ -312,5 +318,25 @@ Opciones:
 3. **Solo local** (`localhost`) hasta la beta. Seguro, pero sin probar en el
    iPhone: OPFS y service worker exigen HTTPS.
 
-Recomendación: la 1, con una prueba E2E que demuestre que las dos apps no se
-tocan. **Pendiente de decisión del operador.**
+**Decidido por el operador (2026-10-25): opción 1.** Implementada en ADR-039
+(`src/canal.ts`, `npm run build:pwa:alfa`, `scripts/desplegar.sh`) y probada en
+`e2e/canales.spec.ts`. Hallazgo al hacerla: expo-sqlite web guarda todas las
+bases en **un único grupo de archivos de OPFS** que bloquea quien lo abre
+primero. Los datos no se mezclan, pero la app real y la alfa **no pueden estar
+abiertas a la vez** (la segunda avisa). Para probar la alfa con tus datos:
+restaurar un respaldo desde Ajustes → Tus datos.
+
+## 14. Orden de trabajo de la alfa
+
+1. Spikes S1–S3 (§12) con pruebas desechables; si S1 no sale bien, las
+   imágenes pasan a archivos de OPFS antes de escribir la migración.
+2. `src/domain/vocabulario/` con pruebas primero: *mappers* de Openverse y
+   Wikimedia (fixtures reales), texto de crédito, filtro de licencias,
+   dimensiones a 400 px.
+3. Migración 009 + repositorio (tema, tarjeta, imagen) con prueba de
+   supervivencia sobre una base v8 con datos.
+4. Pantallas: lista de temas, alta de palabra con foto propia, repaso en los dos
+   modos, imagen con crédito e «i».
+5. Búsqueda en bibliotecas con el aviso de transparencia y manejo de 429.
+6. Capítulo 7 de la Guía y su enlace desde el formulario.
+7. E2E con las APIs simuladas; despliegue a `/alpha/`.
