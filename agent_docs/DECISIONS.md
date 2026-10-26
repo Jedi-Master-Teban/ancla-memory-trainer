@@ -1162,3 +1162,38 @@ estadísticas no mostraba nada de la racha (reporte del operador).
   píldora de Inicio y «Ver mi racha» van directo a Progreso.
 - La configuración de la racha sigue editándose solo en Ajustes (ADR de la
   Fase 8); aquí se muestra y enlaza.
+
+## ADR-039 · 2026-10-25 · Aceptada
+
+**Decisión:** la versión alfa se publica en `/alpha/` del mismo sitio de GitHub
+Pages, con sus propios datos, y la app real aprende a convivir con ella. Es la
+opción 1 de `agent_docs/modulos/10-vocabulario.md` §13, aprobada por el operador.
+
+**Por qué:** una alfa en el mismo origen compartía base, copias y caché con la
+app real; su migración habría dejado los datos de verdad en una versión que la
+app real no puede abrir. El operador ya perdió datos por una actualización
+(ADR-029).
+
+**Cómo:**
+- `src/canal.ts` es la única fuente de los nombres que se guardan:
+  `memory-trainer.db` / `ancla-copias` / caché `ancla-v9` para la real, y
+  `ancla-alfa.db` / `ancla-alfa-copias` / `ancla-alfa-v1` para la alfa.
+  `EXPO_PUBLIC_CANAL=alfa` lo fija el build (`npm run build:pwa:alfa`).
+- `app.config.js` cuelga la ruta base de la alfa de la real; `patch_dist.py`
+  genera otro manifest (id y alcance propios, «Ancla α»), `data-canal="alfa"`
+  y la palabra «alfa» en el arranque; Inicio muestra la insignia ALFA.
+- El service worker de la real limpia solo sus cachés por prefijo (antes
+  borraba toda caché que no fuera la suya) e ignora `/alpha/`; «Forzar
+  actualización» solo toca el de su ruta.
+- `scripts/desplegar.sh estable|alfa` sustituye a `gh-pages -d dist`, que
+  borraba la rama entera y se habría llevado la alfa.
+
+**Limitación comprobada, no un defecto:** expo-sqlite web guarda todas las
+bases en un único grupo de OPFS (`VFS_NAME_PERSISTENT`) bloqueado por quien lo
+abre primero. Los datos no se mezclan, pero la real y la alfa no pueden estar
+abiertas a la vez. Si molesta, la salida es otro origen (otro servicio de
+alojamiento), que aísla del todo.
+
+**Pruebas:** `e2e/canales.spec.ts` (datos separados, caché de cada una, la real
+no atiende la alfa, aviso al abrir las dos). La de cachés se comprobó
+revirtiendo el arreglo: falla.

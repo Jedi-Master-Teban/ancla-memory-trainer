@@ -2,6 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AnilloMeta } from '../src/components/AnilloMeta';
+import { ES_ALFA } from '../src/canal';
 import { MemoInicio } from '../src/components/Memo';
 import { StreakPill } from '../src/components/StreakPill';
 import { IconoChevron, IconoColgadero, IconoGuia, IconoLista, IconoNaipe, IconoNumero } from '../src/components/iconos';
@@ -189,6 +190,12 @@ export default function Index() {
           {/* Memo en lugar del ancla pequeña: dos marcas juntas competían (ADR-033). */}
           <MemoInicio despierto={estadoDeMemo(racha.diasConsecutivos) === 'despierto'} />
           <Text style={[estilos.nombreApp, { color: t.ink, fontFamily: tipografia.display }]}>Ancla</Text>
+          {/* La versión de prueba se reconoce siempre (ADR-039). */}
+          {ES_ALFA ? (
+            <View style={[estilos.insigniaAlfa, { backgroundColor: t.accent1, borderRadius: forma.rPill }]}>
+              <Text style={[estilos.insigniaAlfaTexto, { color: t.inkOnAccent, fontFamily: tipografia.display }]}>ALFA</Text>
+            </View>
+          ) : null}
         </View>
         <StreakPill
           dias={racha.diasConsecutivos}
@@ -370,6 +377,8 @@ const estilos = StyleSheet.create({
   },
   marca: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   nombreApp: { fontSize: 19, fontWeight: '700', letterSpacing: -0.2 },
+  insigniaAlfa: { paddingHorizontal: 8, paddingVertical: 2 },
+  insigniaAlfaTexto: { fontSize: 10.5, fontWeight: '800', letterSpacing: 0.8 },
 
   hero: { borderWidth: 1, padding: 22, gap: 20 },
   heroFila: { flexDirection: 'row', alignItems: 'center', gap: 20 },

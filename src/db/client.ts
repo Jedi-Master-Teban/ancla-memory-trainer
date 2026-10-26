@@ -1,10 +1,10 @@
 import { openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite';
+import { NOMBRE_BD } from '../canal';
 import type { ConexionBD } from './tipos';
 import { copiaDiariaSiToca, tomarCopia } from './instantaneas';
 import { ejecutarMigraciones } from './migrations';
 import { pedirProteccion } from './persistencia';
 
-const NOMBRE_BD = 'memory-trainer.db';
 
 let bdPromise: Promise<SQLiteDatabase> | null = null;
 
