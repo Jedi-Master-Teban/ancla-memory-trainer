@@ -1,5 +1,5 @@
 import { Link, router, useFocusEffect } from 'expo-router';
-import { useCallback, useState, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { HeaderFlotante } from '../../src/components/HeaderFlotante';
 import { EnlaceGuia } from '../../src/components/guia/EnlaceGuia';
@@ -7,6 +7,7 @@ import { obtenerBD } from '../../src/db/client';
 import { crearLista, listarListas, listarObjetosDeLista } from '../../src/db/repository';
 import type { ConexionBD, FilaLista } from '../../src/db/tipos';
 import { useTema } from '../../src/stores/tema';
+import { useUIStore } from '../../src/stores/ui';
 import type { TokensColor } from '../../src/tema/colores';
 import { ResumenCategoria } from '../../src/components/ResumenCategoria';
 
@@ -21,6 +22,16 @@ export default function ListasIndex() {
   const [listas, setListas] = useState<FilaLista[]>([]);
   const [conteos, setConteos] = useState<Record<string, number>>({});
   const [nombreNueva, setNombreNueva] = useState('');
+  const campoNombre = useRef<TextInput>(null);
+
+  // El «+» de la app pide una lista nueva: se enfoca el campo del nombre en
+  // cuanto existe (no hay campo mientras carga) y se consume la petición.
+  const nuevaPendiente = useUIStore((e) => e.nuevaListaPendiente);
+  useEffect(() => {
+    if (!nuevaPendiente || cargando || !campoNombre.current) return;
+    campoNombre.current.focus();
+    useUIStore.getState().consumirNuevaLista();
+  }, [nuevaPendiente, cargando]);
 
   const cargar = useCallback(() => {
     let cancelado = false;
@@ -84,6 +95,8 @@ export default function ListasIndex() {
 
         <View style={estilos.filaCrear}>
           <TextInput
+            ref={campoNombre}
+            accessibilityLabel="Nombre de la lista nueva"
             value={nombreNueva}
             onChangeText={setNombreNueva}
             placeholder="Nombre de la lista nueva..."

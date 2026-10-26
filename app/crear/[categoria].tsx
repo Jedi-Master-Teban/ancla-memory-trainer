@@ -40,6 +40,9 @@ export default function Crear() {
 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Cosas que no son una falla sino algo que no se puede hacer: se explican
+  // con palabras, sin «Error:» (se llega aquí por un enlace directo).
+  const [aviso, setAviso] = useState<string | null>(null);
   const [db, setDb] = useState<ConexionBD | null>(null);
   const [tarjeta, setTarjeta] = useState<FilaTarjeta | null>(null);
 
@@ -51,10 +54,14 @@ export default function Crear() {
           throw new Error(`"${categoriaParam}" no es una categoría válida.`);
         }
         if (categoria === 'naipe' && !id) {
-          throw new Error('Naipe no admite creación — el mazo es un conjunto cerrado de 52 cartas.');
+          setAviso('Los naipes son 52 cartas fijas, así que no se pueden crear nuevos. Lo que sí puedes es cambiar la palabra de cada carta desde Naipes.');
+          setCargando(false);
+          return;
         }
         if (categoria === 'lista_item' && !id && !listaId) {
-          throw new Error('Falta listaId para crear un objeto de lista.');
+          setAviso('Un objeto siempre pertenece a una lista. Entra a una lista y usa «+» para añadirle objetos, o crea una lista nueva.');
+          setCargando(false);
+          return;
         }
         const conexion = await obtenerBD();
         const existente = id ? await obtenerTarjeta(conexion, id) : null;
@@ -107,6 +114,17 @@ export default function Crear() {
     );
   }
 
+  if (aviso) {
+    return (
+      <View style={estilos.centro}>
+        <Text style={estilos.aviso}>{aviso}</Text>
+        <Pressable onPress={() => router.replace((categoria === 'naipe' ? '/naipes' : '/listas') as never)}>
+          <Text style={estilos.enlaceAviso}>{categoria === 'naipe' ? 'Ir a Naipes' : 'Ir a Listas'}</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   if (error || !categoria) {
     return (
       <View style={estilos.centro}>
@@ -142,6 +160,8 @@ const crearEstilos = (t: TokensColor) => StyleSheet.create({
   contenido: { padding: 24 },
   centro: { flex: 1, backgroundColor: t.bg, alignItems: 'center', justifyContent: 'center', padding: 24 },
   error: { color: t.otraVez, textAlign: 'center' },
+  aviso: { color: t.ink, textAlign: 'center', fontSize: 16, lineHeight: 24, maxWidth: 340 },
+  enlaceAviso: { color: t.accent1, fontWeight: '800', fontSize: 16, marginTop: 16, padding: 8 },
   titulo: { color: t.ink, fontSize: 20, fontWeight: '700' },
   botonEliminar: { alignItems: 'center', marginTop: 16, paddingVertical: 8 },
   textoEliminar: { color: t.otraVez, fontWeight: '600' },

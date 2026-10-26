@@ -14,7 +14,8 @@ import { Hash, Link, List, Plus, Spade } from 'lucide';
 import type { Categoria } from '../db/tipos';
 import { useTema } from '../stores/tema';
 import { recetaForma, type TemaId, type TokensColor } from '../tema/colores';
-import { categoriaDeRuta, debeMostrarFab, rutaCrear } from './fab-logic';
+import { categoriaDeRuta, debeMostrarFab, destinoDelFab } from './fab-logic';
+import { useUIStore } from '../stores/ui';
 
 /**
  * FAB polimórfico global.
@@ -34,11 +35,11 @@ import { categoriaDeRuta, debeMostrarFab, rutaCrear } from './fab-logic';
  * volverse «✕» mientras el menú está abierto, y el fondo se atenúa.
  */
 
-const OPCIONES_RADIAL: Array<{ id: Categoria; etiqueta: string; icono: IconNode; ruta: string }> = [
-  { id: 'colgadero', etiqueta: 'Colgadero', icono: Link, ruta: rutaCrear('colgadero') },
-  { id: 'naipe', etiqueta: 'Naipes', icono: Spade, ruta: rutaCrear('naipe') },
-  { id: 'lista_item', etiqueta: 'Listas', icono: List, ruta: rutaCrear('lista_item') },
-  { id: 'numero', etiqueta: 'Números', icono: Hash, ruta: rutaCrear('numero') },
+// Sin Naipes: son 52 cartas fijas (ADR-025) y no hay nada que crear.
+const OPCIONES_RADIAL: Array<{ id: Categoria; etiqueta: string; icono: IconNode }> = [
+  { id: 'colgadero', etiqueta: 'Colgadero', icono: Link },
+  { id: 'lista_item', etiqueta: 'Listas', icono: List },
+  { id: 'numero', etiqueta: 'Números', icono: Hash },
 ];
 
 const LADO = 56;
@@ -131,16 +132,21 @@ export function FAB() {
     });
   }, [opacidadMenu, translateMenu, giro]);
 
-  const irACrear = useCallback(() => {
-    if (!categoriaActual) return;
-    // /numeros/nuevo tiene preview en tiempo real (no se puede reemplazar por
-    // /crear/numero genérico sin perder UX).
-    if (categoriaActual === 'numero') {
-      router.push('/numeros/nuevo' as never);
+  /** Hace lo que `destinoDelFab` decide; en Listas, «crear» es una lista nueva. */
+  const irA = useCallback((categoria: Categoria, desde: string | undefined) => {
+    const destino = destinoDelFab(categoria, desde);
+    if (!destino) return;
+    if (destino.tipo === 'ruta') {
+      router.push(destino.ruta as never);
       return;
     }
-    router.push(rutaCrear(categoriaActual) as never);
-  }, [categoriaActual]);
+    if (desde !== '/listas') router.push('/listas' as never);
+    useUIStore.getState().pedirNuevaLista();
+  }, []);
+
+  const irACrear = useCallback(() => {
+    if (categoriaActual) irA(categoriaActual, pathname);
+  }, [categoriaActual, pathname, irA]);
 
   const onPressHandler = useCallback(() => {
     if (longPressDisparadoRef.current) {
@@ -161,11 +167,11 @@ export function FAB() {
   }, [abrirMenu]);
 
   const elegirCategoria = useCallback(
-    (ruta: string) => {
+    (categoria: Categoria) => {
       cerrarMenu();
-      router.push(ruta as never);
+      irA(categoria, undefined);
     },
-    [cerrarMenu],
+    [cerrarMenu, irA],
   );
 
   // Este return va DESPUÉS de todos los hooks: el FAB se monta en
@@ -195,7 +201,7 @@ export function FAB() {
             {OPCIONES_RADIAL.map((op) => (
               <Pressable
                 key={op.id}
-                onPress={() => elegirCategoria(op.ruta)}
+                onPress={() => elegirCategoria(op.id)}
                 style={({ pressed }) => [
                   estilos.opcionMenu,
                   { borderRadius: forma.rRow },
@@ -226,7 +232,7 @@ export function FAB() {
           accessibilityLabel={menuAbierto ? 'Cerrar el menú de crear' : 'Crear nuevo elemento'}
           accessibilityHint={
             categoriaActual
-              ? `Abre creación de ${categoriaActual}. Mantén presionado para elegir otra categoría.`
+              ? `Crea en ${OPCIONES_RADIAL.find((o) => o.id === categoriaActual)?.etiqueta ?? 'esta categoría'}. Mantén presionado para elegir otra categoría.`
               : 'Mantén presionado para elegir categoría.'
           }
           hitSlop={8}

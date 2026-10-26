@@ -84,8 +84,45 @@ export function debeMostrarFab(pathname: string | undefined): boolean {
   if (!pathname) return false;
   const ruta = pathname.split('?')[0];
   if (ruta === '/' || ruta === '/index') return false;
+  // Naipes: 52 cartas fijas (ADR-025), no hay nada que crear. Antes el «+»
+  // llevaba a un formulario que respondía «Error: Naipe no admite creación».
+  if (categoriaDeRuta(ruta) === 'naipe') return false;
+  // Sobre un formulario de creación, un «+» no crea nada: es el formulario.
+  if (ruta.startsWith('/crear/')) return false;
   if (SOLO_LECTURA.includes(ruta)) return false;
   if (LECTURA_CON_SUBPAGINAS.some((p) => ruta === p || ruta.startsWith(`${p}/`))) return false;
   if (INMERSIVAS.some((p) => ruta.startsWith(p))) return false;
   return !esRutaDeSesion(ruta);
+}
+
+/** Categorías que el «+» puede crear. Naipes no: son 52 cartas fijas. */
+export const CATEGORIAS_CREABLES: Categoria[] = ['colgadero', 'lista_item', 'numero'];
+
+export type DestinoFab = { tipo: 'ruta'; ruta: string } | { tipo: 'nueva-lista' } | null;
+
+/**
+ * Qué hace el «+» según la categoría y el sitio. En Listas no hay «crear un
+ * objeto» a secas: un objeto siempre es de una lista. Dentro de una lista
+ * añade a ESA lista (`/crear/lista_item?listaId=…`); en cualquier otro sitio,
+ * lo que se puede crear es una lista nueva. Antes mandaba siempre a
+ * `/crear/lista_item` sin lista y fallaba con «Falta listaId».
+ */
+export function destinoDelFab(categoria: Categoria, pathname: string | undefined): DestinoFab {
+  switch (categoria) {
+    case 'colgadero':
+      return { tipo: 'ruta', ruta: rutaCrear('colgadero') };
+    case 'numero':
+      // /numeros/nuevo tiene vista previa en tiempo real; no se reemplaza por el formulario genérico.
+      return { tipo: 'ruta', ruta: '/numeros/nuevo' };
+    case 'lista_item': {
+      const ruta = (pathname ?? '').split('?')[0];
+      const dentro = /^\/listas\/([^/]+)$/.exec(ruta);
+      if (dentro && dentro[1] !== 'estudiar') {
+        return { tipo: 'ruta', ruta: `${rutaCrear('lista_item')}?listaId=${dentro[1]}` };
+      }
+      return { tipo: 'nueva-lista' };
+    }
+    default:
+      return null;
+  }
 }
