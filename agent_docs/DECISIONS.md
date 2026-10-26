@@ -1141,3 +1141,26 @@ instante. Costo asumido: abrir la app tarda ~3 s aunque estuviera lista antes.
 espera). `e2e/fixtures.ts` lo pone en 0 para que cada página no pague 3 s, y
 `e2e/arranque.spec.ts` lo restablece para comprobar la duración y el orden de
 llenado.
+
+## ADR-037 · 2026-10-25 · Propuesta (rama `alpha/vocabulario`, sin aprobar)
+
+**Decisión propuesta:** añadir la categoría `vocabulario` —palabras sueltas, sin
+orden, agrupadas por tema— con imagen por tarjeta (foto propia o búsqueda en
+Openverse y Wikimedia Commons) y un campo opcional «truco» para la técnica de
+la palabra clave. Reemplaza a la `palabra_clave` reservada en MODELO-DATOS §1.3.
+Diseño, evidencia y spikes en `agent_docs/modulos/10-vocabulario.md`.
+
+**Lo que obliga a decidir (y por qué no es trivial):**
+- Primera función que habla con un tercero (la consulta de búsqueda y la IP).
+  Solo bajo petición del usuario, con aviso previo.
+- Las imágenes viven en SQLite como BLOB en la alfa (presupuesto 300) para que
+  ADR-029 (copias, respaldo, recuperación) las cubra sin trabajo extra;
+  depende del spike S1 y puede pasar a archivos de OPFS.
+- JPEG y nunca WebP: WebKit codifica WebP como PNG (medido).
+- Filtro de licencias CC0, dominio público, BY y BY-SA; créditos en la esquina
+  de la imagen y detalle completo con «i».
+- **Una alfa en el mismo origen comparte la base y la migraría:** hay que
+  elegir cómo probarla (§13 del módulo) antes de publicarla.
+
+Se vuelve «Aceptada» solo cuando el operador la apruebe; no se fusiona a
+`main` antes.
