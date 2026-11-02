@@ -8,6 +8,22 @@ export interface PuntoRadar {
   y: number;
 }
 
+const LADO_DISENO = 300;
+const RADIO_DISENO = 78;
+/** Aire entre el vértice lateral y su etiqueta. */
+const HOLGURA_ETIQUETA = 6;
+
+/**
+ * Lado del lienzo y radio del radar para el ancho que hay de verdad. El lienzo
+ * no pasa de su tamaño de diseño; en un teléfono angosto encoge, y el radio con
+ * él, porque las etiquetas laterales no encogen: el texto sigue siendo el mismo.
+ */
+export function medidasRadar(anchoDisponible: number, anchoEtiqueta: number): { lado: number; radio: number } {
+  const lado = Math.min(LADO_DISENO, anchoDisponible);
+  const radio = Math.min(RADIO_DISENO, lado / 2 - anchoEtiqueta - HOLGURA_ETIQUETA);
+  return { lado, radio: Math.max(0, radio) };
+}
+
 /**
  * Calcula la posición de un vértice del radar.
  * @param indice Índice del eje (0-based, desde la parte superior y en sentido horario).

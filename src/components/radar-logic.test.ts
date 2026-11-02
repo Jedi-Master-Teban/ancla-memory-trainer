@@ -3,7 +3,32 @@ import {
   poligonoDatos,
   poligonoAnillo,
   puntoEtiqueta,
+  medidasRadar,
 } from './radar-logic';
+
+describe('medidasRadar', () => {
+  const ETIQUETA = 66;
+
+  it('con espacio de sobra usa el tamaño de diseño', () => {
+    expect(medidasRadar(346, ETIQUETA)).toEqual({ lado: 300, radio: 78 });
+    expect(medidasRadar(300, ETIQUETA)).toEqual({ lado: 300, radio: 78 });
+  });
+
+  it('en una pantalla de 320 (274 útiles) cabe y encoge el radio', () => {
+    expect(medidasRadar(274, ETIQUETA)).toEqual({ lado: 274, radio: 65 });
+  });
+
+  it('el vértice lateral nunca pisa la etiqueta', () => {
+    for (const ancho of [240, 274, 288, 300]) {
+      const { lado, radio } = medidasRadar(ancho, ETIQUETA);
+      expect(lado / 2 + radio).toBeLessThanOrEqual(lado - ETIQUETA);
+    }
+  });
+
+  it('sin medida todavía no devuelve números negativos', () => {
+    expect(medidasRadar(0, ETIQUETA)).toEqual({ lado: 0, radio: 0 });
+  });
+});
 
 describe('puntoVertice', () => {
   it('índice 0 en radar de 4 → vértice arriba', () => {

@@ -1,6 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { type LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, G, Line, Polygon } from 'react-native-svg';
-import { poligonoAnillo, poligonoDatos, puntoVertice } from './radar-logic';
+import { medidasRadar, poligonoAnillo, poligonoDatos, puntoVertice } from './radar-logic';
 import { useTema } from '../stores/tema';
 import { recetaForma } from '../tema/colores';
 import { IconoBarras, IconoRadar } from './iconos';
@@ -25,13 +26,13 @@ import { IconoBarras, IconoRadar } from './iconos';
  * 2. Las etiquetas eran `<Text>` de react-native-svg, que ignora la familia
  *    del tema y el tamaño de texto del sistema. Ahora son `<Text>` de RN
  *    posicionados en absoluto sobre el SVG.
+ *
+ * El lienzo sale del ancho medido, no de un número fijo: con 300 px se salía de
+ * la tarjeta en las pantallas de 320 (`medidasRadar`).
  */
 
-const LADO = 300;
 const ALTO = 240;
-const CX = LADO / 2;
 const CY = 112;
-const RADIO = 78;
 const FRACCIONES = [0.25, 0.5, 0.75, 1];
 
 export type VistaRetencion = 'barras' | 'radar';
@@ -52,6 +53,8 @@ interface Props {
 
 /** Qué tan lejos del centro pintar cada bloque de etiqueta. */
 const ANCHO_ETIQUETA_LATERAL = 66;
+/** Aire a cada lado: las etiquetas laterales van pegadas al borde del lienzo. */
+const MARGEN_LIENZO = 8;
 
 export function RetencionPorCategoria({ datos, vista, onCambiarVista }: Props) {
   const { colores: t, tema, tipografia } = useTema();
@@ -133,6 +136,13 @@ function RadarRetencion({ datos }: { datos: DatoCategoria[] }) {
   const { colores: t, tema, tipografia } = useTema();
   const forma = recetaForma(tema);
   const total = datos.length;
+  const [ancho, setAncho] = useState(0);
+  const { lado, radio } = medidasRadar(Math.max(0, ancho - MARGEN_LIENZO * 2), ANCHO_ETIQUETA_LATERAL);
+  const cx = lado / 2;
+
+  function medir(e: LayoutChangeEvent) {
+    setAncho(e.nativeEvent.layout.width);
+  }
 
   if (total < 3) {
     return (
@@ -155,81 +165,85 @@ function RadarRetencion({ datos }: { datos: DatoCategoria[] }) {
         { backgroundColor: t.card, borderColor: t.borderMuted ?? t.glassBorder, borderRadius: forma.rCard },
       ]}
     >
-      <View style={estilos.lienzo}>
-        <Svg width={LADO} height={ALTO} viewBox={`0 0 ${LADO} ${ALTO}`} style={estilos.svg}>
-          <G>
-            {FRACCIONES.map((f) => (
+      <View style={estilos.medida} onLayout={medir}>
+        {lado > 0 ? (
+          <View style={[estilos.lienzo, { width: lado }]}>
+            <Svg width={lado} height={ALTO} viewBox={`0 0 ${lado} ${ALTO}`} style={estilos.svg}>
+              <G>
+                {FRACCIONES.map((f) => (
+                  <Polygon
+                    key={f}
+                    points={poligonoAnillo(total, f, cx, CY, radio)}
+                    fill="none"
+                    stroke={colorReticula}
+                    strokeOpacity={0.32}
+                    strokeWidth={1}
+                  />
+                ))}
+              </G>
+              <G>
+                {Array.from({ length: total }, (_, i) => {
+                  const p = puntoVertice(i, total, radio, cx, CY);
+                  return (
+                    <Line
+                      key={i}
+                      x1={cx}
+                      y1={CY}
+                      x2={p.x}
+                      y2={p.y}
+                      stroke={colorReticula}
+                      strokeOpacity={0.32}
+                      strokeWidth={1}
+                    />
+                  );
+                })}
+              </G>
               <Polygon
-                key={f}
-                points={poligonoAnillo(total, f, CX, CY, RADIO)}
-                fill="none"
-                stroke={colorReticula}
-                strokeOpacity={0.32}
-                strokeWidth={1}
+                points={poligonoDatos(valores, cx, CY, radio)}
+                fill={t.accent1}
+                fillOpacity={0.22}
+                stroke={t.accent1}
+                strokeWidth={2.4}
+                strokeLinejoin="round"
               />
-            ))}
-          </G>
-          <G>
-            {Array.from({ length: total }, (_, i) => {
-              const p = puntoVertice(i, total, RADIO, CX, CY);
-              return (
-                <Line
-                  key={i}
-                  x1={CX}
-                  y1={CY}
-                  x2={p.x}
-                  y2={p.y}
-                  stroke={colorReticula}
-                  strokeOpacity={0.32}
-                  strokeWidth={1}
-                />
-              );
-            })}
-          </G>
-          <Polygon
-            points={poligonoDatos(valores, CX, CY, RADIO)}
-            fill={t.accent1}
-            fillOpacity={0.22}
-            stroke={t.accent1}
-            strokeWidth={2.4}
-            strokeLinejoin="round"
-          />
-          <G>
-            {valores.map((v, i) => {
-              const p = puntoVertice(i, total, RADIO * v, CX, CY);
-              return (
-                <Circle
-                  key={i}
-                  cx={p.x}
-                  cy={p.y}
-                  r={4}
-                  fill={t.accent1}
-                  stroke={t.card}
-                  strokeWidth={1.6}
-                />
-              );
-            })}
-          </G>
-        </Svg>
+              <G>
+                {valores.map((v, i) => {
+                  const p = puntoVertice(i, total, radio * v, cx, CY);
+                  return (
+                    <Circle
+                      key={i}
+                      cx={p.x}
+                      cy={p.y}
+                      r={4}
+                      fill={t.accent1}
+                      stroke={t.card}
+                      strokeWidth={1.6}
+                    />
+                  );
+                })}
+              </G>
+            </Svg>
 
-        {/* Etiquetas en Text de RN, no de SVG: heredan la familia del tema y
-            el tamaño de texto del sistema. Cuatro posiciones fijas — el radar
-            de esta app siempre tiene 4 ejes (las 4 categorías). */}
-        {datos.map((d, i) => (
-          <View key={d.nombre} style={[estilos.etiqueta, posicionEtiqueta(i, total)]}>
-            <Text
-              numberOfLines={1}
-              style={[estilos.etiquetaNombre, { color: t.ink, fontFamily: tipografia.display }, alineacion(i, total)]}
-            >
-              {d.nombre}
-            </Text>
-            <Text
-              style={[estilos.etiquetaPct, { color: t.accent1, fontFamily: tipografia.display }, alineacion(i, total)]}
-            >
-              {Math.round(d.pct)} %
-            </Text>
+            {/* Etiquetas en Text de RN, no de SVG: heredan la familia del tema y
+                el tamaño de texto del sistema. Cuatro posiciones fijas — el radar
+                de esta app siempre tiene 4 ejes (las 4 categorías). */}
+            {datos.map((d, i) => (
+              <View key={d.nombre} style={[estilos.etiqueta, posicionEtiqueta(i, total, cx, radio)]}>
+                <Text
+                  numberOfLines={1}
+                  style={[estilos.etiquetaNombre, { color: t.ink, fontFamily: tipografia.display }, alineacion(i, total)]}
+                >
+                  {d.nombre}
+                </Text>
+                <Text
+                  style={[estilos.etiquetaPct, { color: t.accent1, fontFamily: tipografia.display }, alineacion(i, total)]}
+                >
+                  {Math.round(d.pct)} %
+                </Text>
+              </View>
+            ))}
           </View>
-        ))}
+        ) : null}
       </View>
 
       <Text style={[estilos.pie, { color: t.inkMuted, fontFamily: tipografia.body }]}>
@@ -240,10 +254,10 @@ function RadarRetencion({ datos }: { datos: DatoCategoria[] }) {
 }
 
 /** 0 arriba, 1 derecha, 2 abajo, 3 izquierda (mismo orden que puntoVertice). */
-function posicionEtiqueta(i: number, total: number) {
+function posicionEtiqueta(i: number, total: number, cx: number, radio: number) {
   if (total !== 4) {
     // Fallback genérico: pega la etiqueta al vértice.
-    const p = puntoVertice(i, total, RADIO + 26, CX, CY);
+    const p = puntoVertice(i, total, radio + 26, cx, CY);
     return { left: p.x - ANCHO_ETIQUETA_LATERAL / 2, top: p.y - 14, width: ANCHO_ETIQUETA_LATERAL };
   }
   switch (i) {
@@ -288,7 +302,8 @@ const estilos = StyleSheet.create({
   relleno: { height: '100%' },
 
   card: { borderWidth: 1, paddingTop: 8, paddingBottom: 14, alignItems: 'center' },
-  lienzo: { width: LADO, height: ALTO },
+  medida: { alignSelf: 'stretch', alignItems: 'center', height: ALTO },
+  lienzo: { height: ALTO },
   svg: { position: 'absolute', left: 0, top: 0 },
   etiqueta: { position: 'absolute', gap: 1 },
   etiquetaNombre: { fontSize: 12, fontWeight: '700' },

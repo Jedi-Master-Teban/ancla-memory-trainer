@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { type LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Defs, G, Line, LinearGradient, Path, Polyline, Stop, Text as SvgText } from 'react-native-svg';
 import { Pressable } from 'react-native';
 import {
@@ -14,7 +14,6 @@ import { esTemaOscuro } from '../tema/colores';
 
 interface Props {
   puntos: PuntoLinea[];
-  tamano?: number;
   alto?: number;
   titulo?: string;
   subtitulo?: string;
@@ -38,10 +37,13 @@ const ETIQUETAS_PERIODO: Record<PeriodoLineChart, string> = {
  * - Línea meta punteada horizontal (cuando se pasa `metaY`)
  * - Punto destacado del mejor día
  * - Selector de período encima del chart
+ *
+ * El ancho se mide del contenedor, como en `Heatmap90`. Con 340 px fijos el SVG
+ * se salía de la tarjeta en casi todos los teléfonos, y de la pantalla en los
+ * Android de 360–384 px, que son la mayoría.
  */
 export function LineChart({
   puntos,
-  tamano = 340,
   alto = 140,
   titulo,
   subtitulo,
@@ -51,6 +53,7 @@ export function LineChart({
   onCambiarPeriodo,
 }: Props) {
   const { colores: t, tema } = useTema();
+  const [tamano, setTamano] = useState(0);
   const puntosAgrupados = useMemo(() => {
     if (!periodoActivo) return puntos;
     return agruparPorPeriodo(puntos, periodoActivo);
@@ -66,6 +69,10 @@ export function LineChart({
   // contra dos hex concretos se rompía en silencio en cuanto la paleta
   // cambiara un dígito.
   const colorEjes = esTemaOscuro(tema) ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+
+  function medir(e: LayoutChangeEvent) {
+    setTamano(e.nativeEvent.layout.width);
+  }
 
   // Para la línea meta
   const metaYPos = metaY !== undefined && geom.ejeY.max > 0
@@ -102,73 +109,77 @@ export function LineChart({
           })}
         </View>
       )}
-      <Svg width={tamano} height={alto} viewBox={`0 0 ${tamano} ${alto}`}>
-        <Defs>
-          <LinearGradient id="lineFill" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0%" stopColor={t.accent1} stopOpacity={0.35} />
-            <Stop offset="100%" stopColor={t.accent1} stopOpacity={0} />
-          </LinearGradient>
-        </Defs>
-        {metaYPos !== null && (
-          <G>
-            <Line
-              x1={10}
-              y1={metaYPos}
-              x2={tamano - 10}
-              y2={metaYPos}
-              stroke={t.accent2 ?? t.accent1}
-              strokeDasharray="4 4"
-              strokeWidth={1.5}
-            />
-            <SvgText
-              x={tamano - 12}
-              y={metaYPos - 4}
-              fontSize={9}
-              fill={t.accent2 ?? t.accent1}
-              textAnchor="end"
-            >
-              meta {metaY}
-            </SvgText>
-          </G>
-        )}
-        {geom.puntosArea && <Path d={geom.puntosArea} fill="url(#lineFill)" />}
-        {geom.puntosPolyline && (
-          <Polyline
-            points={geom.puntosPolyline}
-            fill="none"
-            stroke={t.accent1}
-            strokeWidth={2.5}
-            strokeLinejoin="round"
-            strokeLinecap="round"
-          />
-        )}
-        {geom.puntosCirculo.map((c, i) => (
-          <Circle
-            key={i}
-            cx={c.cx}
-            cy={c.cy}
-            r={3.5}
-            fill={t.bg}
-            stroke={t.accent1}
-            strokeWidth={2}
-          />
-        ))}
-        {mejor && geom.puntosCirculo[mejor.indice] && (
-          <G>
-            <Circle
-              cx={geom.puntosCirculo[mejor.indice].cx}
-              cy={geom.puntosCirculo[mejor.indice].cy}
-              r={7}
-              fill="transparent"
-              stroke={t.accent1}
-              strokeWidth={1.5}
-              strokeDasharray="2 2"
-            />
-          </G>
-        )}
-        {/* Línea base (eje X) */}
-        <Line x1={10} y1={alto - 10} x2={tamano - 10} y2={alto - 10} stroke={colorEjes} />
-      </Svg>
+      <View style={{ height: alto }} onLayout={medir}>
+        {tamano > 0 ? (
+          <Svg width={tamano} height={alto} viewBox={`0 0 ${tamano} ${alto}`}>
+            <Defs>
+              <LinearGradient id="lineFill" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0%" stopColor={t.accent1} stopOpacity={0.35} />
+                <Stop offset="100%" stopColor={t.accent1} stopOpacity={0} />
+              </LinearGradient>
+            </Defs>
+            {metaYPos !== null && (
+              <G>
+                <Line
+                  x1={10}
+                  y1={metaYPos}
+                  x2={tamano - 10}
+                  y2={metaYPos}
+                  stroke={t.accent2 ?? t.accent1}
+                  strokeDasharray="4 4"
+                  strokeWidth={1.5}
+                />
+                <SvgText
+                  x={tamano - 12}
+                  y={metaYPos - 4}
+                  fontSize={9}
+                  fill={t.accent2 ?? t.accent1}
+                  textAnchor="end"
+                >
+                  meta {metaY}
+                </SvgText>
+              </G>
+            )}
+            {geom.puntosArea && <Path d={geom.puntosArea} fill="url(#lineFill)" />}
+            {geom.puntosPolyline && (
+              <Polyline
+                points={geom.puntosPolyline}
+                fill="none"
+                stroke={t.accent1}
+                strokeWidth={2.5}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+            )}
+            {geom.puntosCirculo.map((c, i) => (
+              <Circle
+                key={i}
+                cx={c.cx}
+                cy={c.cy}
+                r={3.5}
+                fill={t.bg}
+                stroke={t.accent1}
+                strokeWidth={2}
+              />
+            ))}
+            {mejor && geom.puntosCirculo[mejor.indice] && (
+              <G>
+                <Circle
+                  cx={geom.puntosCirculo[mejor.indice].cx}
+                  cy={geom.puntosCirculo[mejor.indice].cy}
+                  r={7}
+                  fill="transparent"
+                  stroke={t.accent1}
+                  strokeWidth={1.5}
+                  strokeDasharray="2 2"
+                />
+              </G>
+            )}
+            {/* Línea base (eje X) */}
+            <Line x1={10} y1={alto - 10} x2={tamano - 10} y2={alto - 10} stroke={colorEjes} />
+          </Svg>
+        ) : null}
+      </View>
       {mejor && (
         <Text style={[estilos.mejor, { color: t.inkMuted }]}>
           Mejor día: {mejor.fecha} · {mejor.valor}
