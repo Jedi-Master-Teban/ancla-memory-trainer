@@ -71,9 +71,13 @@ export default function RootLayout() {
 
   const tabActiva: TabId | null = pestanaActiva(pathname);
 
+  // `dismissTo`, no `push` (ADR-040): la isla es navegación lateral y no apila.
+  // Si la pestaña ya está en la pila vuelve a ella; si no, reemplaza la pantalla
+  // actual. En la raíz de la pestaña activa el toque no hace nada (`POP_TO` se
+  // queda en la misma ruta) y desde una subpantalla vuelve a esa raíz.
   const cambiarTab = useCallback(
     (tab: TabId) => {
-      router.push(RUTA_POR_TAB[tab]);
+      router.dismissTo(RUTA_POR_TAB[tab]);
     },
     [router],
   );

@@ -391,7 +391,7 @@ retiran de la tabla de pendientes.
 | P-4 | ¿`expo-notifications` dispara notificaciones locales en Expo Go con el SDK que se fije en Fase 0? | Agente (spike) | Fase 8 |
 | P-5 | Simulador de iOS sin runtime descargado (`xcrun simctl list runtimes` vacío). Xcode está instalado pero falta la plataforma iOS, una descarga de varios GB que normalmente pide contraseña de administrador. No bloquea ninguna fase (el objetivo real es Expo Go en el iPhone físico), pero impide usar el simulador como verificación intermedia. | Operador | Ninguna fase (solo conveniencia) |
 | P-6 | El proyecto quedó fijado en SDK 54 por ADR-012, no en "la última" a propósito. Antes de subir de SDK en cualquier fase futura, verificar primero contra `apps.apple.com/us/app/expo-go/id982107779` (o preguntar al operador qué ve en Expo Go) que la nueva versión ya está disponible en el App Store — nunca asumir que "más nueva" significa "usable". | Agente | Cualquier fase futura que toque versión de Expo SDK |
-| P-7 | La isla (`cambiarTab` en `app/_layout.tsx`) hace `push` en cada toque, también en la pestaña activa: tocar «Inicio» apila otro Inicio, y Editar, Stats y Ajustes otra copia de sí mismas. ¿Las pestañas vuelven con `dismissTo` (ADR-035) o se quedan así? Es navegación lateral: decisión de diseño. | Operador | Ninguna fase; que la pila no crezca al cambiar de pestaña |
+| ~~P-7~~ | ~~La isla hace `push` en cada toque, también en la pestaña activa~~ — **resuelto por ADR-040**, ya no bloquea nada | — | — |
 
 ## ADR-014 · 2026-08-12 · Aceptada
 **Decisión:** `src/db/tipos.ts` define una interfaz propia `ConexionBD`
@@ -1197,3 +1197,43 @@ alojamiento), que aísla del todo.
 **Pruebas:** `e2e/canales.spec.ts` (datos separados, caché de cada una, la real
 no atiende la alfa, aviso al abrir las dos). La de cachés se comprobó
 revirtiendo el arreglo: falla.
+
+## ADR-040 · 2026-11-02 · Aceptada — resuelve P-7
+
+**Decisión:** las cuatro pestañas de la isla cambian con `router.dismissTo`
+(ADR-035), no con `push`. El operador lo eligió frente a dos alternativas: solo
+Inicio, o ignorar el toque en la pestaña activa.
+
+**Por qué:** `cambiarTab` hacía `push` en cada toque, también en la pestaña
+activa: Inicio → Ajustes → Inicio → Inicio dejaba tres Inicios montados, y
+Editar, Progreso y Ajustes apilaban copias de sí mismas. Con solo Inicio, esas
+tres seguirían creciendo. Ignorar el toque en la activa tampoco bastaba: al
+volver desde Ajustes, Inicio no es la activa y se apilaba igual.
+
+**Comportamiento** (`dismissTo` quita o reemplaza, así que la isla nunca alarga
+la pila):
+- Pestaña que ya está en la pila: vuelve a esa pantalla y quita las de encima.
+- Pestaña que no está: reemplaza la pantalla actual. Esto incluye salir de
+  Inicio: Inicio → Ajustes deja solo Ajustes, y volver crea un Inicio nuevo. Se
+  ve igual que con `push`, que también creaba uno nuevo, pero el de antes ya no
+  queda montado debajo.
+- Pestaña activa, en su raíz: no hace nada. `StackRouter` (`POP_TO`,
+  `@react-navigation/routers` 7.6.4): si la ruta actual ya tiene ese nombre,
+  conserva su índice y su clave, sin remontar. Por eso `TabBarInferior` puede
+  seguir llamando `onChange` en la activa.
+- Pestaña activa, en una subpantalla (`/colgadero`, `/guia`…): vuelve a la raíz.
+
+**Consecuencia:** el gesto de volver ya no recorre las pestañas visitadas, y
+detrás de una pestaña puede no haber nada de la app. Una sesión lanzada desde
+otra pestaña no encuentra Inicio en la pila: «Volver al inicio» reemplaza el
+resumen y la pestaña de origen queda debajo.
+
+**Pruebas:** `e2e/navegacion.spec.ts`, grupo «cambiar de pestaña en la isla». Las
+tres fallaban con `push` en WebKit y Chromium (3 Inicios, 2 copias de Editar, 2
+Inicios desde Colgadero). «Dos sesiones seguidas…» esperaba que el gesto de
+volver cayera en Ajustes; como ya no queda debajo, ahora comprueba que sale de
+la app, y ese caso pasó a una prueba nueva con la sesión lanzada desde Ajustes.
+
+**Queda fuera:** los enlaces entre pantallas que llevan a una pestaña (la píldora
+de racha de Inicio, el enlace a Ajustes de Progreso) siguen empujando: no pasan
+por la isla.
